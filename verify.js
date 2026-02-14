@@ -1,2 +1,2 @@
-// This file intentionally left minimal.
-// Frontend verification happens via /api/verify only.
+// Frontend verification is done via POST /api/verify.
+// Do not hardcode secrets or keys here.
