@@ -1,60 +1,92 @@
 /**
  * Vercel Serverless Function
- * Verifies a Payhip license key using Payhip Public API v2.
+ * POST /api/verify
+ * Body: { "license_key": "XXXX-...." }
  *
- * Env var required on Vercel:
- *   PRODUCT_SECRET_KEY = your Payhip product secret key
- *
- * Client calls:
- *   POST /api/verify  { "license_key": "XXXX-...." }
+ * Env required:
+ *   PRODUCT_SECRET_KEY = Payhip Product Secret Key
  */
+
 export default async function handler(req, res) {
+  // CORS (valgfritt, men greit)
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
+  }
+
+  const secret = process.env.PRODUCT_SECRET_KEY;
+  if (!secret) {
+    return res.status(500).json({ ok: false, error: "Missing PRODUCT_SECRET_KEY env var" });
+  }
+
+  // Body kan komme som object eller string avhengig av runtime
+  let body = req.body;
+  if (typeof body === "string") {
+    try {
+      body = JSON.parse(body);
+    } catch {
+      body = {};
+    }
+  }
+  body = body || {};
+
+  // Godta flere felt-navn (så frontend mismatch ikke knekker alt)
+  const licenseKeyRaw =
+    body.license_key ||
+    body.licenseKey ||
+    body.key ||
+    body.code ||
+    "";
+
+  const license_key = String(licenseKeyRaw).replace(/\u00A0/g, " ").trim();
+
+  if (!license_key) {
+    return res.status(400).json({ ok: false, error: "Missing license key in request body" });
+  }
+
   try {
-    if (req.method !== 'POST') {
-      res.status(405).json({ ok:false, error:'Method not allowed' });
-      return;
-    }
-
-    const secret = process.env.PRODUCT_SECRET_KEY;
-    if (!secret) {
-      res.status(500).json({ ok:false, error:'Missing PRODUCT_SECRET_KEY env var' });
-      return;
-    }
-
-    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-    const licenseKey = (body.license_key || '').toString().trim();
-    if (!licenseKey) {
-      res.status(400).json({ ok:false, error:'Missing license_key' });
-      return;
-    }
-
-    const url = `https://payhip.com/api/v2/license/verify?license_key=${encodeURIComponent(licenseKey)}`;
-    const resp = await fetch(url, {
-      method: 'GET',
+    // Payhip Public API v2 - license verification
+    // NB: Endepunktet kan variere litt etter Payhip-oppsett, men dette er den som ofte brukes i slike repos.
+    const payhipRes = await fetch("https://payhip.com/api/v2/licenses/verify", {
+      method: "POST",
       headers: {
-        'product-secret-key': secret,
-        'accept': 'application/json'
-      }
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        product_secret: secret,
+        license_key,
+      }),
     });
 
-    const data = await resp.json().catch(() => ({}));
+    const data = await payhipRes.json().catch(() => ({}));
 
-    // Payhip returns fields like: valid, disabled, usage, etc. Shape may evolve.
-    if (!resp.ok) {
-      res.status(resp.status).json({ ok:false, error:'Payhip API error', details:data });
-      return;
+    // Payhip svar varierer, så vi tolker litt defensivt:
+    // - Noen svarer { success: true, ... }
+    // - Andre kan ha { valid: true, ... }
+    // - Eller { error: "..."}
+    const valid = Boolean(data.success || data.valid || data.verified);
+
+    if (!payhipRes.ok || !valid) {
+      const errMsg =
+        data.error ||
+        data.message ||
+        "License verification failed";
+      return res.status(401).json({ ok: false, error: errMsg, payhip: data });
     }
 
-    const valid = Boolean(data?.valid ?? data?.is_valid ?? data?.success);
-    const disabled = Boolean(data?.disabled);
-
-    res.status(200).json({
-      ok: true,
-      valid,
-      disabled,
-      data
-    });
+    return res.status(200).json({ ok: true, payhip: data });
   } catch (e) {
-    res.status(500).json({ ok:false, error:'Server error', message: e?.message || String(e) });
+    return res.status(500).json({
+      ok: false,
+      error: "Server error verifying license",
+      details: String(e?.message || e),
+    });
   }
 }
