@@ -1,44 +1,30 @@
-/**
- * Vercel Serverless Function
- * POST /api/verify
- * Body: { "license_key": "XXXX-...." }
- *
- * Env required on Vercel:
- *   PRODUCT_SECRET_KEY = Payhip Product Secret Key
- */
-
 export default async function handler(req, res) {
-  // (Valgfritt) CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ ok: false, error: "Method not allowed" });
-
-  const productSecret = process.env.PRODUCT_SECRET_KEY;
-  if (!productSecret) {
-    return res.status(500).json({ ok: false, error: "Missing PRODUCT_SECRET_KEY env var" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
-  // Parse body (kan være object eller string)
+  const productSecret = (process.env.PRODUCT_SECRET_KEY || "").trim();
+  if (!productSecret) {
+    return res.status(500).json({ ok: false, error: "Missing PRODUCT_SECRET_KEY" });
+  }
+
   let body = req.body;
   if (typeof body === "string") {
     try { body = JSON.parse(body); } catch { body = {}; }
   }
   body = body || {};
 
-  const license_key =
-    String(body.license_key || body.licenseKey || body.key || body.code || "")
-      .replace(/\u00A0/g, " ")
-      .trim();
-
+  const license_key = String(body.license_key || body.licenseKey || "").trim();
   if (!license_key) {
     return res.status(400).json({ ok: false, error: "Missing license_key" });
   }
 
   try {
-    // Payhip v2: GET /api/v2/license/verify?license_key=...
     const url = new URL("https://payhip.com/api/v2/license/verify");
     url.searchParams.set("license_key", license_key);
 
@@ -49,30 +35,31 @@ export default async function handler(req, res) {
       },
     });
 
-    const data = await payhipRes.json().catch(() => null);
+    const rawText = await payhipRes.text();
+    let data = null;
+    try { data = rawText ? JSON.parse(rawText) : null; } catch {}
 
-    // Payhip doc: suksess -> { data: { enabled: true/false, ... } }
-    const ok = Boolean(data && data.data && typeof data.data.enabled === "boolean");
-
-    if (!payhipRes.ok || !ok) {
+    if (!payhipRes.ok) {
       return res.status(401).json({
         ok: false,
-        error: data?.error || data?.message || "License verification failed",
+        error: data?.error || "Payhip rejected request",
         payhip_status: payhipRes.status,
+        rawText
       });
     }
 
-    // NB: Om du vil kreve at lisensen er aktiv:
-    if (data.data.enabled !== true) {
-      return res.status(401).json({ ok: false, error: "License key is disabled" });
+    const enabled = data?.data?.enabled ?? data?.enabled;
+    if (!enabled) {
+      return res.status(401).json({
+        ok: false,
+        error: "License not enabled",
+        payhip_status: payhipRes.status,
+        rawText
+      });
     }
 
-    return res.status(200).json({ ok: true, data: data.data });
+    return res.status(200).json({ ok: true, data });
   } catch (e) {
-    return res.status(500).json({
-      ok: false,
-      error: "Server error verifying license",
-      details: String(e?.message || e),
-    });
+    return res.status(500).json({ ok: false, error: "Server error", details: String(e) });
   }
 }
