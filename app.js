@@ -1,8 +1,11 @@
+import { templateHTML } from './templates.js';
+
 document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("activateBtn");
   const resetBtn = document.getElementById("resetBtn");
   const input = document.getElementById("licenseInput");
   const status = document.getElementById("status");
+  const builder = document.getElementById("builder");
 
   function setUnlocked(v) {
     localStorage.setItem("cv_unlocked", v ? "true" : "false");
@@ -13,8 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateUI() {
-    document.getElementById("builder").style.display =
-      isUnlocked() ? "block" : "none";
+    builder.innerHTML = isUnlocked() ? templateHTML : "";
   }
 
   btn.onclick = async () => {
