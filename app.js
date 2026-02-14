@@ -11,16 +11,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const status = document.getElementById("status");
   const builder = document.getElementById("builder");
 
-  function setUnlocked(v) {
-    localStorage.setItem("cv_unlocked", v ? "true" : "false");
-  }
-  function isUnlocked() {
-    return localStorage.getItem("cv_unlocked") === "true";
-  }
-  function updateUI() {
+  const setUnlocked = (v) => localStorage.setItem("cv_unlocked", v ? "true" : "false");
+  const isUnlocked = () => localStorage.getItem("cv_unlocked") === "true";
+
+  const updateUI = () => {
     builder.innerHTML = isUnlocked() ? templateHTML : "";
     document.body.classList.toggle("unlocked", isUnlocked());
-  }
+  };
 
   btn.onclick = async () => {
     status.className = "status";

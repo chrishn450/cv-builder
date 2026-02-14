@@ -1,43 +1,17 @@
-body {
-  font-family: serif;
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 32px 24px;
-}
-
+body { font-family: serif; max-width: 900px; margin: 0 auto; padding: 32px 24px; }
 .unlock h2 { margin: 0 0 8px 0; }
 .hint { margin: 0 0 14px 0; opacity: 0.75; }
-
 .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-
-input {
-  padding: 10px 12px;
-  border: 2px solid #111;
-  border-radius: 6px;
-  min-width: 320px;
-  font-size: 16px;
-}
-
-button {
-  padding: 10px 12px;
-  border: 2px solid #111;
-  border-radius: 6px;
-  background: #f4f4f4;
-  cursor: pointer;
-  font-size: 16px;
-}
-
+input { padding: 10px 12px; border: 2px solid #111; border-radius: 6px; min-width: 320px; font-size: 16px; }
+button { padding: 10px 12px; border: 2px solid #111; border-radius: 6px; background: #f4f4f4; cursor: pointer; font-size: 16px; }
 button.secondary { background: #fff; }
-
 .status { margin-top: 10px; font-size: 14px; }
 .status.ok { color: #0a7a2f; }
 .status.err { color: #b00020; }
-
 .cv { margin-top: 40px; }
 .name { letter-spacing: 10px; text-align:center; margin:0; font-size:46px; }
 .subtitle, .contact { text-align:center; margin: 8px 0 0 0; }
 .rule { margin: 22px 0 26px 0; }
 .section-title { letter-spacing: 6px; font-size: 15px; margin: 0 0 10px 0; }
 section { margin-bottom: 18px; }
-
 body.unlocked .unlock { display:none; }
