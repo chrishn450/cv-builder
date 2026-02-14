@@ -1,24 +1,22 @@
-import { templateHTML } from './templates.js';
+import { templateHTML } from "./templates.js";
 
 function normalize(s) {
-  return String(s ?? "").replace(/\u00A0/g, " ").trim();
+  return String(s ?? "").replace(/\u00A0/g, " ").trim().toUpperCase();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("activateBtn");
   const resetBtn = document.getElementById("resetBtn");
-  const input = document.getElementById("licenseInput");
+  const input = document.getElementById("codeInput");
   const status = document.getElementById("status");
   const builder = document.getElementById("builder");
 
   function setUnlocked(v) {
     localStorage.setItem("cv_unlocked", v ? "true" : "false");
   }
-
   function isUnlocked() {
     return localStorage.getItem("cv_unlocked") === "true";
   }
-
   function updateUI() {
     builder.innerHTML = isUnlocked() ? templateHTML : "";
     document.body.classList.toggle("unlocked", isUnlocked());
@@ -26,31 +24,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btn.onclick = async () => {
     status.className = "status";
-    status.textContent = "Verifiserer…";
-    const key = normalize(input.value);
+    status.textContent = "Sjekker kode…";
 
-    const res = await fetch("/api/verify", {
+    const code = normalize(input.value);
+    if (!code) {
+      status.classList.add("err");
+      status.textContent = "Skriv inn en kode.";
+      return;
+    }
+
+    const res = await fetch("/api/redeem", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ license_key: key }),
+      body: JSON.stringify({ code }),
     });
 
     const data = await res.json().catch(() => ({}));
-    console.log("verify response:", data);
 
-    if (data.ok) {
+    if (res.ok && data.ok) {
       setUnlocked(true);
       status.classList.add("ok");
       status.textContent = "Låst opp ✅";
       updateUI();
-    } else {
-      setUnlocked(false);
-      status.classList.add("err");
-      const extra = data.rawText ? ` | ${data.rawText}` : "";
-      const code = data.payhip_status ? `${data.payhip_status} ` : "";
-      status.textContent = `${code}${data.error || "Ugyldig kode"}${extra}`;
-      updateUI();
+      return;
     }
+
+    setUnlocked(false);
+    status.classList.add("err");
+    status.textContent = data.error || "Ugyldig kode";
+    updateUI();
   };
 
   resetBtn.onclick = () => {

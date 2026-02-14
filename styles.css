@@ -5,21 +5,10 @@ body {
   padding: 32px 24px;
 }
 
-.unlock h2 {
-  margin: 0 0 8px 0;
-}
+.unlock h2 { margin: 0 0 8px 0; }
+.hint { margin: 0 0 14px 0; opacity: 0.75; }
 
-.hint {
-  margin: 0 0 14px 0;
-  opacity: 0.75;
-}
-
-.row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
+.row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 
 input {
   padding: 10px 12px;
@@ -38,39 +27,17 @@ button {
   font-size: 16px;
 }
 
-button.secondary {
-  background: #fff;
-}
+button.secondary { background: #fff; }
 
-.status {
-  margin-top: 10px;
-  font-size: 14px;
-}
-
+.status { margin-top: 10px; font-size: 14px; }
 .status.ok { color: #0a7a2f; }
 .status.err { color: #b00020; }
 
-/* CV styles */
 .cv { margin-top: 40px; }
-.name {
-  letter-spacing: 10px;
-  text-align: center;
-  margin: 0;
-  font-size: 46px;
-}
-.subtitle, .contact {
-  text-align: center;
-  margin: 8px 0 0 0;
-}
-.rule {
-  margin: 22px 0 26px 0;
-}
-.section-title {
-  letter-spacing: 6px;
-  font-size: 15px;
-  margin: 0 0 10px 0;
-}
+.name { letter-spacing: 10px; text-align:center; margin:0; font-size:46px; }
+.subtitle, .contact { text-align:center; margin: 8px 0 0 0; }
+.rule { margin: 22px 0 26px 0; }
+.section-title { letter-spacing: 6px; font-size: 15px; margin: 0 0 10px 0; }
 section { margin-bottom: 18px; }
 
-/* Hide unlock UI when unlocked (optional) */
-body.unlocked .unlock { display: none; }
+body.unlocked .unlock { display:none; }
