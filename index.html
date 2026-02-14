@@ -1,224 +1,27 @@
-<!doctype html>
-<html lang="no">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CV Template Builder</title>
-  <link rel="stylesheet" href="styles.css" />
-  <!-- PDF export deps (client-side) -->
-  <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  
-  <script>
-    // TODO: set your links
-    window.CV_BUY = {
-      payhipCheckoutUrl: "https://payhip.com/buy?link=YOUR_PRODUCT_KEY",
-      etsyListingUrl: "https://www.etsy.com/listing/YOUR_LISTING_ID"
-    };
-  </script>
-
-  <script defer src="templates.js"></script>
-  <script defer src="app.js"></script>
+  <meta charset="UTF-8">
+  <title>Nurse CV Studio</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo">CV</div>
-      <div>
-        <div class="brand-title">CV Template Builder</div>
-        <div class="brand-sub">To templates • Nurse & Engineering • Eksporter til PDF</div>
-      </div>
-    </div>
-    <div class="topbar-actions">
-      <button id="btnExport" class="btn primary">Last ned PDF</button>
-      <button id="btnPrint" class="btn">Print / Save as PDF</button>
-    </div>
-  </header>
+  <div class="unlock">
+    <h2>Få tilgang</h2>
+    <input id="licenseInput" placeholder="Enter License Key" />
+    <button id="activateBtn">Aktiver kode</button>
+    <button id="resetBtn">Nullstill</button>
+    <div id="status"></div>
+  </div>
 
-  <main class="layout">
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Innhold</h2>
-        <p class="muted">Fyll inn feltene. Bytt template og farger. Eksporter som PDF.</p>
-      </div>
+  <div id="builder" style="display:none;">
+    <h1 class="name">S A R A H  J O H N S O N</h1>
+    <p class="subtitle">REGISTERED NURSE · BSN, RN</p>
+    <hr>
+    <h3>P R O F E S S I O N A L  S U M M A R Y</h3>
+    <p>Compassionate and detail-oriented nurse...</p>
+  </div>
 
-
-      <div id="paywall" class="paywall">
-        <div class="paywall-card">
-          <h2>Få tilgang</h2>
-          <p class="muted">Kjøp via Etsy eller direkte på nettsiden. Etter kjøp får du en <b>unik lisenskode</b> (Payhip license key) som du limer inn her for å låse opp builderen.</p>
-
-          <div class="group">
-            <label>Lisenskode</label>
-            <input id="licenseKey" type="text" placeholder="WTKP4-66NL5-HMKQW-GFSCZ" />
-          </div>
-          <div class="row2">
-            <button id="btnRedeem" class="btn primary">Aktiver kode</button>
-            <button id="btnClear" class="btn">Nullstill</button>
-          </div>
-
-          <div class="paywall-buy">
-            <a id="buyPayhip" class="btn primary full" href="#" target="_blank" rel="noopener">Kjøp direkte (Payhip)</a>
-            <a id="buyEtsy" class="btn full" href="#" target="_blank" rel="noopener">Kjøp på Etsy</a>
-          </div>
-
-          <details class="help">
-            <summary>Hvor finner jeg koden?</summary>
-            <p class="muted">Når du kjøper via Payhip, får du lisenskoden i kvitteringen / nedlastingssiden. På Etsy legger du inn en PDF “Access guide” som peker til Payhip-kjøp eller til en side hvor kunden kan få koden.</p>
-          </details>
-
-          <p class="small-note">Sikkerhet: Koden verifiseres server-side via Payhip API (produktets secret key ligger kun i Vercel).</p>
-        </div>
-      </div>
-
-      <div id="builderUI" class="builder-ui" hidden>
-
-      <div class="group">
-        <label>Template</label>
-        <select id="templateSelect">
-          <option value="nurse" selected>Nurse (Premium two-column)</option>
-          <option value="engineering">Engineering (Premium two-column)</option>
-        </select>
-      </div>
-
-      <div class="group row2">
-        <div>
-          <label>Stil</label>
-          <select id="themeSelect">
-            <option value="bw" selected>Black & White</option>
-            <option value="beige">Soft Beige</option>
-          </select>
-        </div>
-        <div>
-          <label>Sideformat</label>
-          <select id="paperSelect">
-            <option value="a4" selected>A4</option>
-            <option value="letter">US Letter</option>
-          </select>
-        </div>
-      </div>
-
-      <hr />
-
-      <h3>Header</h3>
-      <div class="group row2">
-        <div>
-          <label>Navn</label>
-          <input id="name" type="text" placeholder="SARA H JOHNSON" />
-        </div>
-        <div>
-          <label>Tittel / Rolle</label>
-          <input id="title" type="text" placeholder="REGISTERED NURSE · BSN, RN" />
-        </div>
-      </div>
-
-      <div class="group">
-        <label>Kontaktlinje (tekst)</label>
-        <input id="contactLine" type="text" placeholder="(555) 123-4567 | email | Oslo | LinkedIn" />
-      </div>
-
-      <h3>Oppsummering</h3>
-      <div class="group">
-        <label>Professional summary</label>
-        <textarea id="summary" rows="5" placeholder="Kort oppsummering med tall, ansvar, resultater..."></textarea>
-      </div>
-
-      <hr />
-
-      <div class="accordion">
-        <button class="acc-btn" data-target="#expWrap">Erfaring</button>
-        <div id="expWrap" class="acc-body"></div>
-        <div class="acc-actions">
-          <button id="addExp" class="btn small">+ Legg til erfaring</button>
-        </div>
-      </div>
-
-      <div class="accordion">
-        <button class="acc-btn" data-target="#eduWrap">Utdanning</button>
-        <div id="eduWrap" class="acc-body"></div>
-        <div class="acc-actions">
-          <button id="addEdu" class="btn small">+ Legg til utdanning</button>
-        </div>
-      </div>
-
-      <div class="accordion">
-        <button class="acc-btn" data-target="#certWrap">Sertifiseringer / Lisenser</button>
-        <div id="certWrap" class="acc-body"></div>
-        <div class="acc-actions">
-          <button id="addCert" class="btn small">+ Legg til</button>
-        </div>
-      </div>
-
-      <div class="accordion">
-        <button class="acc-btn" data-target="#skillsWrap">Skills</button>
-        <div class="acc-body">
-          <div class="group">
-            <label>Skills (komma-separert)</label>
-            <input id="skills" type="text" placeholder="IV therapy, EHR (Epic), Hemodynamic monitoring, ..." />
-          </div>
-          <div class="group">
-            <label>Core competencies / Soft skills (komma-separert)</label>
-            <input id="core" type="text" placeholder="Team leadership, Critical thinking, ..." />
-          </div>
-          <div class="group">
-            <label>Languages (komma-separert)</label>
-            <input id="languages" type="text" placeholder="English — Native, Norwegian — Fluent" />
-          </div>
-        </div>
-      </div>
-
-      <div class="accordion">
-        <button class="acc-btn" data-target="#achWrap">Achievements</button>
-        <div class="acc-body">
-          <div class="group">
-            <label>Achievements (én per linje)</label>
-            <textarea id="achievements" rows="5" placeholder="Spearheaded ...
-Reduced ...
-Awarded ..."></textarea>
-          </div>
-        </div>
-      </div>
-
-      <div class="accordion">
-        <button class="acc-btn" data-target="#volWrap">Volunteer</button>
-        <div class="acc-body">
-          <div class="group">
-            <label>Volunteer (én per linje)</label>
-            <textarea id="volunteer" rows="4" placeholder="Volunteer Nurse — Austin Free Clinic — 2019–Present"></textarea>
-          </div>
-        </div>
-      </div>
-
-      <hr />
-
-      <details class="help">
-        <summary>“AI” knapp? (valgfritt)</summary>
-        <p class="muted">
-          Denne demoen er 100% statisk (gratis å hoste på Vercel). Hvis du vil ha ekte AI-tekstgenerering,
-          kan du koble til en API (f.eks. OpenAI) i <code>app.js</code>. Jeg har lagt inn en tydelig “hook”
-          hvor du kan lime inn egen nøkkel (ikke inkludert).
-        </p>
-      </details>
-          </div>
-    </section>
-
-    <section class="preview">
-      <div class="preview-head">
-        <div>
-          <h2>Preview</h2>
-          <p class="muted">Dette er det som eksporteres til PDF.</p>
-        </div>
-        <div class="badge" id="badgeState">klar</div>
-      </div>
-
-      <div id="paper" class="paper a4 theme-bw template-nurse" aria-label="CV output">
-        <!-- injected by templates.js -->
-      </div>
-    </section>
-  </main>
-
-  <footer class="footer">
-    <span class="muted">Tip: For best ATS, bruk “Black & White” og hold tekst enkel.</span>
-  </footer>
+  <script src="app.js"></script>
 </body>
 </html>
