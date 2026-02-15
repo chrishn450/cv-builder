@@ -1,4 +1,3 @@
-// api/payhip-webhook.js
 import crypto from "crypto";
 import {
   json,
@@ -22,13 +21,14 @@ export default async function handler(req, res) {
 
     const payload = await readJsonBody(req);
 
-    // Webhook verification (TEMPORARILY DISABLED for debugging)
-    // TODO: Implement Payhip’s real signature verification before production
-    // const apiKey = env("PAYHIP_API_KEY");
-    // const expectedSig = sha256Hex(apiKey);
-    // if (!payload.signature || payload.signature !== expectedSig) {
-    //   return json(res, 401, { error: "Invalid signature" });
-    // }
+    // Webhook verification (Payhip)
+    const apiKey = env("PAYHIP_API_KEY");
+    const expectedSig = sha256Hex(apiKey);
+    const gotSig = String(payload.signature || "").trim();
+
+    if (!gotSig || gotSig !== expectedSig) {
+      return json(res, 401, { error: "Invalid signature" });
+    }
 
     // Only handle paid events
     if (payload.type !== "paid") {
@@ -43,16 +43,15 @@ export default async function handler(req, res) {
     const transactionId = String(payload.id || payload.transaction_id || "").trim();
     if (!transactionId) return json(res, 400, { error: "Missing transaction id" });
 
-    // Optional: ensure correct product
     const requiredProductId = process.env.PAYHIP_PRODUCT_ID;
     const item = Array.isArray(payload.items) ? payload.items[0] : null;
-    const productId = (String(item?.product_id || payload.product_id || "").trim() || null);
+    const productId =
+      String(item?.product_id || payload.product_id || "").trim() || null;
 
     if (requiredProductId && productId && requiredProductId !== productId) {
       return json(res, 200, { ok: true, ignored: true, reason: "wrong_product" });
     }
 
-    // Idempotency: if purchase exists, do nothing (but return 200)
     const existing = await supabaseFetch(
       `/rest/v1/purchases?payhip_transaction_id=eq.${encodeURIComponent(transactionId)}&select=id`,
       { method: "GET" }
@@ -61,10 +60,8 @@ export default async function handler(req, res) {
       return json(res, 200, { ok: true, duplicate: true });
     }
 
-    // Grant access for 30 days from now
     const accessExpiresAt = addDaysIso(30);
 
-    // Upsert customer by email
     await supabaseFetch("/rest/v1/customers?on_conflict=email", {
       method: "POST",
       headers: { Prefer: "resolution=merge-duplicates" },
@@ -75,7 +72,6 @@ export default async function handler(req, res) {
       },
     });
 
-    // Insert purchase record
     await supabaseFetch("/rest/v1/purchases", {
       method: "POST",
       body: {
@@ -85,7 +81,6 @@ export default async function handler(req, res) {
       },
     });
 
-    // Create one-time magic token (login link)
     const token = crypto.randomBytes(32).toString("hex");
     const tokenHash = sha256Hex(token);
     const expiresAt = addHoursIso(24);
@@ -99,7 +94,6 @@ export default async function handler(req, res) {
       },
     });
 
-    // Send email with magic link (English)
     const baseUrl = env("APP_BASE_URL");
     const link = `${String(baseUrl).replace(/\/$/, "")}/magic.html?token=${token}`;
 
