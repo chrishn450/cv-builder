@@ -15,20 +15,13 @@ const state = {
     experience: "",
     achievements: "",
     volunteer: "",
-    custom1: "",
-    custom2: "",
     sections: {
-      summary: { enabled: true, title: "Professional Summary" },
-      education: { enabled: true, title: "Education" },
-      licenses: { enabled: true, title: "Licenses & Certifications" },
-      clinicalSkills: { enabled: true, title: "Clinical Skills" },
-      coreCompetencies: { enabled: true, title: "Core Competencies" },
-      languages: { enabled: true, title: "Languages" },
-      experience: { enabled: true, title: "Professional Experience" },
-      achievements: { enabled: true, title: "Clinical Achievements" },
-      volunteer: { enabled: true, title: "Volunteer Experience" },
-      custom1: { enabled: false, title: "Custom Section 1" },
-      custom2: { enabled: false, title: "Custom Section 2" }
+      // defaults (dot = bullets ON by default for these)
+      clinicalSkills: { mode: "bullets", boldFirstLine: false },
+      coreCompetencies: { mode: "bullets", boldFirstLine: false },
+      achievements: { mode: "bullets", boldFirstLine: false },
+      languages: { mode: "paragraph", boldFirstLine: false }, // languages usually looks best as paragraph
+      summary: { mode: "paragraph", boldFirstLine: false },
     }
   }
 };
@@ -41,14 +34,46 @@ async function checkAccess(){
   return res.json();
 }
 
+function ensureSections(){
+  state.data.sections = state.data.sections || {};
+}
+
+function ensureSection(key){
+  ensureSections();
+  state.data.sections[key] = state.data.sections[key] || {};
+  return state.data.sections[key];
+}
+
+function isBulletsOn(key){
+  const sec = ensureSection(key);
+  // treat missing as bullets for list-type fields
+  return (sec.mode || "bullets") === "bullets";
+}
+
+function setBullets(key, on){
+  const sec = ensureSection(key);
+  sec.mode = on ? "bullets" : "paragraph"; // no ¶ button, but "off" is paragraph
+  render();
+  syncToolbarUI(key);
+}
+
+function toggleBoldFirstLine(key){
+  const sec = ensureSection(key);
+  sec.boldFirstLine = !sec.boldFirstLine;
+  render();
+  syncToolbarUI(key);
+}
+
 function render(){
+  // templates.js exposes window.renderCV(data)
   qs("preview").innerHTML = window.renderCV(state.data);
 }
 
-function bindBasicInputs(){
-  const map = ["name","title","email","phone","location","linkedin",
+function bindInputs(){
+  const map = [
+    "name","title","email","phone","location","linkedin",
     "summary","education","licenses","clinicalSkills","coreCompetencies",
-    "languages","experience","achievements","volunteer","custom1","custom2"
+    "languages","experience","achievements","volunteer"
   ];
 
   for (const k of map){
@@ -60,141 +85,21 @@ function bindBasicInputs(){
       render();
     });
   }
-}
 
-function bindSectionControls(){
-  const keys = [
-    "summary","education","licenses","clinicalSkills","coreCompetencies",
-    "languages","experience","achievements","volunteer","custom1","custom2"
-  ];
-
-  for (const key of keys){
-    const enabledEl = qs(`sec_${key}_enabled`);
-    const titleEl   = qs(`sec_${key}_title`);
-    if (!enabledEl || !titleEl) continue;
-
-    enabledEl.checked = !!state.data.sections[key]?.enabled;
-    titleEl.value = state.data.sections[key]?.title || "";
-
-    const sync = () => {
-      state.data.sections[key] = {
-        ...state.data.sections[key],
-        enabled: !!enabledEl.checked,
-        title: titleEl.value || state.data.sections[key]?.title || key
-      };
-      render();
-    };
-
-    enabledEl.addEventListener("change", sync);
-    titleEl.addEventListener("input", sync);
-  }
-}
-
-function wrapSelectionWith(el, left, right){
-  const start = el.selectionStart ?? 0;
-  const end   = el.selectionEnd ?? 0;
-  const v = el.value || "";
-  const selected = v.slice(start, end);
-  const out = v.slice(0, start) + left + selected + right + v.slice(end);
-  el.value = out;
-
-  // keep selection around original selected text
-  const newStart = start + left.length;
-  const newEnd = newStart + selected.length;
-  el.setSelectionRange(newStart, newEnd);
-}
-
-function getSelectedLineRange(el){
-  const v = el.value || "";
-  const start = el.selectionStart ?? 0;
-  const end = el.selectionEnd ?? 0;
-
-  const lineStart = v.lastIndexOf("\n", start - 1) + 1;
-  const lineEndIdx = v.indexOf("\n", end);
-  const lineEnd = lineEndIdx === -1 ? v.length : lineEndIdx;
-
-  return { v, start, end, lineStart, lineEnd };
-}
-
-function toggleBulletsOnSelection(el){
-  const { v, lineStart, lineEnd } = getSelectedLineRange(el);
-  const chunk = v.slice(lineStart, lineEnd);
-  const lines = chunk.split("\n");
-
-  const allBulleted = lines
-    .filter(l => l.trim().length)
-    .every(l => l.trimStart().startsWith("- "));
-
-  const newLines = lines.map(l => {
-    if (!l.trim().length) return l;
-    if (allBulleted) {
-      // remove "- "
-      return l.replace(/^(\s*)-\s+/, "$1");
-    }
-    // add "- " if missing
-    if (l.trimStart().startsWith("- ")) return l;
-    return l.replace(/^(\s*)/, "$1- ");
+  qs("printBtn").addEventListener("click", () => {
+    window.print();
   });
-
-  const out = v.slice(0, lineStart) + newLines.join("\n") + v.slice(lineEnd);
-  el.value = out;
-  el.setSelectionRange(lineStart, lineStart + newLines.join("\n").length);
-}
-
-function selectionToParagraph(el){
-  const { v, lineStart, lineEnd } = getSelectedLineRange(el);
-  const chunk = v.slice(lineStart, lineEnd);
-  const lines = chunk.split("\n");
-
-  const newLines = lines.map(l => l.replace(/^(\s*)-\s+/, "$1"));
-  const out = v.slice(0, lineStart) + newLines.join("\n") + v.slice(lineEnd);
-  el.value = out;
-  el.setSelectionRange(lineStart, lineStart + newLines.join("\n").length);
-}
-
-function bindToolbars(){
-  document.querySelectorAll(".toolbar").forEach(tb => {
-    const fieldId = tb.getAttribute("data-for");
-    const target = qs(fieldId);
-    if (!target) return;
-
-    tb.querySelectorAll(".tbtn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const action = btn.getAttribute("data-action");
-        target.focus();
-
-        if (action === "bold") {
-          // Wrap selection with ** **
-          wrapSelectionWith(target, "**", "**");
-        } else if (action === "bullets") {
-          toggleBulletsOnSelection(target);
-        } else if (action === "paragraph") {
-          selectionToParagraph(target);
-        }
-
-        // trigger app state update + preview
-        state.data[fieldId] = target.value;
-        render();
-      });
-    });
-  });
-}
-
-function bindButtons(){
-  qs("printBtn").addEventListener("click", () => window.print());
 
   qs("downloadHtmlBtn").addEventListener("click", () => {
-    const blob = new Blob(
-      [`<!doctype html><html><head><meta charset="utf-8"><title>CV</title><link rel="stylesheet" href="./styles.css"></head><body>${qs("preview").innerHTML}</body></html>`],
-      { type: "text/html" }
-    );
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>CV</title><link rel="stylesheet" href="/styles.css"></head><body>${qs("preview").innerHTML}</body></html>`;
+    const blob = new Blob([html], {type:"text/html"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "cv.html";
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
   });
 
   qs("logoutBtn").addEventListener("click", async () => {
@@ -203,12 +108,64 @@ function bindButtons(){
   });
 }
 
+function syncToolbarUI(key){
+  document.querySelectorAll(`.toolbar[data-key="${key}"]`).forEach((bar)=>{
+    const sec = ensureSection(key);
+
+    const boldBtn = bar.querySelector(`button[data-action="bold"]`);
+    const bulletBtn = bar.querySelector(`button[data-action="bullets"]`);
+
+    if (boldBtn) boldBtn.classList.toggle("active", !!sec.boldFirstLine);
+
+    const bulletsOn = (sec.mode || "bullets") === "bullets";
+    if (bulletBtn) bulletBtn.classList.toggle("active", bulletsOn);
+  });
+}
+
+function syncAllToolbars(){
+  document.querySelectorAll(".toolbar[data-key]").forEach((bar)=>{
+    const key = bar.getAttribute("data-key");
+    // Default modes if not set yet
+    const sec = ensureSection(key);
+    if (!sec.mode){
+      // sensible defaults
+      if (key === "languages" || key === "summary") sec.mode = "paragraph";
+      else sec.mode = "bullets";
+    }
+    if (sec.boldFirstLine == null) sec.boldFirstLine = false;
+    syncToolbarUI(key);
+  });
+}
+
+function bindToolbars(){
+  document.querySelectorAll(".toolbar[data-key]").forEach((bar)=>{
+    const key = bar.getAttribute("data-key");
+
+    bar.addEventListener("click", (e)=>{
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+      const action = btn.getAttribute("data-action");
+
+      if (action === "bold"){
+        toggleBoldFirstLine(key);
+      }
+
+      if (action === "bullets"){
+        const on = !isBulletsOn(key);
+        setBullets(key, on);
+      }
+    });
+  });
+}
+
 async function init(){
   const locked = qs("locked");
   const app = qs("app");
   const logoutBtn = qs("logoutBtn");
 
-  qs("buyLink").href = "https://payhip.com/b/AeoVP"; // your Payhip link
+  // Put your Payhip product URL here
+  const buyLink = qs("buyLink");
+  buyLink.href = "https://payhip.com/b/AeoVP";
 
   const me = await checkAccess().catch(()=>null);
 
@@ -223,11 +180,9 @@ async function init(){
   app.style.display = "block";
   logoutBtn.style.display = "inline-flex";
 
-  bindBasicInputs();
-  bindSectionControls();
+  bindInputs();
   bindToolbars();
-  bindButtons();
-
+  syncAllToolbars();
   render();
 }
 
