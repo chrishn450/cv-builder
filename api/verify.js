@@ -1,1 +1,0 @@
-import handler from "./redeem.js"; export default handler;
