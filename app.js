@@ -1,142 +1,253 @@
-function qs(id){ return document.getElementById(id); }
+const state = {
+  data: {
+    name: "",
+    title: "",
+    email: "",
+    phone: "",
+    location: "",
+    linkedin: "",
+    summary: "",
+    education: "",
+    licenses: "",
+    clinicalSkills: "",
+    coreCompetencies: "",
+    languages: "",
+    experience: "",
+    achievements: "",
+    volunteer: "",
+    custom1: "",
+    custom2: "",
+    sections: {
+      summary: { enabled: true, title: "Professional Summary" },
+      education: { enabled: true, title: "Education" },
+      licenses: { enabled: true, title: "Licenses & Certifications" },
+      clinicalSkills: { enabled: true, title: "Clinical Skills", mode: "bullets", boldFirstLine: false },
+      coreCompetencies: { enabled: true, title: "Core Competencies", mode: "bullets", boldFirstLine: false },
+      languages: { enabled: true, title: "Languages", mode: "paragraph", boldFirstLine: false },
+      experience: { enabled: true, title: "Professional Experience" },
+      achievements: { enabled: true, title: "Clinical Achievements", mode: "bullets", boldFirstLine: false },
+      volunteer: { enabled: true, title: "Volunteer Experience" },
 
-async function checkAccess(){
+      custom1: { enabled: false, title: "Custom Section 1", mode: "bullets", boldFirstLine: false, column: "right" },
+      custom2: { enabled: false, title: "Custom Section 2", mode: "bullets", boldFirstLine: false, column: "right" },
+    }
+  }
+};
+
+function qs(id) { return document.getElementById(id); }
+
+async function checkAccess() {
   const res = await fetch("/api/me", { method: "GET" });
   if (!res.ok) return null;
   return res.json();
 }
 
-function gatherData(){
-  // Support both old and new field sets (if some inputs don't exist, it's fine)
-  const get = (id) => (qs(id) ? qs(id).value : "");
-
-  return {
-    name: get("name"),
-    title: get("title"),
-    email: get("email"),
-    phone: get("phone"),
-    summary: get("summary"),
-
-    // New template fields
-    location: get("location"),
-    linkedin: get("linkedin"),
-    education: get("education"),
-    licenses: get("licenses"),
-    clinicalSkills: get("clinicalSkills"),
-    coreCompetencies: get("coreCompetencies"),
-    languages: get("languages"),
-    experience: get("experience"),
-    achievements: get("achievements"),
-    volunteer: get("volunteer"),
-
-    // Keep backwards compat (unused by new template, but harmless)
-    skills: get("skills"),
-  };
+function render() {
+  qs("preview").innerHTML = window.renderCV(state.data);
 }
 
-function render(){
-  const preview = qs("preview");
-  if (!preview) return;
+function bindInputs() {
+  const map = [
+    "name","title","email","phone","location","linkedin",
+    "summary","education","licenses","clinicalSkills","coreCompetencies",
+    "languages","experience","achievements","volunteer",
+    "custom1","custom2"
+  ];
 
-  if (typeof window.renderCV !== "function") {
-    preview.innerHTML = `<p style="padding:16px">Missing template function: window.renderCV</p>`;
-    return;
-  }
-
-  preview.innerHTML = window.renderCV(gatherData());
-}
-
-function bindLiveInputs(){
-  // Live update on every input/textarea
-  const handler = (e) => {
-    const t = e.target;
-    if (!t) return;
-    const tag = String(t.tagName || "").toUpperCase();
-    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
+  for (const k of map) {
+    const el = qs(k);
+    if (!el) continue;
+    el.value = state.data[k] || "";
+    el.addEventListener("input", () => {
+      state.data[k] = el.value;
       render();
-    }
-  };
-
-  document.addEventListener("input", handler);
-  document.addEventListener("change", handler);
-
-  const printBtn = qs("printBtn");
-  if (printBtn) {
-    printBtn.addEventListener("click", () => {
-      // Print the current page using your CSS @media print
-      window.print();
     });
   }
 
-  const downloadHtmlBtn = qs("downloadHtmlBtn");
-  if (downloadHtmlBtn) {
-    downloadHtmlBtn.addEventListener("click", () => {
-      const html = `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>CV</title>
-  <link rel="stylesheet" href="${location.origin}/styles.css">
-</head>
-<body>
-  ${qs("preview") ? qs("preview").outerHTML : ""}
-</body>
-</html>`;
+  qs("printBtn").addEventListener("click", () => window.print());
 
-      const blob = new Blob([html], { type: "text/html" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "cv.html";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    });
-  }
+  qs("downloadHtmlBtn").addEventListener("click", () => {
+    const blob = new Blob(
+      [`<!doctype html><html><head><meta charset="utf-8"><title>CV</title><link rel="stylesheet" href="./styles.css"></head><body>${qs("preview").innerHTML}</body></html>`],
+      { type: "text/html" }
+    );
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "cv.html";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
 
-  const logoutBtn = qs("logoutBtn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", async () => {
-      await fetch("/api/logout", { method: "POST" }).catch(() => {});
-      location.reload();
-    });
-  }
+  qs("logoutBtn").addEventListener("click", async () => {
+    await fetch("/api/logout", { method: "POST" }).catch(()=>{});
+    location.reload();
+  });
 }
 
-async function init(){
+function makeRow({ idPrefix, label, sectionKey, supportsMode, supportsBold, supportsColumn }) {
+  const s = state.data.sections[sectionKey] || {};
+
+  const wrap = document.createElement("div");
+  wrap.className = "card";
+  wrap.style.padding = "12px";
+  wrap.style.marginTop = "10px";
+
+  const top = document.createElement("div");
+  top.className = "row";
+
+  const enabled = document.createElement("input");
+  enabled.type = "checkbox";
+  enabled.checked = !!s.enabled;
+  enabled.id = `${idPrefix}_enabled`;
+
+  const enabledLbl = document.createElement("label");
+  enabledLbl.className = "muted small";
+  enabledLbl.style.display = "inline-flex";
+  enabledLbl.style.alignItems = "center";
+  enabledLbl.style.gap = "8px";
+  enabledLbl.appendChild(enabled);
+  enabledLbl.appendChild(document.createTextNode(`Show ${label}`));
+
+  const title = document.createElement("input");
+  title.className = "input";
+  title.style.maxWidth = "360px";
+  title.value = s.title || label;
+  title.placeholder = "Section title";
+
+  top.appendChild(enabledLbl);
+  top.appendChild(title);
+
+  wrap.appendChild(top);
+
+  const options = document.createElement("div");
+  options.className = "row";
+  options.style.marginTop = "10px";
+
+  let modeSel = null;
+  if (supportsMode) {
+    modeSel = document.createElement("select");
+    modeSel.className = "input";
+    modeSel.style.maxWidth = "200px";
+    const opt1 = document.createElement("option");
+    opt1.value = "bullets";
+    opt1.textContent = "Bullets";
+    const opt2 = document.createElement("option");
+    opt2.value = "paragraph";
+    opt2.textContent = "Paragraph";
+    modeSel.appendChild(opt1);
+    modeSel.appendChild(opt2);
+    modeSel.value = s.mode || "bullets";
+    options.appendChild(modeSel);
+  }
+
+  let boldChk = null;
+  if (supportsBold) {
+    boldChk = document.createElement("input");
+    boldChk.type = "checkbox";
+    boldChk.checked = !!s.boldFirstLine;
+
+    const boldLbl = document.createElement("label");
+    boldLbl.className = "muted small";
+    boldLbl.style.display = "inline-flex";
+    boldLbl.style.alignItems = "center";
+    boldLbl.style.gap = "8px";
+    boldLbl.appendChild(boldChk);
+    boldLbl.appendChild(document.createTextNode("Bold first line"));
+
+    options.appendChild(boldLbl);
+  }
+
+  let colSel = null;
+  if (supportsColumn) {
+    colSel = document.createElement("select");
+    colSel.className = "input";
+    colSel.style.maxWidth = "200px";
+    const l = document.createElement("option");
+    l.value = "left";
+    l.textContent = "Left column";
+    const r = document.createElement("option");
+    r.value = "right";
+    r.textContent = "Right column";
+    colSel.appendChild(l);
+    colSel.appendChild(r);
+    colSel.value = s.column || "right";
+    options.appendChild(colSel);
+  }
+
+  wrap.appendChild(options);
+
+  function sync() {
+    state.data.sections[sectionKey] = {
+      ...state.data.sections[sectionKey],
+      enabled: enabled.checked,
+      title: title.value || label,
+      ...(supportsMode ? { mode: modeSel.value } : {}),
+      ...(supportsBold ? { boldFirstLine: boldChk.checked } : {}),
+      ...(supportsColumn ? { column: colSel.value } : {}),
+    };
+    render();
+  }
+
+  enabled.addEventListener("change", sync);
+  title.addEventListener("input", sync);
+  if (modeSel) modeSel.addEventListener("change", sync);
+  if (boldChk) boldChk.addEventListener("change", sync);
+  if (colSel) colSel.addEventListener("change", sync);
+
+  return wrap;
+}
+
+function buildSectionsUI() {
+  const root = qs("sectionsUI");
+  root.innerHTML = "";
+
+  // Standard sections
+  root.appendChild(makeRow({ idPrefix:"sec_summary", label:"Summary", sectionKey:"summary", supportsMode:false, supportsBold:false, supportsColumn:false }));
+  root.appendChild(makeRow({ idPrefix:"sec_education", label:"Education", sectionKey:"education", supportsMode:false, supportsBold:false, supportsColumn:false }));
+  root.appendChild(makeRow({ idPrefix:"sec_licenses", label:"Licenses", sectionKey:"licenses", supportsMode:false, supportsBold:false, supportsColumn:false }));
+  root.appendChild(makeRow({ idPrefix:"sec_clin", label:"Clinical Skills", sectionKey:"clinicalSkills", supportsMode:true, supportsBold:true, supportsColumn:false }));
+  root.appendChild(makeRow({ idPrefix:"sec_core", label:"Core Competencies", sectionKey:"coreCompetencies", supportsMode:true, supportsBold:true, supportsColumn:false }));
+  root.appendChild(makeRow({ idPrefix:"sec_lang", label:"Languages", sectionKey:"languages", supportsMode:true, supportsBold:true, supportsColumn:false }));
+  root.appendChild(makeRow({ idPrefix:"sec_exp", label:"Experience", sectionKey:"experience", supportsMode:false, supportsBold:false, supportsColumn:false }));
+  root.appendChild(makeRow({ idPrefix:"sec_ach", label:"Achievements", sectionKey:"achievements", supportsMode:true, supportsBold:true, supportsColumn:false }));
+  root.appendChild(makeRow({ idPrefix:"sec_vol", label:"Volunteer", sectionKey:"volunteer", supportsMode:false, supportsBold:false, supportsColumn:false }));
+
+  // Custom sections
+  const h = document.createElement("h3");
+  h.textContent = "Custom Sections";
+  h.style.marginTop = "14px";
+  root.appendChild(h);
+
+  root.appendChild(makeRow({ idPrefix:"sec_custom1", label:"Custom 1", sectionKey:"custom1", supportsMode:true, supportsBold:true, supportsColumn:true }));
+  root.appendChild(makeRow({ idPrefix:"sec_custom2", label:"Custom 2", sectionKey:"custom2", supportsMode:true, supportsBold:true, supportsColumn:true }));
+}
+
+async function init() {
   const locked = qs("locked");
   const app = qs("app");
   const logoutBtn = qs("logoutBtn");
 
-  // Set Payhip URL
   const buyLink = qs("buyLink");
-  if (buyLink) buyLink.href = "https://payhip.com/b/AeoVP";
+  buyLink.href = "https://payhip.com/b/AeoVP"; // <-- your Payhip link
 
   const me = await checkAccess().catch(() => null);
 
-  // Support different response shapes:
-  // - { has_access: true } (my suggested /api/me)
-  // - { hasAccess: true }  (your old code)
-  // - { ok: true, has_access: true }
-  const hasAccess =
-    Boolean(me?.has_access) ||
-    Boolean(me?.hasAccess) ||
-    (Boolean(me?.ok) && Boolean(me?.has_access));
-
-  if (!hasAccess){
-    if (locked) locked.style.display = "block";
-    if (app) app.style.display = "none";
-    if (logoutBtn) logoutBtn.style.display = "none";
+  if (!me || !me.has_access) {
+    locked.style.display = "block";
+    app.style.display = "none";
+    logoutBtn.style.display = "none";
     return;
   }
 
-  if (locked) locked.style.display = "none";
-  if (app) app.style.display = "block";
-  if (logoutBtn) logoutBtn.style.display = "inline-flex";
+  locked.style.display = "none";
+  app.style.display = "block";
+  logoutBtn.style.display = "inline-flex";
 
-  // Initial render + bind live updates
+  buildSectionsUI();
+  bindInputs();
   render();
-  bindLiveInputs();
 }
 
 init();
