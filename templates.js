@@ -46,7 +46,6 @@
       .filter(Boolean);
   }
 
-  // Fjern evt. tekst-bullets i input ("• " / "- ") så du ikke får dobbel-bullet i CV
   function stripBulletPrefix(t) {
     const s = String(t ?? "").trim();
     return s.replace(/^([•\-·]\s+)/, "");
@@ -72,6 +71,37 @@
         date: ls[2] || "",
         honors: ls.slice(3).join(" "),
       };
+    });
+  }
+
+  function parseVolunteer(s) {
+    // Multiple blocks separated by blank line
+    return blocks(s).map((block) => {
+      const ls = block.split("\n").map((l) => l.trim()).filter(Boolean);
+
+      let volTitle = ls[0] || "";
+      let volDate = "";
+
+      // Support "Title | Date"
+      const m = volTitle.match(/^(.+?)\s*\|\s*(.+)$/);
+      if (m) {
+        volTitle = m[1];
+        volDate = m[2];
+      }
+
+      // Or "Title 2019 – Present"
+      if (!volDate) {
+        const m2 = volTitle.match(/^(.*?)(\b\d{4}\s*–\s*(?:Present|\d{4})\b)$/);
+        if (m2) {
+          volTitle = m2[1].trim();
+          volDate = m2[2].trim();
+        }
+      }
+
+      const volSub = ls[1] || "";
+      const volBullets = ls.slice(2).map(stripBulletPrefix);
+
+      return { volTitle, volDate, volSub, volBullets };
     });
   }
 
@@ -186,45 +216,30 @@
   }
 
   function renderVolunteerSection(title, volunteerText) {
-    const volLines = lines(volunteerText);
-    if (!volLines.length) return "";
+    const vols = parseVolunteer(volunteerText);
+    if (!vols.length) return "";
 
-    // PDF-en din har: "Volunteer Nurse 2019 – Present" (uten pipe)
-    let volTitle = volLines[0] || "";
-    let volDate = "";
+    const volHTML = vols.map((v) => {
+      const bulletsHTML = v.volBullets.length
+        ? `<ul class="exp-bullets">${v.volBullets.map((b) => `<li>${fmtInline(b)}</li>`).join("")}</ul>`
+        : "";
 
-    // støtt også "Title | Date" hvis noen skriver slik senere
-    const m = volTitle.match(/^(.+?)\s*\|\s*(.+)$/);
-    if (m) {
-      volTitle = m[1];
-      volDate = m[2];
-    }
-
-    // hvis ingen pipe: prøv å splitte siste "YYYY – YYYY"
-    if (!volDate) {
-      const m2 = volTitle.match(/^(.*?)(\b\d{4}\s*–\s*(?:Present|\d{4})\b)$/);
-      if (m2) {
-        volTitle = m2[1].trim();
-        volDate = m2[2].trim();
-      }
-    }
-
-    const volSub = volLines[1] || "";
-    const volBullets = volLines.slice(2).map(stripBulletPrefix);
-
-    const bulletsHTML = volBullets.length
-      ? `<ul class="exp-bullets">${volBullets.map((b) => `<li>${fmtInline(b)}</li>`).join("")}</ul>`
-      : "";
+      return `
+        <div class="exp-entry">
+          <div class="vol-header">
+            <h3>${fmtInline(v.volTitle)}</h3>
+            ${v.volDate ? `<span class="date">${fmtInline(v.volDate)}</span>` : ""}
+          </div>
+          ${v.volSub ? `<p class="vol-sub">${fmtInline(v.volSub)}</p>` : ""}
+          ${bulletsHTML}
+        </div>
+      `;
+    }).join("");
 
     return `
       <section>
         <h2 class="section-title">${esc(title)}</h2>
-        <div class="vol-header">
-          <h3>${fmtInline(volTitle)}</h3>
-          ${volDate ? `<span class="date">${fmtInline(volDate)}</span>` : ""}
-        </div>
-        ${volSub ? `<p class="vol-sub">${fmtInline(volSub)}</p>` : ""}
-        ${bulletsHTML}
+        ${volHTML}
       </section>
     `;
   }
@@ -232,7 +247,7 @@
   window.renderCV = function renderCV(data) {
     const raw = data || {};
 
-    // FULL defaults fra PDF
+    // FULL defaults (original)
     const defaults = {
       name: "Sarah Johnson",
       title: "Registered Nurse · BSN, RN",
