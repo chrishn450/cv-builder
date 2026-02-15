@@ -15,7 +15,6 @@
   </header>
 
   <main class="container">
-    <!-- Locked screen -->
     <section id="locked" class="card" style="display:none;">
       <h1>Access required</h1>
       <p>You need access to use the CV Builder.</p>
@@ -29,9 +28,9 @@
       </p>
     </section>
 
-    <!-- App -->
     <section id="app" style="display:none;">
       <div class="grid">
+        <!-- LEFT: editor -->
         <div class="card">
           <h2>Edit content</h2>
 
@@ -53,120 +52,227 @@
           <label class="label">LinkedIn</label>
           <input id="linkedin" class="input" placeholder="linkedin.com/in/..." />
 
-          <!-- Professional Summary -->
-          <div class="field-head">
-            <label class="label" for="summary">Professional Summary</label>
-            <div class="mini-tools">
-              <button class="mini-btn" type="button" data-action="toggle-section" data-key="summary" title="Show / Hide section">👁</button>
-              <button class="mini-btn" type="button" data-action="toggle-bold-first" data-key="summary" title="Bold first line">B</button>
+          <!-- SUMMARY -->
+          <div class="field">
+            <div class="field-head">
+              <label class="label">Professional Summary</label>
+              <div class="field-controls">
+                <label class="toggle">
+                  <input type="checkbox" id="sec_summary_enabled" checked />
+                  <span>Show</span>
+                </label>
+                <input id="sec_summary_title" class="input small" value="Professional Summary" />
+              </div>
             </div>
-          </div>
-          <textarea id="summary" class="textarea" rows="5" placeholder="Short professional summary..."></textarea>
-
-          <!-- Education -->
-          <div class="field-head">
-            <label class="label" for="education">Education (blank line between entries)</label>
-            <div class="mini-tools">
-              <button class="mini-btn" type="button" data-action="toggle-section" data-key="education" title="Show / Hide section">👁</button>
+            <div class="toolbar" data-for="summary">
+              <button class="tbtn" data-action="bold" type="button" title="Bold (wrap with ** **)"><b>B</b></button>
+              <button class="tbtn" data-action="bullets" type="button" title="Bullets">•</button>
+              <button class="tbtn" data-action="paragraph" type="button" title="Paragraph">¶</button>
             </div>
+            <textarea id="summary" class="textarea" rows="5"></textarea>
           </div>
-          <textarea id="education" class="textarea" rows="6" placeholder="Degree
-School
-2016 – 2018
 
-Degree
-School
-2012 – 2016"></textarea>
-
-          <!-- Licenses -->
-          <div class="field-head">
-            <label class="label" for="licenses">Licenses & Certifications (title line + detail line)</label>
-            <div class="mini-tools">
-              <button class="mini-btn" type="button" data-action="toggle-section" data-key="licenses" title="Show / Hide section">👁</button>
+          <!-- EDUCATION -->
+          <div class="field">
+            <div class="field-head">
+              <label class="label">Education (blank line between entries)</label>
+              <div class="field-controls">
+                <label class="toggle">
+                  <input type="checkbox" id="sec_education_enabled" checked />
+                  <span>Show</span>
+                </label>
+                <input id="sec_education_title" class="input small" value="Education" />
+              </div>
             </div>
-          </div>
-          <textarea id="licenses" class="textarea" rows="6" placeholder="Registered Nurse (RN)
-Texas Board of Nursing · #...
-
-ACLS
-American Heart Association · Exp. ..."></textarea>
-
-          <!-- Clinical Skills -->
-          <div class="field-head">
-            <label class="label" for="clinicalSkills">Clinical Skills</label>
-            <div class="mini-tools">
-              <button class="mini-btn" type="button" data-action="toggle-section" data-key="clinicalSkills" title="Show / Hide section">👁</button>
-              <button class="mini-btn mini-dot" type="button" data-action="toggle-mode" data-key="clinicalSkills" title="Bullets / Paragraph"></button>
-              <button class="mini-btn" type="button" data-action="toggle-bold-first" data-key="clinicalSkills" title="Bold first line">B</button>
+            <div class="toolbar" data-for="education">
+              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+              <button class="tbtn" data-action="bullets" type="button">•</button>
+              <button class="tbtn" data-action="paragraph" type="button">¶</button>
             </div>
+            <textarea id="education" class="textarea" rows="6"></textarea>
           </div>
-          <textarea id="clinicalSkills" class="textarea" rows="6" placeholder="Patient Assessment & Triage
-IV Therapy
-..."></textarea>
 
-          <!-- Core Competencies -->
-          <div class="field-head">
-            <label class="label" for="coreCompetencies">Core Competencies</label>
-            <div class="mini-tools">
-              <button class="mini-btn" type="button" data-action="toggle-section" data-key="coreCompetencies" title="Show / Hide section">👁</button>
-              <button class="mini-btn mini-dot" type="button" data-action="toggle-mode" data-key="coreCompetencies" title="Bullets / Paragraph"></button>
-              <button class="mini-btn" type="button" data-action="toggle-bold-first" data-key="coreCompetencies" title="Bold first line">B</button>
+          <!-- LICENSES -->
+          <div class="field">
+            <div class="field-head">
+              <label class="label">Licenses & Certifications (title line + detail line)</label>
+              <div class="field-controls">
+                <label class="toggle">
+                  <input type="checkbox" id="sec_licenses_enabled" checked />
+                  <span>Show</span>
+                </label>
+                <input id="sec_licenses_title" class="input small" value="Licenses & Certifications" />
+              </div>
             </div>
-          </div>
-          <textarea id="coreCompetencies" class="textarea" rows="5" placeholder="Critical Thinking
-Team Leadership
-..."></textarea>
-
-          <!-- Languages -->
-          <div class="field-head">
-            <label class="label" for="languages">Languages</label>
-            <div class="mini-tools">
-              <button class="mini-btn" type="button" data-action="toggle-section" data-key="languages" title="Show / Hide section">👁</button>
-              <button class="mini-btn mini-dot" type="button" data-action="toggle-mode" data-key="languages" title="Bullets / Paragraph"></button>
-              <button class="mini-btn" type="button" data-action="toggle-bold-first" data-key="languages" title="Bold first line">B</button>
+            <div class="toolbar" data-for="licenses">
+              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+              <button class="tbtn" data-action="bullets" type="button">•</button>
+              <button class="tbtn" data-action="paragraph" type="button">¶</button>
             </div>
+            <textarea id="licenses" class="textarea" rows="6"></textarea>
           </div>
-          <textarea id="languages" class="textarea" rows="3" placeholder="English — Native
-Spanish — Conversational"></textarea>
 
-          <!-- Experience -->
-          <div class="field-head">
-            <label class="label" for="experience">Experience (blank line between roles)</label>
-            <div class="mini-tools">
-              <button class="mini-btn" type="button" data-action="toggle-section" data-key="experience" title="Show / Hide section">👁</button>
+          <!-- CLINICAL SKILLS -->
+          <div class="field">
+            <div class="field-head">
+              <label class="label">Clinical Skills (one per line)</label>
+              <div class="field-controls">
+                <label class="toggle">
+                  <input type="checkbox" id="sec_clinicalSkills_enabled" checked />
+                  <span>Show</span>
+                </label>
+                <input id="sec_clinicalSkills_title" class="input small" value="Clinical Skills" />
+              </div>
             </div>
-          </div>
-          <textarea id="experience" class="textarea" rows="10" placeholder="Senior Registered Nurse – ICU
-Hospital, City | 2021 – Present
-Bullet 1
-Bullet 2
-
-Registered Nurse – ED
-Hospital, City | 2018 – 2020
-Bullet 1"></textarea>
-
-          <!-- Achievements -->
-          <div class="field-head">
-            <label class="label" for="achievements">Clinical Achievements</label>
-            <div class="mini-tools">
-              <button class="mini-btn" type="button" data-action="toggle-section" data-key="achievements" title="Show / Hide section">👁</button>
-              <button class="mini-btn mini-dot" type="button" data-action="toggle-mode" data-key="achievements" title="Bullets / Paragraph"></button>
-              <button class="mini-btn" type="button" data-action="toggle-bold-first" data-key="achievements" title="Bold first line">B</button>
+            <div class="toolbar" data-for="clinicalSkills">
+              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+              <button class="tbtn" data-action="bullets" type="button">•</button>
+              <button class="tbtn" data-action="paragraph" type="button">¶</button>
             </div>
+            <textarea id="clinicalSkills" class="textarea" rows="6"></textarea>
           </div>
-          <textarea id="achievements" class="textarea" rows="4" placeholder="Achievement 1
-Achievement 2"></textarea>
 
-          <!-- Volunteer -->
-          <div class="field-head">
-            <label class="label" for="volunteer">Volunteer (one block)</label>
-            <div class="mini-tools">
-              <button class="mini-btn" type="button" data-action="toggle-section" data-key="volunteer" title="Show / Hide section">👁</button>
+          <!-- CORE COMPETENCIES -->
+          <div class="field">
+            <div class="field-head">
+              <label class="label">Core Competencies (one per line)</label>
+              <div class="field-controls">
+                <label class="toggle">
+                  <input type="checkbox" id="sec_coreCompetencies_enabled" checked />
+                  <span>Show</span>
+                </label>
+                <input id="sec_coreCompetencies_title" class="input small" value="Core Competencies" />
+              </div>
             </div>
+            <div class="toolbar" data-for="coreCompetencies">
+              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+              <button class="tbtn" data-action="bullets" type="button">•</button>
+              <button class="tbtn" data-action="paragraph" type="button">¶</button>
+            </div>
+            <textarea id="coreCompetencies" class="textarea" rows="5"></textarea>
           </div>
-          <textarea id="volunteer" class="textarea" rows="4" placeholder="Volunteer Nurse | 2019 – Present
-Organization · Program
-Bullet 1"></textarea>
+
+          <!-- LANGUAGES -->
+          <div class="field">
+            <div class="field-head">
+              <label class="label">Languages (one per line)</label>
+              <div class="field-controls">
+                <label class="toggle">
+                  <input type="checkbox" id="sec_languages_enabled" checked />
+                  <span>Show</span>
+                </label>
+                <input id="sec_languages_title" class="input small" value="Languages" />
+              </div>
+            </div>
+            <div class="toolbar" data-for="languages">
+              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+              <button class="tbtn" data-action="bullets" type="button">•</button>
+              <button class="tbtn" data-action="paragraph" type="button">¶</button>
+            </div>
+            <textarea id="languages" class="textarea" rows="3"></textarea>
+          </div>
+
+          <!-- EXPERIENCE -->
+          <div class="field">
+            <div class="field-head">
+              <label class="label">Experience (blank line between roles)</label>
+              <div class="field-controls">
+                <label class="toggle">
+                  <input type="checkbox" id="sec_experience_enabled" checked />
+                  <span>Show</span>
+                </label>
+                <input id="sec_experience_title" class="input small" value="Professional Experience" />
+              </div>
+            </div>
+            <div class="toolbar" data-for="experience">
+              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+              <button class="tbtn" data-action="bullets" type="button">•</button>
+              <button class="tbtn" data-action="paragraph" type="button">¶</button>
+            </div>
+            <textarea id="experience" class="textarea" rows="10"></textarea>
+          </div>
+
+          <!-- ACHIEVEMENTS -->
+          <div class="field">
+            <div class="field-head">
+              <label class="label">Clinical Achievements (one per line)</label>
+              <div class="field-controls">
+                <label class="toggle">
+                  <input type="checkbox" id="sec_achievements_enabled" checked />
+                  <span>Show</span>
+                </label>
+                <input id="sec_achievements_title" class="input small" value="Clinical Achievements" />
+              </div>
+            </div>
+            <div class="toolbar" data-for="achievements">
+              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+              <button class="tbtn" data-action="bullets" type="button">•</button>
+              <button class="tbtn" data-action="paragraph" type="button">¶</button>
+            </div>
+            <textarea id="achievements" class="textarea" rows="4"></textarea>
+          </div>
+
+          <!-- VOLUNTEER -->
+          <div class="field">
+            <div class="field-head">
+              <label class="label">Volunteer (one block)</label>
+              <div class="field-controls">
+                <label class="toggle">
+                  <input type="checkbox" id="sec_volunteer_enabled" checked />
+                  <span>Show</span>
+                </label>
+                <input id="sec_volunteer_title" class="input small" value="Volunteer Experience" />
+              </div>
+            </div>
+            <div class="toolbar" data-for="volunteer">
+              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+              <button class="tbtn" data-action="bullets" type="button">•</button>
+              <button class="tbtn" data-action="paragraph" type="button">¶</button>
+            </div>
+            <textarea id="volunteer" class="textarea" rows="4"></textarea>
+          </div>
+
+          <hr />
+
+          <!-- CUSTOM 1 -->
+          <div class="field">
+            <div class="field-head">
+              <label class="label">Custom Section 1</label>
+              <div class="field-controls">
+                <label class="toggle">
+                  <input type="checkbox" id="sec_custom1_enabled" />
+                  <span>Show</span>
+                </label>
+                <input id="sec_custom1_title" class="input small" value="Custom Section 1" />
+              </div>
+            </div>
+            <div class="toolbar" data-for="custom1">
+              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+              <button class="tbtn" data-action="bullets" type="button">•</button>
+              <button class="tbtn" data-action="paragraph" type="button">¶</button>
+            </div>
+            <textarea id="custom1" class="textarea" rows="5"></textarea>
+          </div>
+
+          <!-- CUSTOM 2 -->
+          <div class="field">
+            <div class="field-head">
+              <label class="label">Custom Section 2</label>
+              <div class="field-controls">
+                <label class="toggle">
+                  <input type="checkbox" id="sec_custom2_enabled" />
+                  <span>Show</span>
+                </label>
+                <input id="sec_custom2_title" class="input small" value="Custom Section 2" />
+              </div>
+            </div>
+            <div class="toolbar" data-for="custom2">
+              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+              <button class="tbtn" data-action="bullets" type="button">•</button>
+              <button class="tbtn" data-action="paragraph" type="button">¶</button>
+            </div>
+            <textarea id="custom2" class="textarea" rows="5"></textarea>
+          </div>
 
           <div class="row">
             <button id="printBtn" class="btn">Print / Save as PDF</button>
@@ -174,13 +280,14 @@ Bullet 1"></textarea>
           </div>
 
           <p class="muted small">
-            Print opens your browser’s print dialog (choose “Save as PDF”).
+            Formatting: select text and press <b>B</b> to apply <code>**bold**</code>. Select lines and press <b>•</b> for bullets.
           </p>
         </div>
 
+        <!-- RIGHT: preview -->
         <div class="card">
           <h2>Preview</h2>
-          <div id="preview"></div>
+          <div id="preview" class="cv"></div>
         </div>
       </div>
     </section>
