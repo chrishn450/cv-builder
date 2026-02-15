@@ -21,40 +21,37 @@ const state = {
       summary: { enabled: true, title: "Professional Summary" },
       education: { enabled: true, title: "Education" },
       licenses: { enabled: true, title: "Licenses & Certifications" },
-      clinicalSkills: { enabled: true, title: "Clinical Skills", mode: "bullets", boldFirstLine: false },
-      coreCompetencies: { enabled: true, title: "Core Competencies", mode: "bullets", boldFirstLine: false },
-      languages: { enabled: true, title: "Languages", mode: "paragraph", boldFirstLine: false },
+      clinicalSkills: { enabled: true, title: "Clinical Skills" },
+      coreCompetencies: { enabled: true, title: "Core Competencies" },
+      languages: { enabled: true, title: "Languages" },
       experience: { enabled: true, title: "Professional Experience" },
-      achievements: { enabled: true, title: "Clinical Achievements", mode: "bullets", boldFirstLine: false },
+      achievements: { enabled: true, title: "Clinical Achievements" },
       volunteer: { enabled: true, title: "Volunteer Experience" },
-
-      custom1: { enabled: false, title: "Custom Section 1", mode: "bullets", boldFirstLine: false, column: "right" },
-      custom2: { enabled: false, title: "Custom Section 2", mode: "bullets", boldFirstLine: false, column: "right" },
+      custom1: { enabled: false, title: "Custom Section 1" },
+      custom2: { enabled: false, title: "Custom Section 2" }
     }
   }
 };
 
-function qs(id) { return document.getElementById(id); }
+function qs(id){ return document.getElementById(id); }
 
-async function checkAccess() {
+async function checkAccess(){
   const res = await fetch("/api/me", { method: "GET" });
   if (!res.ok) return null;
   return res.json();
 }
 
-function render() {
+function render(){
   qs("preview").innerHTML = window.renderCV(state.data);
 }
 
-function bindInputs() {
-  const map = [
-    "name","title","email","phone","location","linkedin",
+function bindBasicInputs(){
+  const map = ["name","title","email","phone","location","linkedin",
     "summary","education","licenses","clinicalSkills","coreCompetencies",
-    "languages","experience","achievements","volunteer",
-    "custom1","custom2"
+    "languages","experience","achievements","volunteer","custom1","custom2"
   ];
 
-  for (const k of map) {
+  for (const k of map){
     const el = qs(k);
     if (!el) continue;
     el.value = state.data[k] || "";
@@ -63,7 +60,127 @@ function bindInputs() {
       render();
     });
   }
+}
 
+function bindSectionControls(){
+  const keys = [
+    "summary","education","licenses","clinicalSkills","coreCompetencies",
+    "languages","experience","achievements","volunteer","custom1","custom2"
+  ];
+
+  for (const key of keys){
+    const enabledEl = qs(`sec_${key}_enabled`);
+    const titleEl   = qs(`sec_${key}_title`);
+    if (!enabledEl || !titleEl) continue;
+
+    enabledEl.checked = !!state.data.sections[key]?.enabled;
+    titleEl.value = state.data.sections[key]?.title || "";
+
+    const sync = () => {
+      state.data.sections[key] = {
+        ...state.data.sections[key],
+        enabled: !!enabledEl.checked,
+        title: titleEl.value || state.data.sections[key]?.title || key
+      };
+      render();
+    };
+
+    enabledEl.addEventListener("change", sync);
+    titleEl.addEventListener("input", sync);
+  }
+}
+
+function wrapSelectionWith(el, left, right){
+  const start = el.selectionStart ?? 0;
+  const end   = el.selectionEnd ?? 0;
+  const v = el.value || "";
+  const selected = v.slice(start, end);
+  const out = v.slice(0, start) + left + selected + right + v.slice(end);
+  el.value = out;
+
+  // keep selection around original selected text
+  const newStart = start + left.length;
+  const newEnd = newStart + selected.length;
+  el.setSelectionRange(newStart, newEnd);
+}
+
+function getSelectedLineRange(el){
+  const v = el.value || "";
+  const start = el.selectionStart ?? 0;
+  const end = el.selectionEnd ?? 0;
+
+  const lineStart = v.lastIndexOf("\n", start - 1) + 1;
+  const lineEndIdx = v.indexOf("\n", end);
+  const lineEnd = lineEndIdx === -1 ? v.length : lineEndIdx;
+
+  return { v, start, end, lineStart, lineEnd };
+}
+
+function toggleBulletsOnSelection(el){
+  const { v, lineStart, lineEnd } = getSelectedLineRange(el);
+  const chunk = v.slice(lineStart, lineEnd);
+  const lines = chunk.split("\n");
+
+  const allBulleted = lines
+    .filter(l => l.trim().length)
+    .every(l => l.trimStart().startsWith("- "));
+
+  const newLines = lines.map(l => {
+    if (!l.trim().length) return l;
+    if (allBulleted) {
+      // remove "- "
+      return l.replace(/^(\s*)-\s+/, "$1");
+    }
+    // add "- " if missing
+    if (l.trimStart().startsWith("- ")) return l;
+    return l.replace(/^(\s*)/, "$1- ");
+  });
+
+  const out = v.slice(0, lineStart) + newLines.join("\n") + v.slice(lineEnd);
+  el.value = out;
+  el.setSelectionRange(lineStart, lineStart + newLines.join("\n").length);
+}
+
+function selectionToParagraph(el){
+  const { v, lineStart, lineEnd } = getSelectedLineRange(el);
+  const chunk = v.slice(lineStart, lineEnd);
+  const lines = chunk.split("\n");
+
+  const newLines = lines.map(l => l.replace(/^(\s*)-\s+/, "$1"));
+  const out = v.slice(0, lineStart) + newLines.join("\n") + v.slice(lineEnd);
+  el.value = out;
+  el.setSelectionRange(lineStart, lineStart + newLines.join("\n").length);
+}
+
+function bindToolbars(){
+  document.querySelectorAll(".toolbar").forEach(tb => {
+    const fieldId = tb.getAttribute("data-for");
+    const target = qs(fieldId);
+    if (!target) return;
+
+    tb.querySelectorAll(".tbtn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const action = btn.getAttribute("data-action");
+        target.focus();
+
+        if (action === "bold") {
+          // Wrap selection with ** **
+          wrapSelectionWith(target, "**", "**");
+        } else if (action === "bullets") {
+          toggleBulletsOnSelection(target);
+        } else if (action === "paragraph") {
+          selectionToParagraph(target);
+        }
+
+        // trigger app state update + preview
+        state.data[fieldId] = target.value;
+        render();
+      });
+    });
+  });
+}
+
+function bindButtons(){
   qs("printBtn").addEventListener("click", () => window.print());
 
   qs("downloadHtmlBtn").addEventListener("click", () => {
@@ -86,155 +203,16 @@ function bindInputs() {
   });
 }
 
-function makeRow({ idPrefix, label, sectionKey, supportsMode, supportsBold, supportsColumn }) {
-  const s = state.data.sections[sectionKey] || {};
-
-  const wrap = document.createElement("div");
-  wrap.className = "card";
-  wrap.style.padding = "12px";
-  wrap.style.marginTop = "10px";
-
-  const top = document.createElement("div");
-  top.className = "row";
-
-  const enabled = document.createElement("input");
-  enabled.type = "checkbox";
-  enabled.checked = !!s.enabled;
-  enabled.id = `${idPrefix}_enabled`;
-
-  const enabledLbl = document.createElement("label");
-  enabledLbl.className = "muted small";
-  enabledLbl.style.display = "inline-flex";
-  enabledLbl.style.alignItems = "center";
-  enabledLbl.style.gap = "8px";
-  enabledLbl.appendChild(enabled);
-  enabledLbl.appendChild(document.createTextNode(`Show ${label}`));
-
-  const title = document.createElement("input");
-  title.className = "input";
-  title.style.maxWidth = "360px";
-  title.value = s.title || label;
-  title.placeholder = "Section title";
-
-  top.appendChild(enabledLbl);
-  top.appendChild(title);
-
-  wrap.appendChild(top);
-
-  const options = document.createElement("div");
-  options.className = "row";
-  options.style.marginTop = "10px";
-
-  let modeSel = null;
-  if (supportsMode) {
-    modeSel = document.createElement("select");
-    modeSel.className = "input";
-    modeSel.style.maxWidth = "200px";
-    const opt1 = document.createElement("option");
-    opt1.value = "bullets";
-    opt1.textContent = "Bullets";
-    const opt2 = document.createElement("option");
-    opt2.value = "paragraph";
-    opt2.textContent = "Paragraph";
-    modeSel.appendChild(opt1);
-    modeSel.appendChild(opt2);
-    modeSel.value = s.mode || "bullets";
-    options.appendChild(modeSel);
-  }
-
-  let boldChk = null;
-  if (supportsBold) {
-    boldChk = document.createElement("input");
-    boldChk.type = "checkbox";
-    boldChk.checked = !!s.boldFirstLine;
-
-    const boldLbl = document.createElement("label");
-    boldLbl.className = "muted small";
-    boldLbl.style.display = "inline-flex";
-    boldLbl.style.alignItems = "center";
-    boldLbl.style.gap = "8px";
-    boldLbl.appendChild(boldChk);
-    boldLbl.appendChild(document.createTextNode("Bold first line"));
-
-    options.appendChild(boldLbl);
-  }
-
-  let colSel = null;
-  if (supportsColumn) {
-    colSel = document.createElement("select");
-    colSel.className = "input";
-    colSel.style.maxWidth = "200px";
-    const l = document.createElement("option");
-    l.value = "left";
-    l.textContent = "Left column";
-    const r = document.createElement("option");
-    r.value = "right";
-    r.textContent = "Right column";
-    colSel.appendChild(l);
-    colSel.appendChild(r);
-    colSel.value = s.column || "right";
-    options.appendChild(colSel);
-  }
-
-  wrap.appendChild(options);
-
-  function sync() {
-    state.data.sections[sectionKey] = {
-      ...state.data.sections[sectionKey],
-      enabled: enabled.checked,
-      title: title.value || label,
-      ...(supportsMode ? { mode: modeSel.value } : {}),
-      ...(supportsBold ? { boldFirstLine: boldChk.checked } : {}),
-      ...(supportsColumn ? { column: colSel.value } : {}),
-    };
-    render();
-  }
-
-  enabled.addEventListener("change", sync);
-  title.addEventListener("input", sync);
-  if (modeSel) modeSel.addEventListener("change", sync);
-  if (boldChk) boldChk.addEventListener("change", sync);
-  if (colSel) colSel.addEventListener("change", sync);
-
-  return wrap;
-}
-
-function buildSectionsUI() {
-  const root = qs("sectionsUI");
-  root.innerHTML = "";
-
-  // Standard sections
-  root.appendChild(makeRow({ idPrefix:"sec_summary", label:"Summary", sectionKey:"summary", supportsMode:false, supportsBold:false, supportsColumn:false }));
-  root.appendChild(makeRow({ idPrefix:"sec_education", label:"Education", sectionKey:"education", supportsMode:false, supportsBold:false, supportsColumn:false }));
-  root.appendChild(makeRow({ idPrefix:"sec_licenses", label:"Licenses", sectionKey:"licenses", supportsMode:false, supportsBold:false, supportsColumn:false }));
-  root.appendChild(makeRow({ idPrefix:"sec_clin", label:"Clinical Skills", sectionKey:"clinicalSkills", supportsMode:true, supportsBold:true, supportsColumn:false }));
-  root.appendChild(makeRow({ idPrefix:"sec_core", label:"Core Competencies", sectionKey:"coreCompetencies", supportsMode:true, supportsBold:true, supportsColumn:false }));
-  root.appendChild(makeRow({ idPrefix:"sec_lang", label:"Languages", sectionKey:"languages", supportsMode:true, supportsBold:true, supportsColumn:false }));
-  root.appendChild(makeRow({ idPrefix:"sec_exp", label:"Experience", sectionKey:"experience", supportsMode:false, supportsBold:false, supportsColumn:false }));
-  root.appendChild(makeRow({ idPrefix:"sec_ach", label:"Achievements", sectionKey:"achievements", supportsMode:true, supportsBold:true, supportsColumn:false }));
-  root.appendChild(makeRow({ idPrefix:"sec_vol", label:"Volunteer", sectionKey:"volunteer", supportsMode:false, supportsBold:false, supportsColumn:false }));
-
-  // Custom sections
-  const h = document.createElement("h3");
-  h.textContent = "Custom Sections";
-  h.style.marginTop = "14px";
-  root.appendChild(h);
-
-  root.appendChild(makeRow({ idPrefix:"sec_custom1", label:"Custom 1", sectionKey:"custom1", supportsMode:true, supportsBold:true, supportsColumn:true }));
-  root.appendChild(makeRow({ idPrefix:"sec_custom2", label:"Custom 2", sectionKey:"custom2", supportsMode:true, supportsBold:true, supportsColumn:true }));
-}
-
-async function init() {
+async function init(){
   const locked = qs("locked");
   const app = qs("app");
   const logoutBtn = qs("logoutBtn");
 
-  const buyLink = qs("buyLink");
-  buyLink.href = "https://payhip.com/b/AeoVP"; // <-- your Payhip link
+  qs("buyLink").href = "https://payhip.com/b/AeoVP"; // your Payhip link
 
-  const me = await checkAccess().catch(() => null);
+  const me = await checkAccess().catch(()=>null);
 
-  if (!me || !me.has_access) {
+  if (!me || !me.has_access){
     locked.style.display = "block";
     app.style.display = "none";
     logoutBtn.style.display = "none";
@@ -245,8 +223,11 @@ async function init() {
   app.style.display = "block";
   logoutBtn.style.display = "inline-flex";
 
-  buildSectionsUI();
-  bindInputs();
+  bindBasicInputs();
+  bindSectionControls();
+  bindToolbars();
+  bindButtons();
+
   render();
 }
 
