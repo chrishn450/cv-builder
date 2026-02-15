@@ -1,4 +1,27 @@
-/* ── CV Template Styles (scoped) ── */
+/* ──────────────────────────────────────────────
+   Base Reset (safe)
+────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: #f3f3f3;
+  color: #111;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ──────────────────────────────────────────────
+   CV THEME VARIABLES
+────────────────────────────────────────────── */
+
 :root {
   --cv-bg: #f9f6f0;
   --cv-heading: #2c2c2c;
@@ -9,17 +32,26 @@
   --cv-rule: rgba(184,168,138,0.3);
 }
 
+/* ──────────────────────────────────────────────
+   CV CONTAINER
+────────────────────────────────────────────── */
+
 .cv {
   width: 210mm;
   min-height: 297mm;
+  max-width: 100%;
   background: var(--cv-bg);
   border: 2px solid var(--cv-border);
-  margin: 20px auto;
+  margin: 30px auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   color: var(--cv-body);
 }
+
+/* ──────────────────────────────────────────────
+   HEADER
+────────────────────────────────────────────── */
 
 .cv-header {
   text-align: center;
@@ -34,11 +66,9 @@
   letter-spacing: 0.32em;
   text-transform: uppercase;
   color: var(--cv-heading);
-  margin: 0;
 }
 
 .cv-title {
-  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 9.5px;
   font-weight: 300;
   letter-spacing: 0.5em;
@@ -49,19 +79,33 @@
 
 .cv-contact {
   display: flex;
-  align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 0 18px;
+  gap: 18px;
   margin-top: 14px;
-  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 8.5px;
-  color: var(--cv-body);
 }
 
-.cv-contact .sep { color: var(--cv-light); }
+.cv-contact .sep {
+  color: var(--cv-light);
+}
 
-.cv-summary { padding: 18px 40px 14px; }
+/* ──────────────────────────────────────────────
+   SUMMARY
+────────────────────────────────────────────── */
+
+.cv-summary {
+  padding: 18px 40px 14px;
+}
+
+.body-text {
+  font-size: 9px;
+  line-height: 1.7;
+}
+
+/* ──────────────────────────────────────────────
+   TWO COLUMN LAYOUT
+────────────────────────────────────────────── */
 
 .cv-body {
   display: flex;
@@ -70,13 +114,27 @@
   gap: 30px;
 }
 
-.cv-left { width: 34%; display: flex; flex-direction: column; gap: 14px; }
-.cv-right { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.cv-left {
+  width: 34%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cv-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ──────────────────────────────────────────────
+   SECTION TITLES
+────────────────────────────────────────────── */
 
 .section-title {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 10px;
-  font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.25em;
   color: var(--cv-heading);
@@ -85,34 +143,65 @@
   margin-bottom: 8px;
 }
 
-.cv p, .cv li { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-
-.body-text {
-  font-size: 9px;
-  line-height: 1.7;
-  color: var(--cv-body);
-}
+/* ──────────────────────────────────────────────
+   EDUCATION & CERTS
+────────────────────────────────────────────── */
 
 .edu-block { margin-bottom: 8px; }
-.edu-block h3 { font-size: 9.5px; font-weight: 600; color: var(--cv-heading); margin: 0; }
-.edu-block p { font-size: 8.5px; margin: 0; color: var(--cv-body); }
-.edu-block .date { font-size: 8px; color: var(--cv-light); }
-.edu-block .honors { font-size: 8px; color: var(--cv-light); font-style: italic; }
+
+.edu-block h3 {
+  font-size: 9.5px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.edu-block p {
+  font-size: 8.5px;
+  margin: 0;
+}
+
+.edu-block .date,
+.edu-block .honors {
+  font-size: 8px;
+  color: var(--cv-light);
+}
+
+.edu-block .honors {
+  font-style: italic;
+}
 
 .cert-item { margin-bottom: 6px; }
-.cert-item h3 { font-size: 9px; font-weight: 600; color: var(--cv-heading); margin: 0; }
-.cert-item p { font-size: 8px; color: var(--cv-light); margin: 0; }
 
-.skill-list, .exp-bullets, .achievement-list { list-style: none; padding: 0; margin: 0; }
+.cert-item h3 {
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.cert-item p {
+  font-size: 8px;
+  color: var(--cv-light);
+}
+
+/* ──────────────────────────────────────────────
+   LISTS
+────────────────────────────────────────────── */
+
+.skill-list,
+.exp-bullets,
+.achievement-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
 
 .skill-list li,
 .exp-bullets li,
 .achievement-list li {
   font-size: 8.5px;
   line-height: 1.6;
-  color: var(--cv-body);
   display: flex;
   gap: 7px;
+  margin-bottom: 2px;
 }
 
 .skill-list li::before,
@@ -127,30 +216,95 @@
   flex-shrink: 0;
 }
 
+/* ──────────────────────────────────────────────
+   EXPERIENCE
+────────────────────────────────────────────── */
+
 .exp-entry { margin-bottom: 12px; }
+
 .exp-entry h3 {
   font-size: 9.5px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--cv-heading);
+}
+
+.exp-entry .meta {
+  font-size: 8.5px;
+  color: var(--cv-light);
+  margin: 2px 0 4px;
+}
+
+/* ──────────────────────────────────────────────
+   VOLUNTEER
+────────────────────────────────────────────── */
+
+.vol-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.vol-header h3 {
+  font-size: 9.5px;
+  font-weight: 600;
+}
+
+.vol-header .date {
+  font-size: 8px;
+  color: var(--cv-light);
+}
+
+.vol-sub {
+  font-size: 8.5px;
+  color: var(--cv-light);
+  margin-bottom: 4px;
+}
+
+/* ──────────────────────────────────────────────
+   RESPONSIVE
+────────────────────────────────────────────── */
+
+@media screen {
+  .cv {
+    width: min(210mm, 100%);
+  }
+}
+
+/* ──────────────────────────────────────────────
+   PRINT
+────────────────────────────────────────────── */
+
+@page {
+  size: A4;
   margin: 0;
 }
 
-.exp-entry .meta { font-size: 8.5px; color: var(--cv-light); margin: 1px 0 4px; }
-
-.vol-header { display: flex; justify-content: space-between; align-items: baseline; }
-.vol-header h3 { font-size: 9.5px; font-weight: 600; color: var(--cv-heading); margin: 0; }
-.vol-header .date { font-size: 8px; color: var(--cv-light); }
-.vol-sub { font-size: 8.5px; color: var(--cv-light); margin: 0 0 4px; }
-
-.lang-list p { font-size: 8.5px; color: var(--cv-body); margin: 2px 0; }
-
-/* Print */
-@page { size: A4; margin: 0; }
 @media print {
-  /* hide your site UI, show only the CV */
-  header.topbar, .actions, #locked, .row, .btn, button, .no-print { display: none !important; }
-  body { background: white !important; }
-  .cv { width: 210mm; height: 297mm; margin: 0; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
+
+  .no-print,
+  .editor,
+  .btn-print,
+  header.topbar,
+  #locked,
+  #logoutBtn,
+  button,
+  a.btn {
+    display: none !important;
+  }
+
+  .cv {
+    width: 210mm;
+    height: 297mm;
+    margin: 0;
+    border: 2px solid var(--cv-border);
+    box-shadow: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
