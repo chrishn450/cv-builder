@@ -61,7 +61,7 @@ body{
   box-shadow: 0 20px 60px rgba(0,0,0,0.28);
 }
 
-/* Small inner blocks used for structured editors */
+/* Inner blocks (structured editors) */
 .subcard{
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.08);
@@ -149,7 +149,7 @@ hr{
   --cv-border: #d6cdb8;
   --cv-rule: rgba(184,168,138,0.3);
 
-  /* one source of truth for the dot size */
+  /* one source of truth for dot size */
   --cv-bullet-size: 3.5px;
 }
 
@@ -167,6 +167,9 @@ hr{
   flex-direction: column;
   overflow: hidden;
   color: var(--cv-body);
+
+  /* if Google Fonts loaded */
+  font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .cv .cv-header{
@@ -176,7 +179,7 @@ hr{
 }
 
 .cv .cv-name{
-  font-family: Georgia, "Times New Roman", serif; /* will be overridden if you loaded Google fonts */
+  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-size: 28px;
   font-weight: 400;
   letter-spacing: 0.32em;
@@ -236,7 +239,7 @@ hr{
 }
 
 .cv .section-title{
-  font-family: Georgia, "Times New Roman", serif; /* overridden by fonts if loaded */
+  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.25em;
@@ -276,7 +279,7 @@ hr{
   margin-bottom:2px;
 }
 
-/* ORIGINAL dot in preview */
+/* Original dot (same as preview) */
 .cv .skill-list li::before,
 .cv .exp-bullets li::before,
 .cv .achievement-list li::before{
@@ -373,13 +376,11 @@ hr{
 }
 .tbtn:hover{ background: rgba(255,255,255,0.10); }
 
-/* Active button state */
 .tbtn.active{
   background: rgba(255,255,255,0.14);
   border-color: rgba(255,255,255,0.22);
 }
 
-/* Dot button should match CV bullet (same size + same accent color) */
 .tbtn.tdot{
   width: 34px;
   min-width: 34px;
@@ -389,6 +390,7 @@ hr{
   justify-content: center;
   padding: 0;
 }
+
 .tbtn.tdot::before{
   content:"";
   width: var(--cv-bullet-size);
@@ -399,31 +401,19 @@ hr{
 }
 
 /* ──────────────────────────────────────────────
-   OPTIONAL: If you added Google fonts in index.html,
-   apply them ONLY to the CV (not the whole app)
-────────────────────────────────────────────── */
-.cv{
-  font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
-.cv .cv-name,
-.cv .section-title{
-  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
-}
-
-/* ──────────────────────────────────────────────
-   Print: show ONLY the CV, full A4 (FIXED)
+   Print: ONLY the CV (one A4 page, no "Preview")
 ────────────────────────────────────────────── */
 @page { size: A4; margin: 0; }
 
 @media print{
   html, body{
-    margin:0;
-    padding:0;
-    background:white !important;
+    margin:0 !important;
+    padding:0 !important;
+    background:#fff !important;
     color:#111 !important;
   }
 
-  /* Hide top UI + buttons only (DO NOT hide .container) */
+  /* Hide all app UI */
   .topbar,
   #locked,
   #logoutBtn,
@@ -436,24 +426,63 @@ hr{
     display:none !important;
   }
 
-  /* Hide only the LEFT editor card */
-  .grid{ display:block !important; }
-  .grid > .card:first-child{ display:none !important; }
-
-  /* Show only the CV */
-  #preview, .cv { display:block !important; }
-
-  #preview{
+  /* Remove layout chrome that causes extra pages */
+  .container{
+    max-width:none !important;
     margin:0 !important;
     padding:0 !important;
   }
 
-  .cv{
-    width: 210mm !important;
-    height: 297mm !important;
+  .grid{
+    display:block !important;
     margin:0 !important;
-    border: 2px solid var(--cv-border) !important;
+    padding:0 !important;
+  }
+
+  /* Hide left editor card */
+  .grid > .card:first-child{
+    display:none !important;
+  }
+
+  /* Make right card transparent and remove its title */
+  .grid > .card:last-child{
+    background:transparent !important;
+    border:none !important;
+    box-shadow:none !important;
+    padding:0 !important;
+    margin:0 !important;
+  }
+  .grid > .card:last-child h2{
+    display:none !important; /* hides "Preview" */
+  }
+
+  /* Print only the CV */
+  #preview{
+    display:block !important;
+    margin:0 !important;
+    padding:0 !important;
+  }
+
+  /* If renderer returns <div class="cv"> inside #preview */
+  #preview .cv, .cv{
+    width:210mm !important;
+    height:297mm !important;
+    margin:0 !important;
+    overflow:hidden !important; /* prevents spill to page 2 */
+    border:2px solid var(--cv-border) !important;
+
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .cv section,
+  .cv .exp-entry,
+  .cv .edu-block,
+  .cv .cert-item{
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }
