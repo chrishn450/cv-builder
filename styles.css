@@ -1,5 +1,5 @@
 /* ──────────────────────────────────────────────
-   Base
+   Base (safe)
 ────────────────────────────────────────────── */
 *,
 *::before,
@@ -61,6 +61,7 @@ body{
   box-shadow: 0 20px 60px rgba(0,0,0,0.28);
 }
 
+/* Small inner blocks used for structured editors */
 .subcard{
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.08);
@@ -148,11 +149,12 @@ hr{
   --cv-border: #d6cdb8;
   --cv-rule: rgba(184,168,138,0.3);
 
+  /* one source of truth for the dot size */
   --cv-bullet-size: 3.5px;
 }
 
 /* ──────────────────────────────────────────────
-   CV Template
+   CV Template (scoped)
 ────────────────────────────────────────────── */
 .cv{
   width: 210mm;
@@ -174,7 +176,7 @@ hr{
 }
 
 .cv .cv-name{
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: Georgia, "Times New Roman", serif; /* will be overridden if you loaded Google fonts */
   font-size: 28px;
   font-weight: 400;
   letter-spacing: 0.32em;
@@ -234,7 +236,7 @@ hr{
 }
 
 .cv .section-title{
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: Georgia, "Times New Roman", serif; /* overridden by fonts if loaded */
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.25em;
@@ -274,6 +276,7 @@ hr{
   margin-bottom:2px;
 }
 
+/* ORIGINAL dot in preview */
 .cv .skill-list li::before,
 .cv .exp-bullets li::before,
 .cv .achievement-list li::before{
@@ -322,33 +325,8 @@ hr{
 }
 
 /* ──────────────────────────────────────────────
-   Print
+   Mini controls next to labels
 ────────────────────────────────────────────── */
-@page { size: A4; margin: 0; }
-
-@media print{
-  html, body{
-    margin:0;
-    padding:0;
-    background:white !important;
-    color:#111 !important;
-  }
-
-  .topbar, .container, #locked, #logoutBtn, .btn, button, a { display:none !important; }
-
-  #preview, .cv { display:block !important; }
-
-  .cv{
-    width: 210mm;
-    height: 297mm;
-    margin:0;
-    border: 2px solid var(--cv-border);
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-}
-
-/* Mini controls next to labels */
 .field { margin-top: 14px; }
 .field-head {
   display:flex;
@@ -375,7 +353,9 @@ hr{
 }
 .toggle input { transform: translateY(1px); }
 
-/* Toolbar */
+/* ──────────────────────────────────────────────
+   Toolbar (B + dot)
+────────────────────────────────────────────── */
 .toolbar{
   display:flex;
   gap:8px;
@@ -392,11 +372,14 @@ hr{
   line-height: 1;
 }
 .tbtn:hover{ background: rgba(255,255,255,0.10); }
+
+/* Active button state */
 .tbtn.active{
   background: rgba(255,255,255,0.14);
   border-color: rgba(255,255,255,0.22);
 }
 
+/* Dot button should match CV bullet (same size + same accent color) */
 .tbtn.tdot{
   width: 34px;
   min-width: 34px;
@@ -414,37 +397,63 @@ hr{
   background: var(--cv-accent);
   display:block;
 }
-/* Make CV typography match the reference much closer */
+
+/* ──────────────────────────────────────────────
+   OPTIONAL: If you added Google fonts in index.html,
+   apply them ONLY to the CV (not the whole app)
+────────────────────────────────────────────── */
 .cv{
   font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-
 .cv .cv-name,
 .cv .section-title{
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
 }
 
-.cv .cv-name{
-  font-size: 30px;
-  letter-spacing: 0.34em;
-}
+/* ──────────────────────────────────────────────
+   Print: show ONLY the CV, full A4 (FIXED)
+────────────────────────────────────────────── */
+@page { size: A4; margin: 0; }
 
-.cv .section-title{
-  letter-spacing: 0.30em;
-}
+@media print{
+  html, body{
+    margin:0;
+    padding:0;
+    background:white !important;
+    color:#111 !important;
+  }
 
-/* Match spacing like the PDF */
-.cv .exp-entry h3{
-  font-size: 9.6px;
-  letter-spacing: 0.06em;
-}
+  /* Hide top UI + buttons only (DO NOT hide .container) */
+  .topbar,
+  #locked,
+  #logoutBtn,
+  #buyLink,
+  #printBtn,
+  #downloadHtmlBtn,
+  .actions,
+  .muted,
+  .small{
+    display:none !important;
+  }
 
-.cv .exp-entry .meta{
-  font-size: 8.2px;
-  margin: 2px 0 6px;
-}
+  /* Hide only the LEFT editor card */
+  .grid{ display:block !important; }
+  .grid > .card:first-child{ display:none !important; }
 
-.cv .exp-bullets li{
-  line-height: 1.65;
-  margin-bottom: 3px;
+  /* Show only the CV */
+  #preview, .cv { display:block !important; }
+
+  #preview{
+    margin:0 !important;
+    padding:0 !important;
+  }
+
+  .cv{
+    width: 210mm !important;
+    height: 297mm !important;
+    margin:0 !important;
+    border: 2px solid var(--cv-border) !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
