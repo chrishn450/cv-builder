@@ -139,6 +139,9 @@ hr{
   --cv-accent: #b8a88a;
   --cv-border: #d6cdb8;
   --cv-rule: rgba(184,168,138,0.3);
+
+  /* ENS: samme dot overalt */
+  --cv-bullet-size: 3.5px;
 }
 
 /* ──────────────────────────────────────────────
@@ -269,8 +272,8 @@ hr{
 .cv .achievement-list li::before{
   content:"";
   margin-top: 5px;
-  width: 3.5px;
-  height: 3.5px;
+  width: var(--cv-bullet-size);
+  height: var(--cv-bullet-size);
   border-radius: 50%;
   background: var(--cv-accent);
   flex-shrink:0;
@@ -339,6 +342,7 @@ hr{
     print-color-adjust: exact;
   }
 }
+
 /* Mini controls next to labels */
 .field { margin-top: 14px; }
 .field-head {
@@ -383,7 +387,13 @@ hr{
   line-height: 1;
 }
 .tbtn:hover{ background: rgba(255,255,255,0.10); }
-/* Dot button should match CV bullet (same size + same accent color) */
+
+/* active state */
+.tbtn.active{
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.22);
+}
+
 /* Bullet toggle button = same dot as CV */
 .tbtn.tdot{
   width: 34px;
@@ -397,17 +407,9 @@ hr{
 
 .tbtn.tdot::before{
   content:"";
-  width: 3.5px;
-  height: 3.5px;
+  width: var(--cv-bullet-size);
+  height: var(--cv-bullet-size);
   border-radius: 50%;
   background: var(--cv-accent);
   display:block;
 }
-/* Toolbar active state */
-.tbtn.active{
-  background: rgba(255,255,255,0.14);
-  border-color: rgba(255,255,255,0.22);
-}
-
-
-
