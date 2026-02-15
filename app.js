@@ -7,41 +7,17 @@
   const downloadHtmlBtn = qs("downloadHtmlBtn");
 
   const FIELD_IDS = [
-    "name",
-    "title",
-    "email",
-    "phone",
-    "location",
-    "linkedin",
-    "summary",
-    "education",
-    "licenses",
-    "clinicalSkills",
-    "coreCompetencies",
-    "languages",
-    "experience",
-    "achievements",
-    "volunteer",
-    "custom1",
-    "custom2",
+    "name","title","email","phone","location","linkedin",
+    "summary","clinicalSkills","coreCompetencies","languages",
+    "achievements","custom1","custom2",
+    // NOTE: education/licenses/experience/volunteer are managed by structured UI
   ];
 
   const SECTION_KEYS = [
-    "summary",
-    "education",
-    "licenses",
-    "clinicalSkills",
-    "coreCompetencies",
-    "languages",
-    "experience",
-    "achievements",
-    "volunteer",
-    "custom1",
-    "custom2",
+    "summary","education","licenses","clinicalSkills","coreCompetencies",
+    "languages","experience","achievements","volunteer","custom1","custom2",
   ];
 
-  // NB: Vi fyller IKKE inputs med defaults.
-  // Preview blir full fra templates.js defaults når state.data har tomme felt.
   const state = { data: {}, sections: {} };
 
   function render() {
@@ -52,8 +28,8 @@
     });
   }
 
-  // Lagre bare det brukeren faktisk har skrevet
-  const STORAGE_KEY = "cv_builder_user_overrides_v1";
+  // Store only user overrides
+  const STORAGE_KEY = "cv_builder_user_overrides_structured_v1";
 
   function loadState() {
     try {
@@ -68,10 +44,7 @@
 
   function saveState() {
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ data: state.data, sections: state.sections })
-      );
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: state.data, sections: state.sections }));
     } catch (_) {}
   }
 
@@ -80,32 +53,23 @@
       if (!state.sections[k]) state.sections[k] = {};
       const en = qs(`sec_${k}_enabled`);
       const ti = qs(`sec_${k}_title`);
-
-      // bruk UI som kilde
       if (en) state.sections[k].enabled = !!en.checked;
       if (ti) state.sections[k].title = ti.value;
     });
   }
 
-  function bindInputs() {
+  function bindSimpleInputs() {
     FIELD_IDS.forEach((id) => {
       const el = qs(id);
       if (!el) return;
 
-      // Hvis vi har lagret override, sett den inn – ellers la feltet være tomt
-      if (state.data[id] != null && String(state.data[id]).length > 0) {
-        el.value = String(state.data[id]);
-      } else {
-        el.value = ""; // behold grå placeholder
-      }
+      // Keep empty unless user override exists
+      if (state.data[id] != null && String(state.data[id]).length > 0) el.value = String(state.data[id]);
+      else el.value = "";
 
       el.addEventListener("input", () => {
-        // Brukerens tekst overstyrer defaults
         state.data[id] = el.value;
-
-        // Hvis bruker sletter alt: fjern override så defaults kommer tilbake i preview
         if (String(el.value).trim() === "") delete state.data[id];
-
         saveState();
         render();
       });
@@ -125,9 +89,7 @@
       }
 
       if (ti) {
-        // behold som i UI (du hadde disse ferdig utfylt allerede)
         if (state.sections?.[k]?.title) ti.value = state.sections[k].title;
-
         ti.addEventListener("input", () => {
           if (!state.sections[k]) state.sections[k] = {};
           state.sections[k].title = ti.value;
@@ -138,22 +100,15 @@
     });
   }
 
-  // ---- Toolbar: bullet mode som setter "• " direkte (men preview stripper den) ----
+  // ---------- Toolbar helpers (Bold + Bullet) ----------
   function wrapSelectionWith(el, left, right) {
     const v = el.value || "";
     const start = el.selectionStart ?? 0;
     const end = el.selectionEnd ?? start;
-    const before = v.slice(0, start);
-    const sel = v.slice(start, end);
-    const after = v.slice(end);
-
-    el.value = before + left + sel + right + after;
-    const newStart = start + left.length;
-    const newEnd = end + left.length;
-    el.setSelectionRange(newStart, newEnd);
+    el.value = v.slice(0, start) + left + v.slice(start, end) + right + v.slice(end);
+    el.setSelectionRange(start + left.length, end + left.length);
   }
 
-  const bulletMode = {}; // fieldId -> boolean
   const BULLET = "• ";
 
   function setBulletButtonState(tb, on) {
@@ -176,7 +131,6 @@
     const v = el.value || "";
     const pos = el.selectionStart ?? v.length;
     const lineStart = getLineStart(v, pos);
-
     if (lineHasBulletPrefix(v, lineStart)) return;
 
     el.value = v.slice(0, lineStart) + BULLET + v.slice(lineStart);
@@ -188,17 +142,14 @@
     const v = el.value || "";
     const pos = el.selectionStart ?? v.length;
     const insert = "\n" + BULLET;
-
     el.value = v.slice(0, pos) + insert + v.slice(pos);
-    const newPos = pos + insert.length;
-    el.setSelectionRange(newPos, newPos);
+    el.setSelectionRange(pos + insert.length, pos + insert.length);
   }
 
   function removeEmptyBulletLine(el) {
     const v = el.value || "";
     const pos = el.selectionStart ?? v.length;
     const lineStart = getLineStart(v, pos);
-
     const lineEndIdx = v.indexOf("\n", lineStart);
     const lineEnd = lineEndIdx === -1 ? v.length : lineEndIdx;
     const line = v.slice(lineStart, lineEnd);
@@ -210,84 +161,500 @@
     }
   }
 
-  function bindBulletEnter(el, fieldId) {
-    el.addEventListener("keydown", (e) => {
-      if (!bulletMode[fieldId]) return;
+  function bindToolbar(tb, target, onChange) {
+    target.dataset.bulletOn = target.dataset.bulletOn || "";
+    setBulletButtonState(tb, target.dataset.bulletOn === "1");
+
+    target.addEventListener("keydown", (e) => {
+      if (target.dataset.bulletOn !== "1") return;
 
       if (e.key === "Enter") {
         e.preventDefault();
-        insertBulletNewline(el);
-
-        state.data[fieldId] = el.value;
-        if (String(el.value).trim() === "") delete state.data[fieldId];
-
-        saveState();
-        render();
+        insertBulletNewline(target);
+        onChange();
         return;
       }
-
       if (e.key === "Backspace") {
         setTimeout(() => {
-          removeEmptyBulletLine(el);
-
-          state.data[fieldId] = el.value;
-          if (String(el.value).trim() === "") delete state.data[fieldId];
-
-          saveState();
-          render();
+          removeEmptyBulletLine(target);
+          onChange();
         }, 0);
       }
     });
-  }
 
-  function bindToolbars() {
-    document.querySelectorAll(".toolbar").forEach((tb) => {
-      const fieldId = tb.getAttribute("data-for");
-      const target = qs(fieldId);
-      if (!target) return;
+    tb.querySelectorAll(".tbtn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const action = btn.getAttribute("data-action");
+        target.focus();
 
-      bulletMode[fieldId] = false;
-      setBulletButtonState(tb, false);
+        if (action === "bold") {
+          wrapSelectionWith(target, "**", "**");
+          onChange();
+          return;
+        }
 
-      bindBulletEnter(target, fieldId);
+        if (action === "bullets") {
+          const on = target.dataset.bulletOn === "1" ? "" : "1";
+          target.dataset.bulletOn = on;
+          setBulletButtonState(tb, on === "1");
 
-      tb.querySelectorAll(".tbtn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const action = btn.getAttribute("data-action");
-          target.focus();
-
-          if (action === "bold") {
-            wrapSelectionWith(target, "**", "**");
-
-            state.data[fieldId] = target.value;
-            if (String(target.value).trim() === "") delete state.data[fieldId];
-
-            saveState();
-            render();
-            return;
+          if (on === "1") {
+            ensureBulletPrefixAtCurrentLine(target);
+            onChange();
           }
-
-          if (action === "bullets") {
-            bulletMode[fieldId] = !bulletMode[fieldId];
-            setBulletButtonState(tb, bulletMode[fieldId]);
-
-            if (bulletMode[fieldId]) {
-              // Nøkkelen du manglet: sett bullet med en gang
-              ensureBulletPrefixAtCurrentLine(target);
-
-              state.data[fieldId] = target.value;
-              if (String(target.value).trim() === "") delete state.data[fieldId];
-
-              saveState();
-              render();
-            }
-            return;
-          }
-        });
+        }
       });
     });
   }
 
+  // ---------- Structured sections (Education / Licenses / Experience / Volunteer) ----------
+  const eduRoot = qs("educationBlocks");
+  const addEduBtn = qs("addEducationBlock");
+  const eduHidden = qs("education");
+
+  const licRoot = qs("licenseBlocks");
+  const addLicBtn = qs("addLicenseBlock");
+  const licHidden = qs("licenses");
+
+  const expRoot = qs("experienceJobs");
+  const addExpBtn = qs("addExperienceJob");
+  const expHidden = qs("experience");
+
+  const volRoot = qs("volunteerBlocks");
+  const addVolBtn = qs("addVolunteerBlock");
+  const volHidden = qs("volunteer");
+
+  function ensureArray(key, defaultCount, factory) {
+    if (!Array.isArray(state.data[key])) state.data[key] = [];
+    if (state.data[key].length === 0) {
+      state.data[key] = Array.from({ length: defaultCount }, () => factory());
+    }
+  }
+
+  function setOverrideField(fieldKey, value) {
+    const t = String(value || "").trim();
+    if (t === "") delete state.data[fieldKey];
+    else state.data[fieldKey] = value;
+  }
+
+  // ----- Education blocks -> education text (blocks separated by blank line)
+  function eduToText(blocks) {
+    return (blocks || [])
+      .map((b) => {
+        const degree = (b.degree || "").trim();
+        const school = (b.school || "").trim();
+        const date = (b.date || "").trim();
+        const honors = (b.honors || "").trim();
+        return [degree, school, date, honors].filter(Boolean).join("\n");
+      })
+      .filter((x) => x.trim().length > 0)
+      .join("\n\n");
+  }
+
+  function syncEducation() {
+    ensureArray("educationBlocks", 2, () => ({ degree: "", school: "", date: "", honors: "" }));
+    const txt = eduToText(state.data.educationBlocks);
+    if (eduHidden) eduHidden.value = txt;
+    setOverrideField("education", txt);
+  }
+
+  function renderEducation() {
+    if (!eduRoot) return;
+
+    ensureArray("educationBlocks", 2, () => ({ degree: "", school: "", date: "", honors: "" }));
+    eduRoot.innerHTML = "";
+
+    state.data.educationBlocks.forEach((b, idx) => {
+      const wrap = document.createElement("div");
+      wrap.className = "subcard";
+      wrap.innerHTML = `
+        <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
+          <div class="muted small">Education ${idx + 1}</div>
+          <button class="btn ghost" type="button" data-edu-remove="${idx}" style="padding:6px 10px;">Remove</button>
+        </div>
+
+        <label class="label">Degree</label>
+        <input class="input" data-edu-degree="${idx}" placeholder="Master of Science in Nursing" />
+
+        <label class="label">School</label>
+        <input class="input" data-edu-school="${idx}" placeholder="The University of Texas at Austin" />
+
+        <label class="label">Dates</label>
+        <input class="input" data-edu-date="${idx}" placeholder="2016 – 2018" />
+
+        <label class="label">Honors (optional)</label>
+        <input class="input" data-edu-honors="${idx}" placeholder="Magna Cum Laude · GPA 3.85" />
+      `;
+      eduRoot.appendChild(wrap);
+
+      const degreeEl = wrap.querySelector(`[data-edu-degree="${idx}"]`);
+      const schoolEl = wrap.querySelector(`[data-edu-school="${idx}"]`);
+      const dateEl = wrap.querySelector(`[data-edu-date="${idx}"]`);
+      const honorsEl = wrap.querySelector(`[data-edu-honors="${idx}"]`);
+
+      degreeEl.value = b.degree || "";
+      schoolEl.value = b.school || "";
+      dateEl.value = b.date || "";
+      honorsEl.value = b.honors || "";
+
+      const update = () => {
+        state.data.educationBlocks[idx] = {
+          degree: degreeEl.value,
+          school: schoolEl.value,
+          date: dateEl.value,
+          honors: honorsEl.value,
+        };
+        syncEducation();
+        saveState();
+        render();
+      };
+
+      degreeEl.addEventListener("input", update);
+      schoolEl.addEventListener("input", update);
+      dateEl.addEventListener("input", update);
+      honorsEl.addEventListener("input", update);
+
+      const rm = wrap.querySelector(`[data-edu-remove="${idx}"]`);
+      rm.addEventListener("click", () => {
+        state.data.educationBlocks.splice(idx, 1);
+        syncEducation();
+        saveState();
+        renderEducation();
+        render();
+      });
+    });
+
+    syncEducation();
+  }
+
+  if (addEduBtn) {
+    addEduBtn.addEventListener("click", () => {
+      ensureArray("educationBlocks", 2, () => ({ degree: "", school: "", date: "", honors: "" }));
+      state.data.educationBlocks.push({ degree: "", school: "", date: "", honors: "" });
+      syncEducation();
+      saveState();
+      renderEducation();
+      render();
+    });
+  }
+
+  // ----- Licenses blocks -> lines in pairs (title + detail)
+  function licToText(items) {
+    const lines = [];
+    (items || []).forEach((it) => {
+      const t = (it.title || "").trim();
+      const d = (it.detail || "").trim();
+      if (!t && !d) return;
+      if (t) lines.push(t);
+      if (d) lines.push(d);
+      else lines.push(""); // keep pairing even if detail empty
+    });
+    // trim trailing empty lines
+    while (lines.length && String(lines[lines.length - 1]).trim() === "") lines.pop();
+    return lines.join("\n");
+  }
+
+  function syncLicenses() {
+    ensureArray("licenseBlocks", 2, () => ({ title: "", detail: "" }));
+    const txt = licToText(state.data.licenseBlocks);
+    if (licHidden) licHidden.value = txt;
+    setOverrideField("licenses", txt);
+  }
+
+  function renderLicenses() {
+    if (!licRoot) return;
+
+    ensureArray("licenseBlocks", 2, () => ({ title: "", detail: "" }));
+    licRoot.innerHTML = "";
+
+    state.data.licenseBlocks.forEach((b, idx) => {
+      const wrap = document.createElement("div");
+      wrap.className = "subcard";
+      wrap.innerHTML = `
+        <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
+          <div class="muted small">License ${idx + 1}</div>
+          <button class="btn ghost" type="button" data-lic-remove="${idx}" style="padding:6px 10px;">Remove</button>
+        </div>
+
+        <label class="label">Title</label>
+        <input class="input" data-lic-title="${idx}" placeholder="Registered Nurse (RN)" />
+
+        <label class="label">Detail</label>
+        <input class="input" data-lic-detail="${idx}" placeholder="Texas Board of Nursing · #TX-892341" />
+      `;
+      licRoot.appendChild(wrap);
+
+      const titleEl = wrap.querySelector(`[data-lic-title="${idx}"]`);
+      const detailEl = wrap.querySelector(`[data-lic-detail="${idx}"]`);
+
+      titleEl.value = b.title || "";
+      detailEl.value = b.detail || "";
+
+      const update = () => {
+        state.data.licenseBlocks[idx] = { title: titleEl.value, detail: detailEl.value };
+        syncLicenses();
+        saveState();
+        render();
+      };
+
+      titleEl.addEventListener("input", update);
+      detailEl.addEventListener("input", update);
+
+      const rm = wrap.querySelector(`[data-lic-remove="${idx}"]`);
+      rm.addEventListener("click", () => {
+        state.data.licenseBlocks.splice(idx, 1);
+        syncLicenses();
+        saveState();
+        renderLicenses();
+        render();
+      });
+    });
+
+    syncLicenses();
+  }
+
+  if (addLicBtn) {
+    addLicBtn.addEventListener("click", () => {
+      ensureArray("licenseBlocks", 2, () => ({ title: "", detail: "" }));
+      state.data.licenseBlocks.push({ title: "", detail: "" });
+      syncLicenses();
+      saveState();
+      renderLicenses();
+      render();
+    });
+  }
+
+  // ----- Experience jobs -> blocks with title/meta + bullets
+  function expToText(jobs) {
+    return (jobs || [])
+      .map((j) => {
+        const title = (j.title || "").trim();
+        const meta = (j.meta || "").trim();
+        const bullets = (j.bullets || []).map((x) => String(x || "").trim()).filter(Boolean);
+        return [title, meta, ...bullets].filter(Boolean).join("\n");
+      })
+      .filter((x) => x.trim().length > 0)
+      .join("\n\n");
+  }
+
+  function syncExperience() {
+    ensureArray("experienceJobs", 3, () => ({ title: "", meta: "", bullets: [] }));
+    const txt = expToText(state.data.experienceJobs);
+    if (expHidden) expHidden.value = txt;
+    setOverrideField("experience", txt);
+  }
+
+  function renderExperience() {
+    if (!expRoot) return;
+
+    ensureArray("experienceJobs", 3, () => ({ title: "", meta: "", bullets: [] }));
+    expRoot.innerHTML = "";
+
+    state.data.experienceJobs.forEach((job, idx) => {
+      const wrap = document.createElement("div");
+      wrap.className = "subcard";
+      wrap.innerHTML = `
+        <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
+          <div class="muted small">Job ${idx + 1}</div>
+          <button class="btn ghost" type="button" data-exp-remove="${idx}" style="padding:6px 10px;">Remove</button>
+        </div>
+
+        <label class="label">Role / Title</label>
+        <input class="input" data-exp-title="${idx}" placeholder="SENIOR REGISTERED NURSE – ICU" />
+
+        <label class="label">Company, Location | Dates</label>
+        <input class="input" data-exp-meta="${idx}" placeholder="St. David's Medical Center, Austin, TX | January 2021 – Present" />
+
+        <div class="toolbar" data-exp-toolbar="${idx}">
+          <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+          <button class="tbtn tdot" data-action="bullets" type="button"></button>
+        </div>
+
+        <label class="label">Bullets (one per line)</label>
+        <textarea class="textarea" rows="5" data-exp-bullets="${idx}" placeholder="One per line..."></textarea>
+      `;
+      expRoot.appendChild(wrap);
+
+      const titleEl = wrap.querySelector(`[data-exp-title="${idx}"]`);
+      const metaEl = wrap.querySelector(`[data-exp-meta="${idx}"]`);
+      const bulletsEl = wrap.querySelector(`[data-exp-bullets="${idx}"]`);
+
+      titleEl.value = job.title || "";
+      metaEl.value = job.meta || "";
+      bulletsEl.value = (job.bullets || []).join("\n");
+
+      const parseBullets = () =>
+        String(bulletsEl.value || "")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean);
+
+      const update = () => {
+        state.data.experienceJobs[idx] = {
+          title: titleEl.value,
+          meta: metaEl.value,
+          bullets: parseBullets(),
+        };
+        syncExperience();
+        saveState();
+        render();
+      };
+
+      titleEl.addEventListener("input", update);
+      metaEl.addEventListener("input", update);
+      bulletsEl.addEventListener("input", update);
+
+      const tb = wrap.querySelector(`[data-exp-toolbar="${idx}"]`);
+      bindToolbar(tb, bulletsEl, update);
+
+      const rm = wrap.querySelector(`[data-exp-remove="${idx}"]`);
+      rm.addEventListener("click", () => {
+        state.data.experienceJobs.splice(idx, 1);
+        syncExperience();
+        saveState();
+        renderExperience();
+        render();
+      });
+    });
+
+    syncExperience();
+  }
+
+  if (addExpBtn) {
+    addExpBtn.addEventListener("click", () => {
+      ensureArray("experienceJobs", 3, () => ({ title: "", meta: "", bullets: [] }));
+      state.data.experienceJobs.push({ title: "", meta: "", bullets: [] });
+      syncExperience();
+      saveState();
+      renderExperience();
+      render();
+    });
+  }
+
+  // ----- Volunteer blocks -> multiple blocks like experience
+  function volToText(vols) {
+    return (vols || [])
+      .map((v) => {
+        const header = (v.header || "").trim(); // "Volunteer Nurse 2019 – Present" OR "Title | Date"
+        const sub = (v.sub || "").trim();
+        const bullets = (v.bullets || []).map((x) => String(x || "").trim()).filter(Boolean);
+        return [header, sub, ...bullets].filter(Boolean).join("\n");
+      })
+      .filter((x) => x.trim().length > 0)
+      .join("\n\n");
+  }
+
+  function syncVolunteer() {
+    ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
+    const txt = volToText(state.data.volunteerBlocks);
+    if (volHidden) volHidden.value = txt;
+    setOverrideField("volunteer", txt);
+  }
+
+  function renderVolunteer() {
+    if (!volRoot) return;
+
+    ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
+    volRoot.innerHTML = "";
+
+    state.data.volunteerBlocks.forEach((v, idx) => {
+      const wrap = document.createElement("div");
+      wrap.className = "subcard";
+      wrap.innerHTML = `
+        <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
+          <div class="muted small">Volunteer ${idx + 1}</div>
+          <button class="btn ghost" type="button" data-vol-remove="${idx}" style="padding:6px 10px;">Remove</button>
+        </div>
+
+        <label class="label">Header (Title + Date)</label>
+        <input class="input" data-vol-header="${idx}" placeholder="Volunteer Nurse 2019 – Present" />
+
+        <label class="label">Sub line</label>
+        <input class="input" data-vol-sub="${idx}" placeholder="Austin Free Clinic · Community Health Outreach" />
+
+        <div class="toolbar" data-vol-toolbar="${idx}">
+          <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+          <button class="tbtn tdot" data-action="bullets" type="button"></button>
+        </div>
+
+        <label class="label">Bullets (one per line)</label>
+        <textarea class="textarea" rows="4" data-vol-bullets="${idx}" placeholder="One per line..."></textarea>
+      `;
+      volRoot.appendChild(wrap);
+
+      const headerEl = wrap.querySelector(`[data-vol-header="${idx}"]`);
+      const subEl = wrap.querySelector(`[data-vol-sub="${idx}"]`);
+      const bulletsEl = wrap.querySelector(`[data-vol-bullets="${idx}"]`);
+
+      headerEl.value = v.header || "";
+      subEl.value = v.sub || "";
+      bulletsEl.value = (v.bullets || []).join("\n");
+
+      const parseBullets = () =>
+        String(bulletsEl.value || "")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean);
+
+      const update = () => {
+        state.data.volunteerBlocks[idx] = {
+          header: headerEl.value,
+          sub: subEl.value,
+          bullets: parseBullets(),
+        };
+        syncVolunteer();
+        saveState();
+        render();
+      };
+
+      headerEl.addEventListener("input", update);
+      subEl.addEventListener("input", update);
+      bulletsEl.addEventListener("input", update);
+
+      const tb = wrap.querySelector(`[data-vol-toolbar="${idx}"]`);
+      bindToolbar(tb, bulletsEl, update);
+
+      const rm = wrap.querySelector(`[data-vol-remove="${idx}"]`);
+      rm.addEventListener("click", () => {
+        state.data.volunteerBlocks.splice(idx, 1);
+        syncVolunteer();
+        saveState();
+        renderVolunteer();
+        render();
+      });
+    });
+
+    syncVolunteer();
+  }
+
+  if (addVolBtn) {
+    addVolBtn.addEventListener("click", () => {
+      ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
+      state.data.volunteerBlocks.push({ header: "", sub: "", bullets: [] });
+      syncVolunteer();
+      saveState();
+      renderVolunteer();
+      render();
+    });
+  }
+
+  // ---- Simple toolbars for textareas that still exist (summary/skills/etc)
+  function bindSimpleToolbars() {
+    document.querySelectorAll(".toolbar[data-for]").forEach((tb) => {
+      const fieldId = tb.getAttribute("data-for");
+      const target = qs(fieldId);
+      if (!target) return;
+
+      bindToolbar(tb, target, () => {
+        state.data[fieldId] = target.value;
+        if (String(target.value).trim() === "") delete state.data[fieldId];
+        saveState();
+        render();
+      });
+    });
+  }
+
+  // ---- Print / Download
   if (printBtn) printBtn.addEventListener("click", () => window.print());
 
   if (downloadHtmlBtn) {
@@ -316,17 +683,24 @@ ${preview ? preview.innerHTML : ""}
     });
   }
 
-  // INIT: vis app (hvis du ikke bruker auth-flow her)
+  // INIT show app (auth kan du koble tilbake senere)
   const app = qs("app");
   const locked = qs("locked");
   if (app) app.style.display = "block";
   if (locked) locked.style.display = "none";
 
   loadState();
-  initSectionsFromUI();   // bruker checkbox/title i UI
-  bindInputs();           // inputs forblir tomme hvis ingen override
-  bindToolbars();
+  initSectionsFromUI();
+  bindSimpleInputs();
+  bindSimpleToolbars();
 
-  // Preview FULL fra templates defaults
+  // Render structured sections
+  renderEducation();
+  renderLicenses();
+  renderExperience();
+  renderVolunteer();
+
+  // Initial preview (full defaults because overrides are mostly empty)
+  saveState();
   render();
 })();
