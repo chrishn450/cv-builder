@@ -1,4 +1,4 @@
-// app.js
+// app.js (FULL)
 (function () {
   const qs = (id) => document.getElementById(id);
 
@@ -6,11 +6,11 @@
   const printBtn = qs("printBtn");
   const downloadHtmlBtn = qs("downloadHtmlBtn");
 
+  // Only these are "simple" fields. Structured sections are handled separately.
   const FIELD_IDS = [
     "name","title","email","phone","location","linkedin",
     "summary","clinicalSkills","coreCompetencies","languages",
     "achievements","custom1","custom2",
-    // NOTE: education/licenses/experience/volunteer are managed by structured UI
   ];
 
   const SECTION_KEYS = [
@@ -28,8 +28,8 @@
     });
   }
 
-  // Store only user overrides
-  const STORAGE_KEY = "cv_builder_user_overrides_structured_v1";
+  // Store only user overrides (so preview can stay "original" until user types)
+  const STORAGE_KEY = "cv_builder_user_overrides_structured_v2";
 
   function loadState() {
     try {
@@ -207,7 +207,23 @@
     });
   }
 
-  // ---------- Structured sections (Education / Licenses / Experience / Volunteer) ----------
+  // ---- Simple toolbars for textareas (summary/skills/etc)
+  function bindSimpleToolbars() {
+    document.querySelectorAll(".toolbar[data-for]").forEach((tb) => {
+      const fieldId = tb.getAttribute("data-for");
+      const target = qs(fieldId);
+      if (!target) return;
+
+      bindToolbar(tb, target, () => {
+        state.data[fieldId] = target.value;
+        if (String(target.value).trim() === "") delete state.data[fieldId];
+        saveState();
+        render();
+      });
+    });
+  }
+
+  // ---------- Structured sections ----------
   const eduRoot = qs("educationBlocks");
   const addEduBtn = qs("addEducationBlock");
   const eduHidden = qs("education");
@@ -314,8 +330,7 @@
       dateEl.addEventListener("input", update);
       honorsEl.addEventListener("input", update);
 
-      const rm = wrap.querySelector(`[data-edu-remove="${idx}"]`);
-      rm.addEventListener("click", () => {
+      wrap.querySelector(`[data-edu-remove="${idx}"]`).addEventListener("click", () => {
         state.data.educationBlocks.splice(idx, 1);
         syncEducation();
         saveState();
@@ -347,9 +362,8 @@
       if (!t && !d) return;
       if (t) lines.push(t);
       if (d) lines.push(d);
-      else lines.push(""); // keep pairing even if detail empty
+      else lines.push(""); // keep pairing
     });
-    // trim trailing empty lines
     while (lines.length && String(lines[lines.length - 1]).trim() === "") lines.pop();
     return lines.join("\n");
   }
@@ -400,8 +414,7 @@
       titleEl.addEventListener("input", update);
       detailEl.addEventListener("input", update);
 
-      const rm = wrap.querySelector(`[data-lic-remove="${idx}"]`);
-      rm.addEventListener("click", () => {
+      wrap.querySelector(`[data-lic-remove="${idx}"]`).addEventListener("click", () => {
         state.data.licenseBlocks.splice(idx, 1);
         syncLicenses();
         saveState();
@@ -507,8 +520,7 @@
       const tb = wrap.querySelector(`[data-exp-toolbar="${idx}"]`);
       bindToolbar(tb, bulletsEl, update);
 
-      const rm = wrap.querySelector(`[data-exp-remove="${idx}"]`);
-      rm.addEventListener("click", () => {
+      wrap.querySelector(`[data-exp-remove="${idx}"]`).addEventListener("click", () => {
         state.data.experienceJobs.splice(idx, 1);
         syncExperience();
         saveState();
@@ -531,7 +543,7 @@
     });
   }
 
-  // ----- Volunteer blocks -> multiple blocks like experience
+  // ----- Volunteer blocks (multiple blocks)
   function volToText(vols) {
     return (vols || [])
       .map((v) => {
@@ -614,8 +626,7 @@
       const tb = wrap.querySelector(`[data-vol-toolbar="${idx}"]`);
       bindToolbar(tb, bulletsEl, update);
 
-      const rm = wrap.querySelector(`[data-vol-remove="${idx}"]`);
-      rm.addEventListener("click", () => {
+      wrap.querySelector(`[data-vol-remove="${idx}"]`).addEventListener("click", () => {
         state.data.volunteerBlocks.splice(idx, 1);
         syncVolunteer();
         saveState();
@@ -638,69 +649,72 @@
     });
   }
 
-  // ---- Simple toolbars for textareas that still exist (summary/skills/etc)
-  function bindSimpleToolbars() {
-    document.querySelectorAll(".toolbar[data-for]").forEach((tb) => {
-      const fieldId = tb.getAttribute("data-for");
-      const target = qs(fieldId);
-      if (!target) return;
-
-      bindToolbar(tb, target, () => {
-        state.data[fieldId] = target.value;
-        if (String(target.value).trim() === "") delete state.data[fieldId];
-        saveState();
-        render();
-      });
-    });
+  // ---- Print
+  if (printBtn) {
+    printBtn.addEventListener("click", () => window.print());
   }
 
-  // ---- Print / Download
-  if (printBtn) printBtn.addEventListener("click", () => window.print());
-
+  // ---- Download HTML (standalone + identical)
   if (downloadHtmlBtn) {
-    downloadHtmlBtn.addEventListener("click", () => {
-      const html = `
-<!doctype html>
+    downloadHtmlBtn.addEventListener("click", async () => {
+      try {
+        const cssText = await fetch("/styles.css", { cache: "no-store" }).then(r => r.text());
+
+        const html = `<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CV</title>
-  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Google Fonts (if used) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <!-- Embed ALL CSS so file works standalone -->
+  <style>${cssText}</style>
 </head>
-<body>
-${preview ? preview.innerHTML : ""}
+<body style="margin:0; padding:0; background:white;">
+  ${preview ? preview.innerHTML : ""}
 </body>
 </html>`;
-      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "cv.html";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+
+        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "cv.html";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error("Export failed:", err);
+        alert("Export failed. Check console.");
+      }
     });
   }
 
-  // INIT show app (auth kan du koble tilbake senere)
+  // INIT show app (auth kan kobles tilbake hos deg)
   const app = qs("app");
   const locked = qs("locked");
   if (app) app.style.display = "block";
   if (locked) locked.style.display = "none";
 
+  // Boot
   loadState();
   initSectionsFromUI();
   bindSimpleInputs();
   bindSimpleToolbars();
 
-  // Render structured sections
   renderEducation();
   renderLicenses();
   renderExperience();
   renderVolunteer();
 
-  // Initial preview (full defaults because overrides are mostly empty)
   saveState();
   render();
 })();
