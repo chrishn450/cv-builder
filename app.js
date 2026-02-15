@@ -46,7 +46,8 @@ function render(){
 }
 
 function bindBasicInputs(){
-  const map = ["name","title","email","phone","location","linkedin",
+  const map = [
+    "name","title","email","phone","location","linkedin",
     "summary","education","licenses","clinicalSkills","coreCompetencies",
     "languages","experience","achievements","volunteer","custom1","custom2"
   ];
@@ -98,7 +99,6 @@ function wrapSelectionWith(el, left, right){
   const out = v.slice(0, start) + left + selected + right + v.slice(end);
   el.value = out;
 
-  // keep selection around original selected text
   const newStart = start + left.length;
   const newEnd = newStart + selected.length;
   el.setSelectionRange(newStart, newEnd);
@@ -113,40 +113,25 @@ function getSelectedLineRange(el){
   const lineEndIdx = v.indexOf("\n", end);
   const lineEnd = lineEndIdx === -1 ? v.length : lineEndIdx;
 
-  return { v, start, end, lineStart, lineEnd };
+  return { v, lineStart, lineEnd };
 }
 
 function toggleBulletsOnSelection(el){
   const { v, lineStart, lineEnd } = getSelectedLineRange(el);
   const chunk = v.slice(lineStart, lineEnd);
-  const lines = chunk.split("\n");
+  const ls = chunk.split("\n");
 
-  const allBulleted = lines
+  const allBulleted = ls
     .filter(l => l.trim().length)
     .every(l => l.trimStart().startsWith("- "));
 
-  const newLines = lines.map(l => {
+  const newLines = ls.map(l => {
     if (!l.trim().length) return l;
-    if (allBulleted) {
-      // remove "- "
-      return l.replace(/^(\s*)-\s+/, "$1");
-    }
-    // add "- " if missing
+    if (allBulleted) return l.replace(/^(\s*)-\s+/, "$1");
     if (l.trimStart().startsWith("- ")) return l;
     return l.replace(/^(\s*)/, "$1- ");
   });
 
-  const out = v.slice(0, lineStart) + newLines.join("\n") + v.slice(lineEnd);
-  el.value = out;
-  el.setSelectionRange(lineStart, lineStart + newLines.join("\n").length);
-}
-
-function selectionToParagraph(el){
-  const { v, lineStart, lineEnd } = getSelectedLineRange(el);
-  const chunk = v.slice(lineStart, lineEnd);
-  const lines = chunk.split("\n");
-
-  const newLines = lines.map(l => l.replace(/^(\s*)-\s+/, "$1"));
   const out = v.slice(0, lineStart) + newLines.join("\n") + v.slice(lineEnd);
   el.value = out;
   el.setSelectionRange(lineStart, lineStart + newLines.join("\n").length);
@@ -164,15 +149,11 @@ function bindToolbars(){
         target.focus();
 
         if (action === "bold") {
-          // Wrap selection with ** **
           wrapSelectionWith(target, "**", "**");
         } else if (action === "bullets") {
           toggleBulletsOnSelection(target);
-        } else if (action === "paragraph") {
-          selectionToParagraph(target);
         }
 
-        // trigger app state update + preview
         state.data[fieldId] = target.value;
         render();
       });
@@ -208,7 +189,7 @@ async function init(){
   const app = qs("app");
   const logoutBtn = qs("logoutBtn");
 
-  qs("buyLink").href = "https://payhip.com/b/AeoVP"; // your Payhip link
+  qs("buyLink").href = "https://payhip.com/b/AeoVP";
 
   const me = await checkAccess().catch(()=>null);
 
