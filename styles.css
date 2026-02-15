@@ -384,12 +384,15 @@ hr{
 }
 .tbtn:hover{ background: rgba(255,255,255,0.10); }
 /* Dot button should match CV bullet (same size + same accent color) */
+/* Bullet toggle button = same dot as CV */
 .tbtn.tdot{
   width: 34px;
+  min-width: 34px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 10px; /* same as tbtn */
+  padding: 0;
 }
 
 .tbtn.tdot::before{
@@ -398,5 +401,69 @@ hr{
   height: 3.5px;
   border-radius: 50%;
   background: var(--cv-accent);
-  display: block;
+  display:block;
 }
+const bulletMode = {}; // fieldId -> boolean
+
+function setBulletButtonState(tb, on){
+  const btn = tb.querySelector('[data-action="bullets"]');
+  if (!btn) return;
+  btn.classList.toggle("active", !!on);
+}
+
+function ensureBulletPrefixAtLineStart(el){
+  const v = el.value || "";
+  const pos = el.selectionStart ?? v.length;
+  const lineStart = v.lastIndexOf("\n", pos - 1) + 1;
+  const before = v.slice(lineStart, pos);
+  // if current line is empty or only spaces, insert "- "
+  if (/^\s*$/.test(before)) {
+    el.value = v.slice(0, lineStart) + "- " + v.slice(lineStart);
+    const newPos = pos + 2;
+    el.setSelectionRange(newPos, newPos);
+  }
+}
+
+function bindToolbars(){
+  document.querySelectorAll(".toolbar").forEach(tb => {
+    const fieldId = tb.getAttribute("data-for");
+    const target = qs(fieldId);
+    if (!target) return;
+
+    // init state
+    bulletMode[fieldId] = false;
+    setBulletButtonState(tb, false);
+
+    // enter behavior for this textarea
+    bindBulletEnter(target, fieldId);
+
+    tb.querySelectorAll(".tbtn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const action = btn.getAttribute("data-action");
+        target.focus();
+
+        if (action === "bold") {
+          wrapSelectionWith(target, "**", "**");
+          state.data[fieldId] = target.value;
+          render();
+          return;
+        }
+
+        if (action === "bullets") {
+          // toggle bullet mode ON/OFF
+          bulletMode[fieldId] = !bulletMode[fieldId];
+          setBulletButtonState(tb, bulletMode[fieldId]);
+
+          // If turning ON, ensure current line has "- " so user can start typing right away
+          if (bulletMode[fieldId]) {
+            ensureBulletPrefixAtLineStart(target);
+            state.data[fieldId] = target.value;
+            render();
+          }
+          return;
+        }
+      });
+    });
+  });
+}
+
