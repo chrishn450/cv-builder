@@ -15,7 +15,6 @@
   </header>
 
   <main class="container">
-    <!-- Locked screen -->
     <section id="locked" class="card" style="display:none;">
       <h1>Access required</h1>
       <p>You need access to use the CV Builder.</p>
@@ -29,7 +28,6 @@
       </p>
     </section>
 
-    <!-- App -->
     <section id="app" style="display:none;">
       <div class="grid">
         <div class="card">
@@ -56,54 +54,47 @@
           <label class="label">Professional Summary</label>
           <textarea id="summary" class="textarea" rows="5" placeholder="Short professional summary..."></textarea>
 
-          <label class="label">Education (use blank line between entries)</label>
-          <textarea id="education" class="textarea" rows="6" placeholder="Degree
-School
-2016 – 2018
-
-Degree
-School
-2012 – 2016"></textarea>
+          <label class="label">Education (blank line between entries)</label>
+          <textarea id="education" class="textarea" rows="6"></textarea>
 
           <label class="label">Licenses & Certifications (title line + detail line)</label>
-          <textarea id="licenses" class="textarea" rows="6" placeholder="Registered Nurse (RN)
-Texas Board of Nursing · #...
-
-ACLS
-American Heart Association · Exp. ..."></textarea>
+          <textarea id="licenses" class="textarea" rows="6"></textarea>
 
           <label class="label">Clinical Skills (one per line)</label>
-          <textarea id="clinicalSkills" class="textarea" rows="6" placeholder="Patient Assessment & Triage
-IV Therapy
-..."></textarea>
+          <textarea id="clinicalSkills" class="textarea" rows="6"></textarea>
 
           <label class="label">Core Competencies (one per line)</label>
-          <textarea id="coreCompetencies" class="textarea" rows="5" placeholder="Critical Thinking
-Team Leadership
-..."></textarea>
+          <textarea id="coreCompetencies" class="textarea" rows="5"></textarea>
 
           <label class="label">Languages (one per line)</label>
-          <textarea id="languages" class="textarea" rows="3" placeholder="English — Native
-Spanish — Conversational"></textarea>
+          <textarea id="languages" class="textarea" rows="3"></textarea>
 
           <label class="label">Experience (blank line between roles)</label>
-          <textarea id="experience" class="textarea" rows="10" placeholder="Senior Registered Nurse – ICU
-Hospital, City | 2021 – Present
-Bullet 1
-Bullet 2
-
-Registered Nurse – ED
-Hospital, City | 2018 – 2020
-Bullet 1"></textarea>
+          <textarea id="experience" class="textarea" rows="10"></textarea>
 
           <label class="label">Clinical Achievements (one per line)</label>
-          <textarea id="achievements" class="textarea" rows="4" placeholder="Achievement 1
-Achievement 2"></textarea>
+          <textarea id="achievements" class="textarea" rows="4"></textarea>
 
           <label class="label">Volunteer (one block)</label>
-          <textarea id="volunteer" class="textarea" rows="4" placeholder="Volunteer Nurse | 2019 – Present
-Organization · Program
-Bullet 1"></textarea>
+          <textarea id="volunteer" class="textarea" rows="4"></textarea>
+
+          <hr />
+
+          <h2>Section settings</h2>
+          <p class="muted small">Toggle sections, rename headings, choose bullets vs paragraph, and optional bold-first-line.</p>
+
+          <div id="sectionsUI"></div>
+
+          <hr />
+
+          <h2>Custom sections</h2>
+          <p class="muted small">Enable Custom 1/2 above, then fill content here.</p>
+
+          <label class="label">Custom 1 content</label>
+          <textarea id="custom1" class="textarea" rows="5" placeholder="One line per bullet (or paragraph lines)."></textarea>
+
+          <label class="label">Custom 2 content</label>
+          <textarea id="custom2" class="textarea" rows="5" placeholder="One line per bullet (or paragraph lines)."></textarea>
 
           <div class="row">
             <button id="printBtn" class="btn">Print / Save as PDF</button>
