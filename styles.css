@@ -61,6 +61,14 @@ body{
   box-shadow: 0 20px 60px rgba(0,0,0,0.28);
 }
 
+.subcard{
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 12px;
+}
+
 .card h1, .card h2{
   margin: 0 0 10px;
   letter-spacing: 0.01em;
@@ -140,7 +148,6 @@ hr{
   --cv-border: #d6cdb8;
   --cv-rule: rgba(184,168,138,0.3);
 
-  /* ONE single bullet size everywhere */
   --cv-bullet-size: 3.5px;
 }
 
@@ -237,7 +244,16 @@ hr{
   margin-bottom: 8px;
 }
 
-/* Bullet lists */
+.cv .edu-block{ margin-bottom: 8px; }
+.cv .edu-block h3{ font-size: 9.5px; font-weight: 600; margin:0; color: var(--cv-heading); }
+.cv .edu-block p{ font-size: 8.5px; margin:0; color: var(--cv-body); }
+.cv .edu-block .date{ font-size: 8px; color: var(--cv-light); }
+.cv .edu-block .honors{ font-size: 8px; color: var(--cv-light); font-style: italic; }
+
+.cv .cert-item{ margin-bottom: 6px; }
+.cv .cert-item h3{ font-size: 9px; font-weight: 600; margin:0; color: var(--cv-heading); }
+.cv .cert-item p{ font-size: 8px; margin:0; color: var(--cv-light); }
+
 .cv .skill-list,
 .cv .exp-bullets,
 .cv .achievement-list{
@@ -258,7 +274,6 @@ hr{
   margin-bottom:2px;
 }
 
-/* ORIGINAL CV DOT */
 .cv .skill-list li::before,
 .cv .exp-bullets li::before,
 .cv .achievement-list li::before{
@@ -271,15 +286,101 @@ hr{
   flex-shrink:0;
 }
 
+.cv .exp-entry{ margin-bottom: 12px; }
+.cv .exp-entry h3{
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin:0;
+  color: var(--cv-heading);
+}
+.cv .exp-entry .meta{
+  font-size: 8.5px;
+  color: var(--cv-light);
+  margin: 2px 0 4px;
+}
+
+.cv .vol-header{
+  display:flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.cv .vol-header h3{ font-size: 9.5px; font-weight: 600; margin:0; color: var(--cv-heading); }
+.cv .vol-header .date{ font-size: 8px; color: var(--cv-light); }
+
+.cv .vol-sub{
+  font-size: 8.5px;
+  color: var(--cv-light);
+  margin: 0 0 4px;
+}
+
+.cv .lang-list p{
+  font-size: 8.5px;
+  color: var(--cv-body);
+  margin: 2px 0;
+}
+
 /* ──────────────────────────────────────────────
-   Toolbar
+   Print
 ────────────────────────────────────────────── */
+@page { size: A4; margin: 0; }
+
+@media print{
+  html, body{
+    margin:0;
+    padding:0;
+    background:white !important;
+    color:#111 !important;
+  }
+
+  .topbar, .container, #locked, #logoutBtn, .btn, button, a { display:none !important; }
+
+  #preview, .cv { display:block !important; }
+
+  .cv{
+    width: 210mm;
+    height: 297mm;
+    margin:0;
+    border: 2px solid var(--cv-border);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* Mini controls next to labels */
+.field { margin-top: 14px; }
+.field-head {
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+}
+.field-controls{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.input.small{
+  max-width: 260px;
+  padding: 8px 10px;
+}
+
+.toggle{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.75);
+}
+.toggle input { transform: translateY(1px); }
+
+/* Toolbar */
 .toolbar{
   display:flex;
   gap:8px;
   margin: 8px 0 8px;
 }
-
 .tbtn{
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.06);
@@ -290,16 +391,12 @@ hr{
   font-size: 13px;
   line-height: 1;
 }
-
 .tbtn:hover{ background: rgba(255,255,255,0.10); }
-
-/* Active state */
 .tbtn.active{
   background: rgba(255,255,255,0.14);
   border-color: rgba(255,255,255,0.22);
 }
 
-/* Toolbar dot – EXACT SAME dot as CV */
 .tbtn.tdot{
   width: 34px;
   min-width: 34px;
@@ -309,7 +406,6 @@ hr{
   justify-content: center;
   padding: 0;
 }
-
 .tbtn.tdot::before{
   content:"";
   width: var(--cv-bullet-size);
