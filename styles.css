@@ -403,5 +403,11 @@ hr{
   background: var(--cv-accent);
   display:block;
 }
+/* Toolbar active state */
+.tbtn.active{
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.22);
+}
+
 
 
