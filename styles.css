@@ -383,4 +383,50 @@ hr{
   line-height: 1;
 }
 .tbtn:hover{ background: rgba(255,255,255,0.10); }
+/* ───────────────── Toolbar next to labels ───────────────── */
+.field { margin-top: 12px; }
+.field-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom: 6px;
+}
+
+.toolbar{
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+
+.tbtn{
+  width:28px;
+  height:28px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color:#fff;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  user-select:none;
+  font-weight: 700;
+}
+
+.tbtn:hover{ background: rgba(255,255,255,0.10); }
+
+.tbtn.active{
+  background: rgba(255,255,255,0.18);
+  border-color: rgba(255,255,255,0.22);
+}
+
+/* Dot button matches the CV accent dot */
+.tbtn-bullets::before{
+  content:"";
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background: var(--cv-accent);
+}
 
