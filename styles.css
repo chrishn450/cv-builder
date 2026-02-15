@@ -1,85 +1,156 @@
-:root{
-  --bg:#0b0f14;
-  --card:#121926;
-  --text:#e7eefc;
-  --muted:#9fb0cc;
-  --border:#223049;
-  --btn:#2f6bff;
-  --btn2:#1b2334;
+/* ── CV Template Styles (scoped) ── */
+:root {
+  --cv-bg: #f9f6f0;
+  --cv-heading: #2c2c2c;
+  --cv-body: #3a3a3a;
+  --cv-light: #7a7a7a;
+  --cv-accent: #b8a88a;
+  --cv-border: #d6cdb8;
+  --cv-rule: rgba(184,168,138,0.3);
 }
 
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-  background: radial-gradient(1200px 700px at 10% 0%, #101a2a, var(--bg));
-  color:var(--text);
+.cv {
+  width: 210mm;
+  min-height: 297mm;
+  background: var(--cv-bg);
+  border: 2px solid var(--cv-border);
+  margin: 20px auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--cv-body);
 }
 
-.topbar{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:14px 18px;
-  border-bottom:1px solid rgba(255,255,255,0.06);
-  position:sticky; top:0;
-  background: rgba(11,15,20,0.75);
-  backdrop-filter: blur(10px);
+.cv-header {
+  text-align: center;
+  padding: 38px 40px 20px;
+  border-bottom: 1px solid var(--cv-rule);
 }
-.brand{font-weight:700; letter-spacing:0.2px}
-.container{max-width:1100px; margin:0 auto; padding:24px}
-.card{
-  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:14px;
-  padding:18px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+
+.cv-name {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--cv-heading);
+  margin: 0;
 }
-.grid{display:grid; gap:16px; grid-template-columns: 1fr 1fr}
-@media (max-width: 900px){ .grid{grid-template-columns:1fr;} }
 
-h1,h2{margin:0 0 10px 0}
-p{margin:8px 0}
-hr{border:none; border-top:1px solid rgba(255,255,255,0.08); margin:14px 0}
-
-.label{display:block; margin-top:12px; margin-bottom:6px; color:var(--muted); font-size:13px}
-.input,.textarea{
-  width:100%;
-  border:1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.22);
-  color: var(--text);
-  border-radius:10px;
-  padding:10px 12px;
-  outline:none;
+.cv-title {
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 9.5px;
+  font-weight: 300;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--cv-light);
+  margin-top: 6px;
 }
-.textarea{resize:vertical}
-.row{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap}
 
-.btn{
-  display:inline-flex; align-items:center; justify-content:center;
-  padding:10px 14px;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,0.10);
-  background: var(--btn);
-  color: white;
-  text-decoration:none;
-  cursor:pointer;
-  font-weight:600;
+.cv-contact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0 18px;
+  margin-top: 14px;
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 8.5px;
+  color: var(--cv-body);
 }
-.btn.ghost{background: var(--btn2)}
-.btn:active{transform: translateY(1px)}
 
-.muted{color:var(--muted)}
-.small{font-size:12px}
+.cv-contact .sep { color: var(--cv-light); }
 
-.cv{
-  background:white;
-  color:#111;
-  border-radius:12px;
-  padding:18px;
-  min-height: 600px;
+.cv-summary { padding: 18px 40px 14px; }
+
+.cv-body {
+  display: flex;
+  flex: 1;
+  padding: 0 40px 24px;
+  gap: 30px;
 }
-.cv h1{font-size:26px; margin:0}
-.cv h2{font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:#334; margin-top:18px}
-.cv .topline{display:flex; gap:12px; flex-wrap:wrap; margin-top:6px; color:#223}
-.cv .pill{display:inline-block; background:#eef2ff; padding:4px 8px; border-radius:999px; font-size:12px}
-.cv ul{padding-left:18px}
-.cv li{margin:6px 0}
+
+.cv-left { width: 34%; display: flex; flex-direction: column; gap: 14px; }
+.cv-right { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+
+.section-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: var(--cv-heading);
+  border-bottom: 1px solid var(--cv-rule);
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+}
+
+.cv p, .cv li { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+.body-text {
+  font-size: 9px;
+  line-height: 1.7;
+  color: var(--cv-body);
+}
+
+.edu-block { margin-bottom: 8px; }
+.edu-block h3 { font-size: 9.5px; font-weight: 600; color: var(--cv-heading); margin: 0; }
+.edu-block p { font-size: 8.5px; margin: 0; color: var(--cv-body); }
+.edu-block .date { font-size: 8px; color: var(--cv-light); }
+.edu-block .honors { font-size: 8px; color: var(--cv-light); font-style: italic; }
+
+.cert-item { margin-bottom: 6px; }
+.cert-item h3 { font-size: 9px; font-weight: 600; color: var(--cv-heading); margin: 0; }
+.cert-item p { font-size: 8px; color: var(--cv-light); margin: 0; }
+
+.skill-list, .exp-bullets, .achievement-list { list-style: none; padding: 0; margin: 0; }
+
+.skill-list li,
+.exp-bullets li,
+.achievement-list li {
+  font-size: 8.5px;
+  line-height: 1.6;
+  color: var(--cv-body);
+  display: flex;
+  gap: 7px;
+}
+
+.skill-list li::before,
+.exp-bullets li::before,
+.achievement-list li::before {
+  content: "";
+  margin-top: 5px;
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: 50%;
+  background: var(--cv-accent);
+  flex-shrink: 0;
+}
+
+.exp-entry { margin-bottom: 12px; }
+.exp-entry h3 {
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cv-heading);
+  margin: 0;
+}
+
+.exp-entry .meta { font-size: 8.5px; color: var(--cv-light); margin: 1px 0 4px; }
+
+.vol-header { display: flex; justify-content: space-between; align-items: baseline; }
+.vol-header h3 { font-size: 9.5px; font-weight: 600; color: var(--cv-heading); margin: 0; }
+.vol-header .date { font-size: 8px; color: var(--cv-light); }
+.vol-sub { font-size: 8.5px; color: var(--cv-light); margin: 0 0 4px; }
+
+.lang-list p { font-size: 8.5px; color: var(--cv-body); margin: 2px 0; }
+
+/* Print */
+@page { size: A4; margin: 0; }
+@media print {
+  /* hide your site UI, show only the CV */
+  header.topbar, .actions, #locked, .row, .btn, button, .no-print { display: none !important; }
+  body { background: white !important; }
+  .cv { width: 210mm; height: 297mm; margin: 0; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
