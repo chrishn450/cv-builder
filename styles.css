@@ -414,3 +414,37 @@ hr{
   background: var(--cv-accent);
   display:block;
 }
+/* Make CV typography match the reference much closer */
+.cv{
+  font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.cv .cv-name,
+.cv .section-title{
+  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+}
+
+.cv .cv-name{
+  font-size: 30px;
+  letter-spacing: 0.34em;
+}
+
+.cv .section-title{
+  letter-spacing: 0.30em;
+}
+
+/* Match spacing like the PDF */
+.cv .exp-entry h3{
+  font-size: 9.6px;
+  letter-spacing: 0.06em;
+}
+
+.cv .exp-entry .meta{
+  font-size: 8.2px;
+  margin: 2px 0 6px;
+}
+
+.cv .exp-bullets li{
+  line-height: 1.65;
+  margin-bottom: 3px;
+}
