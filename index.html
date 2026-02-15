@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="no">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,69 +10,69 @@
   <header class="topbar">
     <div class="brand">CV Builder</div>
     <div class="actions">
-      <button id="logoutBtn" class="btn ghost" style="display:none;">Logg ut</button>
+      <button id="logoutBtn" class="btn ghost" style="display:none;">Log out</button>
     </div>
   </header>
 
   <main class="container">
     <section id="locked" class="card" style="display:none;">
-      <h1>Tilgang kreves</h1>
-      <p>Du trenger tilgang for å bruke CV-builderen.</p>
+      <h1>Access required</h1>
+      <p>You need access to use the CV Builder.</p>
       <p class="muted">
-        Hvis du nettopp kjøpte: sjekk e-posten din for innloggingslenke.
+        If you just purchased: check your email for your login link.
       </p>
       <div class="row">
-        <a class="btn" id="buyLink" href="#" target="_blank" rel="noreferrer">Kjøp tilgang</a>
+        <a class="btn" id="buyLink" href="#" target="_blank" rel="noreferrer">Buy access</a>
       </div>
       <hr />
       <p class="muted small">
-        Har du en magic link? Åpne lenken fra e-posten (den slutter med <code>/magic.html?token=...</code>).
+        Have a magic link? Open the link from your email (it ends with <code>/magic.html?token=...</code>).
       </p>
     </section>
 
     <section id="app" style="display:none;">
       <div class="grid">
         <div class="card">
-          <h2>Rediger innhold</h2>
+          <h2>Edit content</h2>
 
-          <label class="label">Fullt navn</label>
-          <input id="name" class="input" placeholder="Ola Nordmann" />
+          <label class="label">Full name</label>
+          <input id="name" class="input" placeholder="Jane Doe" />
 
-          <label class="label">Tittel</label>
-          <input id="title" class="input" placeholder="Sykepleier / Ingeniør / ..." />
+          <label class="label">Title</label>
+          <input id="title" class="input" placeholder="Nurse / Engineer / ..." />
 
-          <label class="label">E-post</label>
-          <input id="email" class="input" placeholder="ola@email.no" />
+          <label class="label">Email</label>
+          <input id="email" class="input" placeholder="jane@email.com" />
 
-          <label class="label">Telefon</label>
+          <label class="label">Phone</label>
           <input id="phone" class="input" placeholder="+47 ..." />
 
-          <label class="label">Profil (kort tekst)</label>
-          <textarea id="summary" class="textarea" rows="5" placeholder="Kort profiltekst..."></textarea>
+          <label class="label">Profile (short summary)</label>
+          <textarea id="summary" class="textarea" rows="5" placeholder="Short profile summary..."></textarea>
 
-          <label class="label">Erfaring (en per linje)</label>
-          <textarea id="experience" class="textarea" rows="6" placeholder="2023–2025 — Jobb, Bedrift
+          <label class="label">Experience (one per line)</label>
+          <textarea id="experience" class="textarea" rows="6" placeholder="2023–2025 — Role, Company
 2021–2023 — ..."></textarea>
 
-          <label class="label">Utdanning (en per linje)</label>
-          <textarea id="education" class="textarea" rows="5" placeholder="2020–2023 — Grad, Skole
+          <label class="label">Education (one per line)</label>
+          <textarea id="education" class="textarea" rows="5" placeholder="2020–2023 — Degree, School
 ..."></textarea>
 
-          <label class="label">Ferdigheter (kommaseparert)</label>
-          <input id="skills" class="input" placeholder="Kommunikasjon, Teamarbeid, ..." />
+          <label class="label">Skills (comma-separated)</label>
+          <input id="skills" class="input" placeholder="Communication, Teamwork, ..." />
 
           <div class="row">
-            <button id="printBtn" class="btn">Last ned som PDF (Print)</button>
-            <button id="downloadHtmlBtn" class="btn ghost">Last ned HTML</button>
+            <button id="printBtn" class="btn">Download as PDF (Print)</button>
+            <button id="downloadHtmlBtn" class="btn ghost">Download HTML</button>
           </div>
 
           <p class="muted small">
-            PDF-knappen åpner nettleserens utskriftsdialog (velg “Lagre som PDF”).
+            The PDF button opens your browser's print dialog (choose “Save as PDF”).
           </p>
         </div>
 
         <div class="card">
-          <h2>Forhåndsvisning</h2>
+          <h2>Preview</h2>
           <div id="preview" class="cv"></div>
         </div>
       </div>
