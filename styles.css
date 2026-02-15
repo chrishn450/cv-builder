@@ -383,3 +383,20 @@ hr{
   line-height: 1;
 }
 .tbtn:hover{ background: rgba(255,255,255,0.10); }
+/* Dot button should match CV bullet (same size + same accent color) */
+.tbtn.tdot{
+  width: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px; /* same as tbtn */
+}
+
+.tbtn.tdot::before{
+  content:"";
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: 50%;
+  background: var(--cv-accent);
+  display: block;
+}
