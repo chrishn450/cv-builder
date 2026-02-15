@@ -8,17 +8,12 @@
       .replace(/>/g, "&gt;");
   }
 
-  // Render **bold** while keeping everything else escaped.
-  // Steps:
-  // 1) Split on **...** patterns
-  // 2) Escape each piece
-  // 3) Wrap bold parts in <strong>
   function fmtInline(text, { preserveNewlines = false } = {}) {
     const t = String(text ?? "");
     if (!t) return "";
-  
+
     const parts = t.split(/(\*\*[^*]+\*\*)/g);
-  
+
     const html = parts
       .map((p) => {
         const m = p.match(/^\*\*([^*]+)\*\*$/);
@@ -26,13 +21,10 @@
         return esc(p);
       })
       .join("");
-  
-    if (!preserveNewlines) return html;
-  
-    // Convert literal newlines into <br> (for summary-like blocks)
-    return html.replace(/\n/g, "<br>");
-}
 
+    if (!preserveNewlines) return html;
+    return html.replace(/\n/g, "<br>");
+  }
 
   function hasText(v) {
     return v != null && String(v).trim().length > 0;
@@ -54,13 +46,19 @@
       .filter(Boolean);
   }
 
+  // Stripp bullet-prefix i tekstlinjer, så CV-en får bare sin "ekte" bullet (CSS-dot)
+  function stripBulletPrefix(t) {
+    const s = String(t ?? "").trim();
+    return s.replace(/^([•\-·]\s+)/, ""); // fjerner "• ", "- ", "· "
+  }
+
   function parseExperience(s) {
     return blocks(s).map((block) => {
       const ls = block.split("\n").map((l) => l.trim()).filter(Boolean);
       return {
         title: ls[0] || "",
         meta: ls[1] || "",
-        bullets: ls.slice(2),
+        bullets: ls.slice(2).map(stripBulletPrefix),
       };
     });
   }
@@ -100,7 +98,7 @@
 
     const lis = items
       .map((t, idx) => {
-        const inner = fmtInline(t);
+        const inner = fmtInline(stripBulletPrefix(t)); // <-- viktig
         if (boldFirstLine && idx === 0) return `<li><strong>${inner}</strong></li>`;
         return `<li>${inner}</li>`;
       })
@@ -199,7 +197,7 @@
       volDate = m[2];
     }
     const volSub = volLines[1] || "";
-    const volBullets = volLines.slice(2);
+    const volBullets = volLines.slice(2).map(stripBulletPrefix);
 
     const bulletsHTML = volBullets.length
       ? `<ul class="exp-bullets">${volBullets.map((b) => `<li>${fmtInline(b)}</li>`).join("")}</ul>`
