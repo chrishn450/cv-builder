@@ -26,33 +26,6 @@
     "custom2",
   ];
 
-  // Viktig: behold defaults, men bullets kan være med "- " eller "• " – preview stripper uansett.
-  const DEFAULT_DATA = {
-    name: "Sarah Johnson",
-    title: "Registered Nurse · BSN, RN",
-    phone: "(555) 123-4567",
-    email: "sarah.johnson@email.com",
-    location: "Austin, TX 78701",
-    linkedin: "linkedin.com/in/sarahjohnsonrn",
-    summary:
-      "Compassionate and detail-oriented Registered Nurse with 7+ years of progressive experience in acute care, emergency, and critical care settings.",
-    education:
-      "Master of Science in Nursing\nThe University of Texas at Austin\n2016 – 2018\n\nBachelor of Science in Nursing\nThe University of Texas at Austin\n2012 – 2016\nMagna Cum Laude · GPA 3.85",
-    licenses:
-      "Registered Nurse (RN)\nTexas Board of Nursing · #TX-892341\nCCRN – Critical Care\nAACN · Expires March 2026",
-    clinicalSkills:
-      "Patient Assessment & Triage\nIV Therapy & Venipuncture\nWound Care & Dressing Changes",
-    coreCompetencies: "Team Leadership & Mentoring\nCritical Thinking\nTime Management",
-    languages: "English — Native\nSpanish — Conversational",
-    experience:
-      "Senior Registered Nurse – ICU\nSt. David's Medical Center, Austin, TX | January 2021 – Present\n- Provide direct care for 4–6 critically ill patients per shift\n- Maintain 98% patient satisfaction scores",
-    achievements: "Spearheaded ICU sepsis screening protocol\nDeveloped new-hire orientation program",
-    volunteer:
-      "Volunteer Nurse | 2019 – Present\nAustin Free Clinic · Community Health Outreach\n- Provide free health screenings",
-    custom1: "",
-    custom2: "",
-  };
-
   const SECTION_KEYS = [
     "summary",
     "education",
@@ -67,6 +40,8 @@
     "custom2",
   ];
 
+  // NB: Vi fyller IKKE inputs med defaults.
+  // Preview blir full fra templates.js defaults når state.data har tomme felt.
   const state = { data: {}, sections: {} };
 
   function render() {
@@ -77,58 +52,38 @@
     });
   }
 
+  // Lagre bare det brukeren faktisk har skrevet
+  const STORAGE_KEY = "cv_builder_user_overrides_v1";
+
   function loadState() {
     try {
-      const raw = localStorage.getItem("cv_builder_state_v1");
-      if (!raw) return false;
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === "object") {
-        state.data = parsed.data || {};
-        state.sections = parsed.sections || {};
-        return true;
-      }
+      if (!parsed || typeof parsed !== "object") return;
+      state.data = parsed.data || {};
+      state.sections = parsed.sections || {};
     } catch (_) {}
-    return false;
   }
 
   function saveState() {
     try {
       localStorage.setItem(
-        "cv_builder_state_v1",
+        STORAGE_KEY,
         JSON.stringify({ data: state.data, sections: state.sections })
       );
     } catch (_) {}
   }
 
-  function hydrateInputsFromState() {
-    FIELD_IDS.forEach((id) => {
-      const el = qs(id);
-      if (!el) return;
-      el.value = state.data[id] != null ? String(state.data[id]) : "";
-    });
-
-    SECTION_KEYS.forEach((k) => {
-      const en = qs(`sec_${k}_enabled`);
-      const ti = qs(`sec_${k}_title`);
-      if (en) en.checked = state.sections?.[k]?.enabled !== false;
-      if (ti) ti.value = state.sections?.[k]?.title ?? ti.value;
-    });
-  }
-
-  function ensureDefaultsIfEmpty() {
-    FIELD_IDS.forEach((id) => {
-      const cur = state.data[id];
-      if (cur == null || String(cur).trim() === "") {
-        state.data[id] = DEFAULT_DATA[id] ?? "";
-      }
-    });
-
+  function initSectionsFromUI() {
     SECTION_KEYS.forEach((k) => {
       if (!state.sections[k]) state.sections[k] = {};
       const en = qs(`sec_${k}_enabled`);
       const ti = qs(`sec_${k}_title`);
-      state.sections[k].enabled = en ? !!en.checked : true;
-      state.sections[k].title = ti ? ti.value : k;
+
+      // bruk UI som kilde
+      if (en) state.sections[k].enabled = !!en.checked;
+      if (ti) state.sections[k].title = ti.value;
     });
   }
 
@@ -136,8 +91,21 @@
     FIELD_IDS.forEach((id) => {
       const el = qs(id);
       if (!el) return;
+
+      // Hvis vi har lagret override, sett den inn – ellers la feltet være tomt
+      if (state.data[id] != null && String(state.data[id]).length > 0) {
+        el.value = String(state.data[id]);
+      } else {
+        el.value = ""; // behold grå placeholder
+      }
+
       el.addEventListener("input", () => {
+        // Brukerens tekst overstyrer defaults
         state.data[id] = el.value;
+
+        // Hvis bruker sletter alt: fjern override så defaults kommer tilbake i preview
+        if (String(el.value).trim() === "") delete state.data[id];
+
         saveState();
         render();
       });
@@ -157,6 +125,9 @@
       }
 
       if (ti) {
+        // behold som i UI (du hadde disse ferdig utfylt allerede)
+        if (state.sections?.[k]?.title) ti.value = state.sections[k].title;
+
         ti.addEventListener("input", () => {
           if (!state.sections[k]) state.sections[k] = {};
           state.sections[k].title = ti.value;
@@ -167,7 +138,7 @@
     });
   }
 
-  // ---- Toolbar helpers ----
+  // ---- Toolbar: bullet mode som setter "• " direkte (men preview stripper den) ----
   function wrapSelectionWith(el, left, right) {
     const v = el.value || "";
     const start = el.selectionStart ?? 0;
@@ -177,15 +148,13 @@
     const after = v.slice(end);
 
     el.value = before + left + sel + right + after;
-
     const newStart = start + left.length;
     const newEnd = end + left.length;
     el.setSelectionRange(newStart, newEnd);
   }
 
-  // Bullet mode per textarea
   const bulletMode = {}; // fieldId -> boolean
-  const BULLET = "• ";   // <-- samme "dot"-type som du vil ha
+  const BULLET = "• ";
 
   function setBulletButtonState(tb, on) {
     const btn = tb.querySelector('[data-action="bullets"]');
@@ -218,10 +187,9 @@
   function insertBulletNewline(el) {
     const v = el.value || "";
     const pos = el.selectionStart ?? v.length;
-
     const insert = "\n" + BULLET;
-    el.value = v.slice(0, pos) + insert + v.slice(pos);
 
+    el.value = v.slice(0, pos) + insert + v.slice(pos);
     const newPos = pos + insert.length;
     el.setSelectionRange(newPos, newPos);
   }
@@ -235,7 +203,6 @@
     const lineEnd = lineEndIdx === -1 ? v.length : lineEndIdx;
     const line = v.slice(lineStart, lineEnd);
 
-    // Hvis linja er kun "• " eller "- " (evt spaces) -> fjern prefix
     if ((line.startsWith("• ") && line.trim() === "•") || (line.startsWith("- ") && line.trim() === "-")) {
       el.value = v.slice(0, lineStart) + v.slice(lineStart + 2);
       const newPos = Math.max(lineStart, pos - 2);
@@ -250,7 +217,10 @@
       if (e.key === "Enter") {
         e.preventDefault();
         insertBulletNewline(el);
+
         state.data[fieldId] = el.value;
+        if (String(el.value).trim() === "") delete state.data[fieldId];
+
         saveState();
         render();
         return;
@@ -259,29 +229,10 @@
       if (e.key === "Backspace") {
         setTimeout(() => {
           removeEmptyBulletLine(el);
-          state.data[fieldId] = el.value;
-          saveState();
-          render();
-        }, 0);
-      }
-    });
 
-    el.addEventListener("mouseup", () => {
-      if (!bulletMode[fieldId]) return;
-      setTimeout(() => {
-        ensureBulletPrefixAtCurrentLine(el);
-        state.data[fieldId] = el.value;
-        saveState();
-        render();
-      }, 0);
-    });
-
-    el.addEventListener("keyup", (e) => {
-      if (!bulletMode[fieldId]) return;
-      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-        setTimeout(() => {
-          ensureBulletPrefixAtCurrentLine(el);
           state.data[fieldId] = el.value;
+          if (String(el.value).trim() === "") delete state.data[fieldId];
+
           saveState();
           render();
         }, 0);
@@ -307,7 +258,10 @@
 
           if (action === "bold") {
             wrapSelectionWith(target, "**", "**");
+
             state.data[fieldId] = target.value;
+            if (String(target.value).trim() === "") delete state.data[fieldId];
+
             saveState();
             render();
             return;
@@ -317,10 +271,13 @@
             bulletMode[fieldId] = !bulletMode[fieldId];
             setBulletButtonState(tb, bulletMode[fieldId]);
 
-            // Nøkkelen: når du slår på, sett bullet med en gang
             if (bulletMode[fieldId]) {
+              // Nøkkelen du manglet: sett bullet med en gang
               ensureBulletPrefixAtCurrentLine(target);
+
               state.data[fieldId] = target.value;
+              if (String(target.value).trim() === "") delete state.data[fieldId];
+
               saveState();
               render();
             }
@@ -359,17 +316,17 @@ ${preview ? preview.innerHTML : ""}
     });
   }
 
-  // INIT
+  // INIT: vis app (hvis du ikke bruker auth-flow her)
   const app = qs("app");
   const locked = qs("locked");
   if (app) app.style.display = "block";
   if (locked) locked.style.display = "none";
 
   loadState();
-  ensureDefaultsIfEmpty();
-  hydrateInputsFromState();
-  bindInputs();
+  initSectionsFromUI();   // bruker checkbox/title i UI
+  bindInputs();           // inputs forblir tomme hvis ingen override
   bindToolbars();
-  saveState();
+
+  // Preview FULL fra templates defaults
   render();
 })();
