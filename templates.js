@@ -143,10 +143,13 @@
           <div class="cv-contact">${contactHTML}</div>
         </header>
 
-        <section class="cv-summary">
-          <h2 class="section-title">Professional Summary</h2>
-          <p class="body-text">${esc(d.summary || "")}</p>
-        </section>
+        ${d.summary ? `
+          <section class="cv-summary">
+            <h2 class="section-title">Professional Summary</h2>
+            <p class="body-text">${esc(d.summary)}</p>
+          </section>
+        ` : ""}
+
 
         <div class="cv-body">
           <div class="cv-left">
