@@ -1,6 +1,4 @@
 // app.js
-// Krever templates.js som definerer window.renderCV(data) -> HTML string
-
 (function () {
   const qs = (id) => document.getElementById(id);
 
@@ -8,7 +6,6 @@
   const printBtn = qs("printBtn");
   const downloadHtmlBtn = qs("downloadHtmlBtn");
 
-  // Alle felt som finnes i HTML
   const FIELD_IDS = [
     "name",
     "title",
@@ -29,7 +26,7 @@
     "custom2",
   ];
 
-  // Defaults (matcher templates.js så preview ser riktig ut fra start)
+  // Viktig: behold defaults, men bullets kan være med "- " eller "• " – preview stripper uansett.
   const DEFAULT_DATA = {
     name: "Sarah Johnson",
     title: "Registered Nurse · BSN, RN",
@@ -56,7 +53,6 @@
     custom2: "",
   };
 
-  // Section-controls som finnes i HTML (sec_*_enabled og sec_*_title)
   const SECTION_KEYS = [
     "summary",
     "education",
@@ -71,13 +67,8 @@
     "custom2",
   ];
 
-  // ---- State ----
-  const state = {
-    data: {},
-    sections: {},
-  };
+  const state = { data: {}, sections: {} };
 
-  // ---- Render ----
   function render() {
     if (!preview || typeof window.renderCV !== "function") return;
     preview.innerHTML = window.renderCV({
@@ -86,7 +77,6 @@
     });
   }
 
-  // ---- Save/Load (valgfritt, men nyttig) ----
   function loadState() {
     try {
       const raw = localStorage.getItem("cv_builder_state_v1");
@@ -110,27 +100,22 @@
     } catch (_) {}
   }
 
-  // ---- Inputs binding ----
   function hydrateInputsFromState() {
     FIELD_IDS.forEach((id) => {
       const el = qs(id);
       if (!el) return;
-
-      const v = state.data[id];
-      el.value = v != null ? String(v) : "";
+      el.value = state.data[id] != null ? String(state.data[id]) : "";
     });
 
     SECTION_KEYS.forEach((k) => {
       const en = qs(`sec_${k}_enabled`);
       const ti = qs(`sec_${k}_title`);
-
-      if (en) en.checked = state.sections?.[k]?.enabled !== false; // default true
+      if (en) en.checked = state.sections?.[k]?.enabled !== false;
       if (ti) ti.value = state.sections?.[k]?.title ?? ti.value;
     });
   }
 
   function ensureDefaultsIfEmpty() {
-    // Fyll state.data med defaults dersom felt ikke finnes eller er tomt
     FIELD_IDS.forEach((id) => {
       const cur = state.data[id];
       if (cur == null || String(cur).trim() === "") {
@@ -138,16 +123,11 @@
       }
     });
 
-    // Default sections: enabled=true (custom* default styres av checkbox i HTML)
     SECTION_KEYS.forEach((k) => {
       if (!state.sections[k]) state.sections[k] = {};
       const en = qs(`sec_${k}_enabled`);
       const ti = qs(`sec_${k}_title`);
-
-      // enabled: ta fra checkbox hvis den finnes, ellers true
       state.sections[k].enabled = en ? !!en.checked : true;
-
-      // title: ta fra input hvis finnes, ellers fallback
       state.sections[k].title = ti ? ti.value : k;
     });
   }
@@ -156,7 +136,6 @@
     FIELD_IDS.forEach((id) => {
       const el = qs(id);
       if (!el) return;
-
       el.addEventListener("input", () => {
         state.data[id] = el.value;
         saveState();
@@ -204,9 +183,9 @@
     el.setSelectionRange(newStart, newEnd);
   }
 
-  // Bullet mode per felt (textarea id)
+  // Bullet mode per textarea
   const bulletMode = {}; // fieldId -> boolean
-  const BULLET = "- ";
+  const BULLET = "• ";   // <-- samme "dot"-type som du vil ha
 
   function setBulletButtonState(tb, on) {
     const btn = tb.querySelector('[data-action="bullets"]');
@@ -219,27 +198,23 @@
     return v.lastIndexOf("\n", pos - 1) + 1;
   }
 
-  function lineStartsWithBullet(v, lineStart) {
-    return v.slice(lineStart, lineStart + BULLET.length) === BULLET;
+  function lineHasBulletPrefix(v, lineStart) {
+    const head2 = v.slice(lineStart, lineStart + 2);
+    return head2 === "• " || head2 === "- ";
   }
 
-  // FIKS: når du trykker • skal bullet legges inn umiddelbart, uansett
-  // (så lenge linja ikke allerede har "- " i starten)
   function ensureBulletPrefixAtCurrentLine(el) {
     const v = el.value || "";
     const pos = el.selectionStart ?? v.length;
     const lineStart = getLineStart(v, pos);
 
-    if (lineStartsWithBullet(v, lineStart)) return;
+    if (lineHasBulletPrefix(v, lineStart)) return;
 
     el.value = v.slice(0, lineStart) + BULLET + v.slice(lineStart);
-
-    // Flytt caret to tegn frem (men behold relativ posisjon i linja)
     const newPos = pos + BULLET.length;
     el.setSelectionRange(newPos, newPos);
   }
 
-  // Enter når bulletMode er på => ny linje med "- "
   function insertBulletNewline(el) {
     const v = el.value || "";
     const pos = el.selectionStart ?? v.length;
@@ -251,7 +226,6 @@
     el.setSelectionRange(newPos, newPos);
   }
 
-  // Backspace på en tom bullet-linje => fjern "- " så du ikke sitter fast
   function removeEmptyBulletLine(el) {
     const v = el.value || "";
     const pos = el.selectionStart ?? v.length;
@@ -261,12 +235,10 @@
     const lineEnd = lineEndIdx === -1 ? v.length : lineEndIdx;
     const line = v.slice(lineStart, lineEnd);
 
-    if (!line.startsWith(BULLET)) return;
-
-    // bare "- " (evt spaces)
-    if (line.trim() === BULLET.trim()) {
-      el.value = v.slice(0, lineStart) + v.slice(lineStart + BULLET.length);
-      const newPos = Math.max(lineStart, pos - BULLET.length);
+    // Hvis linja er kun "• " eller "- " (evt spaces) -> fjern prefix
+    if ((line.startsWith("• ") && line.trim() === "•") || (line.startsWith("- ") && line.trim() === "-")) {
+      el.value = v.slice(0, lineStart) + v.slice(lineStart + 2);
+      const newPos = Math.max(lineStart, pos - 2);
       el.setSelectionRange(newPos, newPos);
     }
   }
@@ -285,7 +257,6 @@
       }
 
       if (e.key === "Backspace") {
-        // la native backspace skje først, så rydder vi hvis det ble tom bullet-linje
         setTimeout(() => {
           removeEmptyBulletLine(el);
           state.data[fieldId] = el.value;
@@ -295,7 +266,6 @@
       }
     });
 
-    // Hvis du klikker deg til en annen linje mens bullets er på, sørg for "- " på linja
     el.addEventListener("mouseup", () => {
       if (!bulletMode[fieldId]) return;
       setTimeout(() => {
@@ -306,7 +276,6 @@
       }, 0);
     });
 
-    // Piltaster/navigasjon
     el.addEventListener("keyup", (e) => {
       if (!bulletMode[fieldId]) return;
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
@@ -348,7 +317,7 @@
             bulletMode[fieldId] = !bulletMode[fieldId];
             setBulletButtonState(tb, bulletMode[fieldId]);
 
-            // FIKS: når du slår på, legg bullet med en gang (så du kan skrive rett etterpå)
+            // Nøkkelen: når du slår på, sett bullet med en gang
             if (bulletMode[fieldId]) {
               ensureBulletPrefixAtCurrentLine(target);
               state.data[fieldId] = target.value;
@@ -362,10 +331,7 @@
     });
   }
 
-  // ---- Print / Download ----
-  if (printBtn) {
-    printBtn.addEventListener("click", () => window.print());
-  }
+  if (printBtn) printBtn.addEventListener("click", () => window.print());
 
   if (downloadHtmlBtn) {
     downloadHtmlBtn.addEventListener("click", () => {
@@ -393,15 +359,12 @@ ${preview ? preview.innerHTML : ""}
     });
   }
 
-  // ---- INIT ----
-  // Vis app direkte (hvis du ikke bruker login-greiene nå)
-  // Hvis du har egen access-flow i din gamle app.js, behold den logikken der.
+  // INIT
   const app = qs("app");
   const locked = qs("locked");
   if (app) app.style.display = "block";
   if (locked) locked.style.display = "none";
 
-  // load -> defaults -> hydrate -> bind -> render
   loadState();
   ensureDefaultsIfEmpty();
   hydrateInputsFromState();
