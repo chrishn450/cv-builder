@@ -1,105 +1,129 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nurse CV Template</title>
-
-  <!-- IMPORTANT: make sure this file exists in root -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CV Builder</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
-
 <body>
+  <header class="topbar">
+    <div class="brand">CV Builder</div>
+    <div class="actions">
+      <button id="logoutBtn" class="btn ghost" style="display:none;">Log out</button>
+    </div>
+  </header>
 
-  <button class="btn-print no-print" onclick="window.print()">
-    Print / Save PDF
-  </button>
+  <main class="container">
+    <!-- Locked screen -->
+    <section id="locked" class="card" style="display:none;">
+      <h1>Access required</h1>
+      <p>You need access to use the CV Builder.</p>
+      <p class="muted">If you just purchased: you will receive an email shortly with your secure login link.</p>
+      <div class="row">
+        <a class="btn" id="buyLink" href="#" target="_blank" rel="noreferrer">Buy access</a>
+      </div>
+      <hr />
+      <p class="muted small">
+        Have a magic link? Open the link from your email (it ends with <code>/magic.html?token=...</code>).
+      </p>
+    </section>
 
-  <!-- CV Preview -->
-  <div id="preview" class="cv"></div>
+    <!-- App -->
+    <section id="app" style="display:none;">
+      <div class="grid">
+        <div class="card">
+          <h2>Edit content</h2>
 
-  <!-- Editor -->
-  <div class="editor no-print">
-    <h2>Edit CV Content</h2>
+          <label class="label">Full name</label>
+          <input id="name" class="input" placeholder="Sarah Johnson" />
 
-    <label>Full Name</label>
-    <input id="name" value="Sarah Johnson" />
+          <label class="label">Title / Credentials</label>
+          <input id="title" class="input" placeholder="Registered Nurse · BSN, RN" />
 
-    <label>Title / Credentials</label>
-    <input id="title" value="Registered Nurse · BSN, RN" />
+          <label class="label">Email</label>
+          <input id="email" class="input" placeholder="sarah.johnson@email.com" />
 
-    <label>Phone</label>
-    <input id="phone" value="(555) 123-4567" />
+          <label class="label">Phone</label>
+          <input id="phone" class="input" placeholder="(555) 123-4567" />
 
-    <label>Email</label>
-    <input id="email" value="sarah.johnson@email.com" />
+          <label class="label">Location</label>
+          <input id="location" class="input" placeholder="Austin, TX 78701" />
 
-    <label>Location</label>
-    <input id="location" value="Austin, TX 78701" />
+          <label class="label">LinkedIn</label>
+          <input id="linkedin" class="input" placeholder="linkedin.com/in/..." />
 
-    <label>LinkedIn</label>
-    <input id="linkedin" value="linkedin.com/in/sarahjohnsonrn" />
+          <label class="label">Professional Summary</label>
+          <textarea id="summary" class="textarea" rows="5" placeholder="Short professional summary..."></textarea>
 
-    <label>Professional Summary</label>
-    <textarea id="summary"></textarea>
+          <label class="label">Education (use blank line between entries)</label>
+          <textarea id="education" class="textarea" rows="6" placeholder="Degree
+School
+2016 – 2018
 
-    <label>Education</label>
-    <textarea id="education"></textarea>
+Degree
+School
+2012 – 2016"></textarea>
 
-    <label>Licenses & Certifications</label>
-    <textarea id="licenses"></textarea>
+          <label class="label">Licenses & Certifications (title line + detail line)</label>
+          <textarea id="licenses" class="textarea" rows="6" placeholder="Registered Nurse (RN)
+Texas Board of Nursing · #...
 
-    <label>Clinical Skills</label>
-    <textarea id="clinicalSkills"></textarea>
+ACLS
+American Heart Association · Exp. ..."></textarea>
 
-    <label>Core Competencies</label>
-    <textarea id="coreCompetencies"></textarea>
+          <label class="label">Clinical Skills (one per line)</label>
+          <textarea id="clinicalSkills" class="textarea" rows="6" placeholder="Patient Assessment & Triage
+IV Therapy
+..."></textarea>
 
-    <label>Languages</label>
-    <textarea id="languages"></textarea>
+          <label class="label">Core Competencies (one per line)</label>
+          <textarea id="coreCompetencies" class="textarea" rows="5" placeholder="Critical Thinking
+Team Leadership
+..."></textarea>
 
-    <label>Experience</label>
-    <textarea id="experience" style="min-height:200px"></textarea>
+          <label class="label">Languages (one per line)</label>
+          <textarea id="languages" class="textarea" rows="3" placeholder="English — Native
+Spanish — Conversational"></textarea>
 
-    <label>Clinical Achievements</label>
-    <textarea id="achievements"></textarea>
+          <label class="label">Experience (blank line between roles)</label>
+          <textarea id="experience" class="textarea" rows="10" placeholder="Senior Registered Nurse – ICU
+Hospital, City | 2021 – Present
+Bullet 1
+Bullet 2
 
-    <label>Volunteer</label>
-    <textarea id="volunteer"></textarea>
+Registered Nurse – ED
+Hospital, City | 2018 – 2020
+Bullet 1"></textarea>
 
-    <button onclick="updatePreview()">Update Preview</button>
-  </div>
+          <label class="label">Clinical Achievements (one per line)</label>
+          <textarea id="achievements" class="textarea" rows="4" placeholder="Achievement 1
+Achievement 2"></textarea>
+
+          <label class="label">Volunteer (one block)</label>
+          <textarea id="volunteer" class="textarea" rows="4" placeholder="Volunteer Nurse | 2019 – Present
+Organization · Program
+Bullet 1"></textarea>
+
+          <div class="row">
+            <button id="printBtn" class="btn">Print / Save as PDF</button>
+            <button id="downloadHtmlBtn" class="btn ghost">Download HTML</button>
+          </div>
+
+          <p class="muted small">
+            Print opens your browser’s print dialog (choose “Save as PDF”).
+          </p>
+        </div>
+
+        <div class="card">
+          <h2>Preview</h2>
+          <div id="preview" class="cv"></div>
+        </div>
+      </div>
+    </section>
+  </main>
 
   <script src="/templates.js"></script>
-
-  <script>
-    function gatherData() {
-      return {
-        name: document.getElementById('name').value,
-        title: document.getElementById('title').value,
-        phone: document.getElementById('phone').value,
-        email: document.getElementById('email').value,
-        location: document.getElementById('location').value,
-        linkedin: document.getElementById('linkedin').value,
-        summary: document.getElementById('summary').value,
-        education: document.getElementById('education').value,
-        licenses: document.getElementById('licenses').value,
-        clinicalSkills: document.getElementById('clinicalSkills').value,
-        coreCompetencies: document.getElementById('coreCompetencies').value,
-        languages: document.getElementById('languages').value,
-        experience: document.getElementById('experience').value,
-        achievements: document.getElementById('achievements').value,
-        volunteer: document.getElementById('volunteer').value,
-      };
-    }
-
-    function updatePreview() {
-      document.getElementById('preview').innerHTML =
-        window.renderCV(gatherData());
-    }
-
-    updatePreview();
-  </script>
-
+  <script src="/app.js"></script>
 </body>
 </html>
