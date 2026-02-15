@@ -13,18 +13,26 @@
   // 1) Split on **...** patterns
   // 2) Escape each piece
   // 3) Wrap bold parts in <strong>
-  function fmtInline(text) {
+  function fmtInline(text, { preserveNewlines = false } = {}) {
     const t = String(text ?? "");
     if (!t) return "";
+  
     const parts = t.split(/(\*\*[^*]+\*\*)/g);
-    return parts
+  
+    const html = parts
       .map((p) => {
         const m = p.match(/^\*\*([^*]+)\*\*$/);
         if (m) return `<strong>${esc(m[1])}</strong>`;
         return esc(p);
       })
       .join("");
-  }
+  
+    if (!preserveNewlines) return html;
+  
+    // Convert literal newlines into <br> (for summary-like blocks)
+    return html.replace(/\n/g, "<br>");
+}
+
 
   function hasText(v) {
     return v != null && String(v).trim().length > 0;
@@ -273,7 +281,7 @@
         ? `
           <section class="cv-summary">
             <h2 class="section-title">${esc(sections.summary.title || "Professional Summary")}</h2>
-            <p class="body-text">${fmtInline(d.summary)}</p>
+            <p class="body-text">${fmtInline(d.summary, { preserveNewlines: true })}</p>
           </section>
         `
         : "";
