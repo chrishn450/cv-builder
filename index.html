@@ -3,22 +3,83 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Nurse CV Studio</title>
-  <link rel="stylesheet" href="styles.css" />
-  <script type="module" src="app.js"></script>
+  <title>CV Builder</title>
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="unlock">
-    <h2>Få tilgang</h2>
-    <p class="hint">Skriv inn engangskoden du fikk etter kjøp. Når en kode er brukt, kan den ikke brukes igjen.</p>
-    <div class="row">
-      <input id="codeInput" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" />
-      <button id="activateBtn">Aktiver kode</button>
-      <button id="resetBtn" class="secondary">Nullstill</button>
+  <header class="topbar">
+    <div class="brand">CV Builder</div>
+    <div class="actions">
+      <button id="logoutBtn" class="btn ghost" style="display:none;">Logg ut</button>
     </div>
-    <div id="status" class="status"></div>
-  </div>
+  </header>
 
-  <div id="builder"></div>
+  <main class="container">
+    <section id="locked" class="card" style="display:none;">
+      <h1>Tilgang kreves</h1>
+      <p>Du trenger tilgang for å bruke CV-builderen.</p>
+      <p class="muted">
+        Hvis du nettopp kjøpte: sjekk e-posten din for innloggingslenke.
+      </p>
+      <div class="row">
+        <a class="btn" id="buyLink" href="#" target="_blank" rel="noreferrer">Kjøp tilgang</a>
+      </div>
+      <hr />
+      <p class="muted small">
+        Har du en magic link? Åpne lenken fra e-posten (den slutter med <code>/magic.html?token=...</code>).
+      </p>
+    </section>
+
+    <section id="app" style="display:none;">
+      <div class="grid">
+        <div class="card">
+          <h2>Rediger innhold</h2>
+
+          <label class="label">Fullt navn</label>
+          <input id="name" class="input" placeholder="Ola Nordmann" />
+
+          <label class="label">Tittel</label>
+          <input id="title" class="input" placeholder="Sykepleier / Ingeniør / ..." />
+
+          <label class="label">E-post</label>
+          <input id="email" class="input" placeholder="ola@email.no" />
+
+          <label class="label">Telefon</label>
+          <input id="phone" class="input" placeholder="+47 ..." />
+
+          <label class="label">Profil (kort tekst)</label>
+          <textarea id="summary" class="textarea" rows="5" placeholder="Kort profiltekst..."></textarea>
+
+          <label class="label">Erfaring (en per linje)</label>
+          <textarea id="experience" class="textarea" rows="6" placeholder="2023–2025 — Jobb, Bedrift
+2021–2023 — ..."></textarea>
+
+          <label class="label">Utdanning (en per linje)</label>
+          <textarea id="education" class="textarea" rows="5" placeholder="2020–2023 — Grad, Skole
+..."></textarea>
+
+          <label class="label">Ferdigheter (kommaseparert)</label>
+          <input id="skills" class="input" placeholder="Kommunikasjon, Teamarbeid, ..." />
+
+          <div class="row">
+            <button id="printBtn" class="btn">Last ned som PDF (Print)</button>
+            <button id="downloadHtmlBtn" class="btn ghost">Last ned HTML</button>
+          </div>
+
+          <p class="muted small">
+            PDF-knappen åpner nettleserens utskriftsdialog (velg “Lagre som PDF”).
+          </p>
+        </div>
+
+        <div class="card">
+          <h2>Forhåndsvisning</h2>
+          <div id="preview" class="cv"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./templates.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>

@@ -1,63 +1,110 @@
-import { templateHTML } from "./templates.js";
+const state = {
+  template: "classic",
+  data: {
+    name: "",
+    title: "",
+    email: "",
+    phone: "",
+    summary: "",
+    experience: "",
+    education: "",
+    skills: ""
+  }
+};
 
-function normalize(s) {
-  return String(s ?? "").replace(/\u00A0/g, " ").trim().toUpperCase();
+function qs(id){ return document.getElementById(id); }
+
+async function checkAccess(){
+  const res = await fetch("/api/me", { method: "GET" });
+  if (!res.ok) return null;
+  return res.json();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("activateBtn");
-  const resetBtn = document.getElementById("resetBtn");
-  const input = document.getElementById("codeInput");
-  const status = document.getElementById("status");
-  const builder = document.getElementById("builder");
+function render(){
+  const tplFn = window.CVTemplates?.[state.template];
+  qs("preview").innerHTML = tplFn ? tplFn(state.data) : "<p>Mangler template</p>";
+}
 
-  const setUnlocked = (v) => localStorage.setItem("cv_unlocked", v ? "true" : "false");
-  const isUnlocked = () => localStorage.getItem("cv_unlocked") === "true";
-
-  const updateUI = () => {
-    builder.innerHTML = isUnlocked() ? templateHTML : "";
-    document.body.classList.toggle("unlocked", isUnlocked());
-  };
-
-  btn.onclick = async () => {
-    status.className = "status";
-    status.textContent = "Sjekker kode…";
-
-    const code = normalize(input.value);
-    if (!code) {
-      status.classList.add("err");
-      status.textContent = "Skriv inn en kode.";
-      return;
-    }
-
-    const res = await fetch("/api/redeem", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
+function bindInputs(){
+  const map = ["name","title","email","phone","summary","experience","education","skills"];
+  for (const k of map){
+    const el = qs(k);
+    el.value = state.data[k] || "";
+    el.addEventListener("input", () => {
+      state.data[k] = el.value;
+      render();
     });
+  }
 
-    const data = await res.json().catch(() => ({}));
+  qs("printBtn").addEventListener("click", () => {
+    // Print only the preview
+    const w = window.open("", "_blank");
+    const html = `
+      <html>
+        <head>
+          <title>CV</title>
+          <style>
+            body{font-family: Arial, sans-serif; margin:24px;}
+            h1{margin:0}
+            h2{font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:#334; margin-top:18px}
+            .muted{color:#667}
+            .topline{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px}
+            .pill{display:inline-block; background:#eef2ff; padding:4px 8px; border-radius:999px; font-size:12px}
+            ul{padding-left:18px}
+            li{margin:6px 0}
+          </style>
+        </head>
+        <body>${qs("preview").innerHTML}</body>
+      </html>
+    `;
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    w.print();
+  });
 
-    if (res.ok && data.ok) {
-      setUnlocked(true);
-      status.classList.add("ok");
-      status.textContent = "Låst opp ✅";
-      updateUI();
-      return;
-    }
+  qs("downloadHtmlBtn").addEventListener("click", () => {
+    const blob = new Blob([`<!doctype html><html><head><meta charset="utf-8"><title>CV</title></head><body>${qs("preview").innerHTML}</body></html>`], {type:"text/html"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "cv.html";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  });
 
-    setUnlocked(false);
-    status.classList.add("err");
-    status.textContent = data.error || "Ugyldig kode";
-    updateUI();
-  };
+  qs("logoutBtn").addEventListener("click", async () => {
+    await fetch("/api/logout", { method: "POST" }).catch(()=>{});
+    location.reload();
+  });
+}
 
-  resetBtn.onclick = () => {
-    setUnlocked(false);
-    status.className = "status";
-    status.textContent = "Nullstilt.";
-    updateUI();
-  };
+async function init(){
+  const locked = qs("locked");
+  const app = qs("app");
+  const logoutBtn = qs("logoutBtn");
 
-  updateUI();
-});
+  // Optional: put your Payhip product URL here (or set it in the DOM server-side)
+  const buyLink = qs("buyLink");
+  buyLink.href = "https://payhip.com/"; // <-- sett inn din Payhip product link
+
+  const me = await checkAccess().catch(()=>null);
+
+  if (!me || !me.hasAccess){
+    locked.style.display = "block";
+    app.style.display = "none";
+    logoutBtn.style.display = "none";
+    return;
+  }
+
+  locked.style.display = "none";
+  app.style.display = "block";
+  logoutBtn.style.display = "inline-flex";
+
+  render();
+  bindInputs();
+}
+
+init();

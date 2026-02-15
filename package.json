@@ -1,0 +1,7 @@
+{
+  "name": "cv-builder-magic",
+  "private": true,
+  "version": "1.0.0",
+  "description": "CV Builder with Payhip webhook + magic link access using Supabase and Vercel serverless.",
+  "license": "MIT"
+}

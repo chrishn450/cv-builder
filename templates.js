@@ -1,13 +1,43 @@
-export const templateHTML = `
-<div class="cv">
-  <h1 class="name">S A R A H  J O H N S O N</h1>
-  <p class="subtitle">REGISTERED NURSE · BSN, RN</p>
-  <p class="contact">(555) 123-4567 | sarah@email.com | Oslo | linkedin.com/in/sarahjohnson</p>
-  <hr class="rule">
+window.CVTemplates = {
+  classic: function(data){
+    const esc = (s="") => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const lines = (s="") => String(s).split("\n").map(x=>x.trim()).filter(Boolean);
 
-  <section>
-    <h3 class="section-title">P R O F E S S I O N A L  S U M M A R Y</h3>
-    <p>Compassionate and detail-oriented registered nurse with strong clinical expertise and patient-centered care experience.</p>
-  </section>
-</div>
-`;
+    const skills = (data.skills||"").split(",").map(x=>x.trim()).filter(Boolean);
+
+    return `
+      <div>
+        <h1>${esc(data.name||"Ditt navn")}</h1>
+        <div class="muted">${esc(data.title||"Din tittel")}</div>
+
+        <div class="topline">
+          ${data.email ? `<span class="pill">${esc(data.email)}</span>` : ``}
+          ${data.phone ? `<span class="pill">${esc(data.phone)}</span>` : ``}
+        </div>
+
+        ${data.summary ? `<h2>Profil</h2><p>${esc(data.summary)}</p>` : ``}
+
+        ${lines(data.experience).length ? `
+          <h2>Erfaring</h2>
+          <ul>
+            ${lines(data.experience).map(x=>`<li>${esc(x)}</li>`).join("")}
+          </ul>
+        ` : ``}
+
+        ${lines(data.education).length ? `
+          <h2>Utdanning</h2>
+          <ul>
+            ${lines(data.education).map(x=>`<li>${esc(x)}</li>`).join("")}
+          </ul>
+        ` : ``}
+
+        ${skills.length ? `
+          <h2>Ferdigheter</h2>
+          <div class="topline">
+            ${skills.map(s=>`<span class="pill">${esc(s)}</span>`).join("")}
+          </div>
+        ` : ``}
+      </div>
+    `;
+  }
+};

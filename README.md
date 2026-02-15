@@ -1,54 +1,91 @@
-# Nurse CV Studio — One-time codes (NO Supabase)
+# CV Builder (Payhip + Magic Link + Supabase) — Vercel-ready
 
-This build uses **Vercel KV** (Upstash Redis under the hood) to store one-time codes.
-When a code is redeemed, it is marked as used and cannot be redeemed again.
+Dette prosjektet gir kundene automatisk tilgang etter Payhip-kjøp via **webhook** og en **magic link**.
+Kunden trenger ikke å lime inn koder.
 
-## What you get
-- `codes.csv` with 10,000 unique codes (format XXXX-XXXX-XXXX-XXXX)
-- `/api/seed` endpoint to import codes into KV (run once)
-- `/api/redeem` endpoint to redeem a code (atomic check+set via Lua)
-- Frontend unlock UI that redeems codes and stores unlock in localStorage
+## Hvordan det funker (flyt)
+1. Kunde kjøper i Payhip
+2. Payhip sender `paid` webhook til `/api/payhip-webhook`
+3. Server:
+   - verifiserer webhook-signatur
+   - oppretter/oppdaterer kunde i Supabase
+   - lager en **one-time magic token** (utløper)
+   - sender e-post med lenke: `/magic.html?token=...`
+4. Kunden klikker lenken
+5. `/api/magic-exchange` bytter token -> session-cookie
+6. Appen kaller `/api/me` for å sjekke tilgang og viser CV-builderen
 
-## 1) Create / connect Vercel KV
-In Vercel:
-1. Project → Storage → Create → **KV**
-2. Attach it to this project
-3. Vercel will add env vars automatically (Production):
-   - `KV_REST_API_URL`
-   - `KV_REST_API_TOKEN`
-   - `KV_REST_API_READ_ONLY_TOKEN` (optional)
+---
 
-Redeploy after attaching KV.
+## 1) Supabase
+Kjør SQL-filen `supabase_schema.sql` i Supabase SQL editor.
 
-## 2) Seed the 10,000 codes (run once)
-This project includes `api/seed.js`. For safety it requires an env var `SEED_SECRET`.
+Du trenger:
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY` (server-side, aldri eksponer i frontend)
 
-### Set env var in Vercel
-Add in Vercel → Environment Variables (Production):
-- `SEED_SECRET` = choose a long random string
+> Merk: Denne appen bruker **egen sessions-cookie** (JWT) og ikke Supabase Auth.
 
-Redeploy.
+---
 
-### Call the seed endpoint
-Option A (recommended): Use curl from your computer:
+## 2) Payhip
+I Payhip:
+- Settings → Developer → Webhooks
+- URL: `https://<ditt-domene>/api/payhip-webhook`
+- Event: `paid`
 
-curl -X POST "https://YOUR_DOMAIN/api/seed" \
-  -H "Content-Type: application/json" \
-  -d '{"secret":"YOUR_SEED_SECRET","codes":["ABCD-EFGH-IJKL-MNOP","...."]}'
+Du må også ha Payhip API key i env (se under).
 
-For 10,000 codes, don't paste them by hand. Use the included helper script below.
+Webhook-verifisering følger Payhip sin dokumentasjon:
+`signature` sammenlignes med `sha256(PAYHIP_API_KEY)`.
 
-## 3) Helper script to seed from codes.csv
-Use Node 18+ locally (or any JS runtime) and run:
+---
 
-node seed_from_csv.mjs https://YOUR_DOMAIN/api/seed YOUR_SEED_SECRET codes.csv
+## 3) E-post (Resend)
+Dette repoet bruker Resend (enkel HTTP API).
+Lag en konto og en API key.
 
-## 4) Redeem in the app
-User enters code → app POSTs to `/api/redeem`.
-- Invalid: "Ugyldig kode"
-- Used: "Code already used"
-- Success: unlocks
+Env:
+- `RESEND_API_KEY`
+- `EMAIL_FROM` (må være en verifisert avsender i Resend)
 
-## Security notes
-- Keep `KV_REST_API_TOKEN` secret (server-only).
-- Keep `SEED_SECRET` secret. After seeding, you may remove/disable `/api/seed`.
+Hvis du vil bruke en annen provider, bytt ut `sendEmail()` i `api/_utils.js`.
+
+---
+
+## 4) Environment variables (Vercel)
+Sett disse i Vercel → Project → Settings → Environment Variables:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+- `PAYHIP_API_KEY`
+- `PAYHIP_PRODUCT_ID` *(valgfritt men anbefalt – for å kun gi tilgang til riktig produkt)*
+- `APP_BASE_URL` *(f.eks. https://cv-builder-orpin-beta.vercel.app)*
+
+- `RESEND_API_KEY`
+- `EMAIL_FROM`
+
+- `JWT_SECRET` *(til signering av session-cookie)*
+
+---
+
+## 5) Lokal kjøring (valgfritt)
+Dette er en statisk app + Vercel serverless endpoints.
+Du kan kjøre en enkel static server lokalt og simulere API via Vercel dev (om du ønsker).
+De fleste tester enklest direkte på Vercel.
+
+---
+
+## 6) Sikkerhet / idempotency
+- Payhip kan sende samme webhook flere ganger.
+- Vi lagrer `payhip_transaction_id` i `purchases` og sjekker før vi oppretter nye tokens.
+- Magic token lagres som **hash** og kan brukes kun én gang.
+
+---
+
+## Feilsøking
+- Sjekk Vercel logs for `/api/payhip-webhook`
+- Sjekk at `APP_BASE_URL` stemmer med domenet der appen kjører
+- Sjekk at Resend sender (API key + avsender)
+
