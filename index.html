@@ -53,123 +53,120 @@
           <label class="label">LinkedIn</label>
           <input id="linkedin" class="input" placeholder="linkedin.com/in/..." />
 
-          <!-- Summary -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" for="summary">Professional Summary</label>
-              <div class="toolbar" data-key="summary">
-                <button type="button" class="tbtn tbtn-bold" data-action="bold" title="Bold first line">B</button>
-                <button type="button" class="tbtn tbtn-bullets" data-action="bullets" title="Bullets on/off"></button>
-              </div>
+          <!-- Professional Summary -->
+          <div class="field-head">
+            <label class="label" for="summary">Professional Summary</label>
+            <div class="mini-tools">
+              <button class="mini-btn" type="button" data-action="toggle-section" data-key="summary" title="Show / Hide section">👁</button>
+              <button class="mini-btn" type="button" data-action="toggle-bold-first" data-key="summary" title="Bold first line">B</button>
             </div>
-            <textarea id="summary" class="textarea" rows="5" placeholder="Short professional summary..."></textarea>
           </div>
+          <textarea id="summary" class="textarea" rows="5" placeholder="Short professional summary..."></textarea>
 
           <!-- Education -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" for="education">Education (use blank line between entries)</label>
-              <div class="toolbar" data-key="education">
-                <button type="button" class="tbtn tbtn-bold" data-action="bold" title="Bold first line">B</button>
-                <button type="button" class="tbtn tbtn-bullets" data-action="bullets" title="Bullets on/off"></button>
-              </div>
+          <div class="field-head">
+            <label class="label" for="education">Education (blank line between entries)</label>
+            <div class="mini-tools">
+              <button class="mini-btn" type="button" data-action="toggle-section" data-key="education" title="Show / Hide section">👁</button>
             </div>
-            <textarea id="education" class="textarea" rows="6" placeholder="Degree
+          </div>
+          <textarea id="education" class="textarea" rows="6" placeholder="Degree
 School
 2016 – 2018
 
 Degree
 School
 2012 – 2016"></textarea>
-          </div>
 
           <!-- Licenses -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" for="licenses">Licenses & Certifications (title line + detail line)</label>
-              <div class="toolbar" data-key="licenses">
-                <button type="button" class="tbtn tbtn-bold" data-action="bold" title="Bold first line">B</button>
-                <button type="button" class="tbtn tbtn-bullets" data-action="bullets" title="Bullets on/off"></button>
-              </div>
+          <div class="field-head">
+            <label class="label" for="licenses">Licenses & Certifications (title line + detail line)</label>
+            <div class="mini-tools">
+              <button class="mini-btn" type="button" data-action="toggle-section" data-key="licenses" title="Show / Hide section">👁</button>
             </div>
-            <textarea id="licenses" class="textarea" rows="6" placeholder="Registered Nurse (RN)
+          </div>
+          <textarea id="licenses" class="textarea" rows="6" placeholder="Registered Nurse (RN)
 Texas Board of Nursing · #...
 
 ACLS
 American Heart Association · Exp. ..."></textarea>
-          </div>
 
           <!-- Clinical Skills -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" for="clinicalSkills">Clinical Skills (one per line)</label>
-              <div class="toolbar" data-key="clinicalSkills">
-                <button type="button" class="tbtn tbtn-bold" data-action="bold" title="Bold first line">B</button>
-                <button type="button" class="tbtn tbtn-bullets" data-action="bullets" title="Bullets on/off"></button>
-              </div>
+          <div class="field-head">
+            <label class="label" for="clinicalSkills">Clinical Skills</label>
+            <div class="mini-tools">
+              <button class="mini-btn" type="button" data-action="toggle-section" data-key="clinicalSkills" title="Show / Hide section">👁</button>
+              <button class="mini-btn mini-dot" type="button" data-action="toggle-mode" data-key="clinicalSkills" title="Bullets / Paragraph"></button>
+              <button class="mini-btn" type="button" data-action="toggle-bold-first" data-key="clinicalSkills" title="Bold first line">B</button>
             </div>
-            <textarea id="clinicalSkills" class="textarea" rows="6"></textarea>
           </div>
+          <textarea id="clinicalSkills" class="textarea" rows="6" placeholder="Patient Assessment & Triage
+IV Therapy
+..."></textarea>
 
           <!-- Core Competencies -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" for="coreCompetencies">Core Competencies (one per line)</label>
-              <div class="toolbar" data-key="coreCompetencies">
-                <button type="button" class="tbtn tbtn-bold" data-action="bold" title="Bold first line">B</button>
-                <button type="button" class="tbtn tbtn-bullets" data-action="bullets" title="Bullets on/off"></button>
-              </div>
+          <div class="field-head">
+            <label class="label" for="coreCompetencies">Core Competencies</label>
+            <div class="mini-tools">
+              <button class="mini-btn" type="button" data-action="toggle-section" data-key="coreCompetencies" title="Show / Hide section">👁</button>
+              <button class="mini-btn mini-dot" type="button" data-action="toggle-mode" data-key="coreCompetencies" title="Bullets / Paragraph"></button>
+              <button class="mini-btn" type="button" data-action="toggle-bold-first" data-key="coreCompetencies" title="Bold first line">B</button>
             </div>
-            <textarea id="coreCompetencies" class="textarea" rows="5"></textarea>
           </div>
+          <textarea id="coreCompetencies" class="textarea" rows="5" placeholder="Critical Thinking
+Team Leadership
+..."></textarea>
 
           <!-- Languages -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" for="languages">Languages (one per line)</label>
-              <div class="toolbar" data-key="languages">
-                <button type="button" class="tbtn tbtn-bold" data-action="bold" title="Bold first line">B</button>
-                <button type="button" class="tbtn tbtn-bullets" data-action="bullets" title="Bullets on/off"></button>
-              </div>
+          <div class="field-head">
+            <label class="label" for="languages">Languages</label>
+            <div class="mini-tools">
+              <button class="mini-btn" type="button" data-action="toggle-section" data-key="languages" title="Show / Hide section">👁</button>
+              <button class="mini-btn mini-dot" type="button" data-action="toggle-mode" data-key="languages" title="Bullets / Paragraph"></button>
+              <button class="mini-btn" type="button" data-action="toggle-bold-first" data-key="languages" title="Bold first line">B</button>
             </div>
-            <textarea id="languages" class="textarea" rows="3"></textarea>
           </div>
+          <textarea id="languages" class="textarea" rows="3" placeholder="English — Native
+Spanish — Conversational"></textarea>
 
           <!-- Experience -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" for="experience">Experience (blank line between roles)</label>
-              <div class="toolbar" data-key="experience">
-                <button type="button" class="tbtn tbtn-bold" data-action="bold" title="Bold first line">B</button>
-                <button type="button" class="tbtn tbtn-bullets" data-action="bullets" title="Bullets on/off"></button>
-              </div>
+          <div class="field-head">
+            <label class="label" for="experience">Experience (blank line between roles)</label>
+            <div class="mini-tools">
+              <button class="mini-btn" type="button" data-action="toggle-section" data-key="experience" title="Show / Hide section">👁</button>
             </div>
-            <textarea id="experience" class="textarea" rows="10"></textarea>
           </div>
+          <textarea id="experience" class="textarea" rows="10" placeholder="Senior Registered Nurse – ICU
+Hospital, City | 2021 – Present
+Bullet 1
+Bullet 2
+
+Registered Nurse – ED
+Hospital, City | 2018 – 2020
+Bullet 1"></textarea>
 
           <!-- Achievements -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" for="achievements">Clinical Achievements (one per line)</label>
-              <div class="toolbar" data-key="achievements">
-                <button type="button" class="tbtn tbtn-bold" data-action="bold" title="Bold first line">B</button>
-                <button type="button" class="tbtn tbtn-bullets" data-action="bullets" title="Bullets on/off"></button>
-              </div>
+          <div class="field-head">
+            <label class="label" for="achievements">Clinical Achievements</label>
+            <div class="mini-tools">
+              <button class="mini-btn" type="button" data-action="toggle-section" data-key="achievements" title="Show / Hide section">👁</button>
+              <button class="mini-btn mini-dot" type="button" data-action="toggle-mode" data-key="achievements" title="Bullets / Paragraph"></button>
+              <button class="mini-btn" type="button" data-action="toggle-bold-first" data-key="achievements" title="Bold first line">B</button>
             </div>
-            <textarea id="achievements" class="textarea" rows="4"></textarea>
           </div>
+          <textarea id="achievements" class="textarea" rows="4" placeholder="Achievement 1
+Achievement 2"></textarea>
 
           <!-- Volunteer -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" for="volunteer">Volunteer (one block)</label>
-              <div class="toolbar" data-key="volunteer">
-                <button type="button" class="tbtn tbtn-bold" data-action="bold" title="Bold first line">B</button>
-                <button type="button" class="tbtn tbtn-bullets" data-action="bullets" title="Bullets on/off"></button>
-              </div>
+          <div class="field-head">
+            <label class="label" for="volunteer">Volunteer (one block)</label>
+            <div class="mini-tools">
+              <button class="mini-btn" type="button" data-action="toggle-section" data-key="volunteer" title="Show / Hide section">👁</button>
             </div>
-            <textarea id="volunteer" class="textarea" rows="4"></textarea>
           </div>
+          <textarea id="volunteer" class="textarea" rows="4" placeholder="Volunteer Nurse | 2019 – Present
+Organization · Program
+Bullet 1"></textarea>
 
           <div class="row">
             <button id="printBtn" class="btn">Print / Save as PDF</button>
@@ -183,7 +180,7 @@ American Heart Association · Exp. ..."></textarea>
 
         <div class="card">
           <h2>Preview</h2>
-          <div id="preview" class="cv"></div>
+          <div id="preview"></div>
         </div>
       </div>
     </section>
