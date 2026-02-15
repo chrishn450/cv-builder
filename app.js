@@ -88,7 +88,7 @@ async function init(){
 
   // Optional: put your Payhip product URL here (or set it in the DOM server-side)
   const buyLink = qs("buyLink");
-  buyLink.href = "https://payhip.com/"; // <-- sett inn din Payhip product link
+  buyLink.href = "https://payhip.com/b/AeoVP"; // <-- sett inn din Payhip product link
 
   const me = await checkAccess().catch(()=>null);
 
