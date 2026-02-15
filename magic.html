@@ -1,16 +1,16 @@
 <!doctype html>
-<html lang="no">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Logger inn...</title>
+  <title>Signing in...</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <main class="container">
     <section class="card">
-      <h1>Logger inn…</h1>
-      <p id="status" class="muted">Venter…</p>
+      <h1>Signing in…</h1>
+      <p id="status" class="muted">Please wait…</p>
     </section>
   </main>
 
@@ -21,12 +21,12 @@
       const token = url.searchParams.get("token");
 
       if (!token) {
-        statusEl.textContent = "Mangler token i URL.";
+        statusEl.textContent = "Missing token in URL.";
         return;
       }
 
       try {
-        statusEl.textContent = "Verifiserer…";
+        statusEl.textContent = "Verifying…";
         const res = await fetch("/api/magic-exchange", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -36,14 +36,15 @@
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-          statusEl.textContent = data.error || "Kunne ikke logge inn (token ugyldig/utløpt).";
+          statusEl.textContent =
+            data.error || "Unable to sign in (invalid or expired link).";
           return;
         }
 
-        statusEl.textContent = "OK! Sender deg videre…";
-        setTimeout(() => window.location.href = "/", 600);
+        statusEl.textContent = "Success! Redirecting…";
+        setTimeout(() => (window.location.href = "/"), 600);
       } catch (e) {
-        statusEl.textContent = "Nettverksfeil. Prøv igjen.";
+        statusEl.textContent = "Network error. Please try again.";
       }
     })();
   </script>
