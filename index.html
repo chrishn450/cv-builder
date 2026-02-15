@@ -68,13 +68,13 @@
               <button class="tbtn" data-action="bold" type="button" title="Bold (** **)"><b>B</b></button>
               <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
             </div>
-            <textarea id="summary" class="textarea" rows="5"></textarea>
+            <textarea id="summary" class="textarea" rows="5" placeholder="Write your summary..."></textarea>
           </div>
 
-          <!-- EDUCATION -->
+          <!-- EDUCATION (structured) -->
           <div class="field">
             <div class="field-head">
-              <label class="label">Education (blank line between entries)</label>
+              <label class="label">Education</label>
               <div class="field-controls">
                 <label class="toggle">
                   <input type="checkbox" id="sec_education_enabled" checked />
@@ -83,17 +83,21 @@
                 <input id="sec_education_title" class="input small" value="Education" />
               </div>
             </div>
-            <div class="toolbar" data-for="education">
-              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-              <button class="tbtn tdot" data-action="bullets" type="button"></button>
+
+            <div id="educationBlocks"></div>
+
+            <div class="row" style="margin-top:10px;">
+              <button id="addEducationBlock" class="btn ghost" type="button">+ Add education</button>
             </div>
-            <textarea id="education" class="textarea" rows="6"></textarea>
+
+            <!-- hidden aggregate field for renderer -->
+            <textarea id="education" class="textarea" rows="6" style="display:none;"></textarea>
           </div>
 
-          <!-- LICENSES -->
+          <!-- LICENSES (structured: title+detail pairs) -->
           <div class="field">
             <div class="field-head">
-              <label class="label">Licenses & Certifications (title line + detail line)</label>
+              <label class="label">Licenses & Certifications</label>
               <div class="field-controls">
                 <label class="toggle">
                   <input type="checkbox" id="sec_licenses_enabled" checked />
@@ -102,11 +106,15 @@
                 <input id="sec_licenses_title" class="input small" value="Licenses & Certifications" />
               </div>
             </div>
-            <div class="toolbar" data-for="licenses">
-              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-              <button class="tbtn tdot" data-action="bullets" type="button"></button>
+
+            <div id="licenseBlocks"></div>
+
+            <div class="row" style="margin-top:10px;">
+              <button id="addLicenseBlock" class="btn ghost" type="button">+ Add license</button>
             </div>
-            <textarea id="licenses" class="textarea" rows="6"></textarea>
+
+            <!-- hidden aggregate field -->
+            <textarea id="licenses" class="textarea" rows="6" style="display:none;"></textarea>
           </div>
 
           <!-- CLINICAL SKILLS -->
@@ -125,7 +133,7 @@
               <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
               <button class="tbtn tdot" data-action="bullets" type="button"></button>
             </div>
-            <textarea id="clinicalSkills" class="textarea" rows="6"></textarea>
+            <textarea id="clinicalSkills" class="textarea" rows="6" placeholder="One per line..."></textarea>
           </div>
 
           <!-- CORE COMPETENCIES -->
@@ -144,7 +152,7 @@
               <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
               <button class="tbtn tdot" data-action="bullets" type="button"></button>
             </div>
-            <textarea id="coreCompetencies" class="textarea" rows="5"></textarea>
+            <textarea id="coreCompetencies" class="textarea" rows="5" placeholder="One per line..."></textarea>
           </div>
 
           <!-- LANGUAGES -->
@@ -163,13 +171,13 @@
               <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
               <button class="tbtn tdot" data-action="bullets" type="button"></button>
             </div>
-            <textarea id="languages" class="textarea" rows="3"></textarea>
+            <textarea id="languages" class="textarea" rows="3" placeholder="One per line..."></textarea>
           </div>
 
-          <!-- EXPERIENCE -->
+          <!-- EXPERIENCE (structured jobs) -->
           <div class="field">
             <div class="field-head">
-              <label class="label">Experience (blank line between roles)</label>
+              <label class="label">Experience (jobs)</label>
               <div class="field-controls">
                 <label class="toggle">
                   <input type="checkbox" id="sec_experience_enabled" checked />
@@ -178,11 +186,15 @@
                 <input id="sec_experience_title" class="input small" value="Professional Experience" />
               </div>
             </div>
-            <div class="toolbar" data-for="experience">
-              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-              <button class="tbtn tdot" data-action="bullets" type="button"></button>
+
+            <div id="experienceJobs"></div>
+
+            <div class="row" style="margin-top:10px;">
+              <button id="addExperienceJob" class="btn ghost" type="button">+ Add job</button>
             </div>
-            <textarea id="experience" class="textarea" rows="10"></textarea>
+
+            <!-- hidden aggregate field -->
+            <textarea id="experience" class="textarea" rows="10" style="display:none;"></textarea>
           </div>
 
           <!-- ACHIEVEMENTS -->
@@ -201,13 +213,13 @@
               <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
               <button class="tbtn tdot" data-action="bullets" type="button"></button>
             </div>
-            <textarea id="achievements" class="textarea" rows="4"></textarea>
+            <textarea id="achievements" class="textarea" rows="4" placeholder="One per line..."></textarea>
           </div>
 
-          <!-- VOLUNTEER -->
+          <!-- VOLUNTEER (structured: 3 blocks) -->
           <div class="field">
             <div class="field-head">
-              <label class="label">Volunteer (one block)</label>
+              <label class="label">Volunteer</label>
               <div class="field-controls">
                 <label class="toggle">
                   <input type="checkbox" id="sec_volunteer_enabled" checked />
@@ -216,11 +228,15 @@
                 <input id="sec_volunteer_title" class="input small" value="Volunteer Experience" />
               </div>
             </div>
-            <div class="toolbar" data-for="volunteer">
-              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-              <button class="tbtn tdot" data-action="bullets" type="button"></button>
+
+            <div id="volunteerBlocks"></div>
+
+            <div class="row" style="margin-top:10px;">
+              <button id="addVolunteerBlock" class="btn ghost" type="button">+ Add volunteer</button>
             </div>
-            <textarea id="volunteer" class="textarea" rows="4"></textarea>
+
+            <!-- hidden aggregate field -->
+            <textarea id="volunteer" class="textarea" rows="6" style="display:none;"></textarea>
           </div>
 
           <hr />
@@ -241,7 +257,7 @@
               <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
               <button class="tbtn tdot" data-action="bullets" type="button"></button>
             </div>
-            <textarea id="custom1" class="textarea" rows="5"></textarea>
+            <textarea id="custom1" class="textarea" rows="5" placeholder="..."></textarea>
           </div>
 
           <!-- CUSTOM 2 -->
@@ -260,7 +276,7 @@
               <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
               <button class="tbtn tdot" data-action="bullets" type="button"></button>
             </div>
-            <textarea id="custom2" class="textarea" rows="5"></textarea>
+            <textarea id="custom2" class="textarea" rows="5" placeholder="..."></textarea>
           </div>
 
           <div class="row">
@@ -269,7 +285,7 @@
           </div>
 
           <p class="muted small">
-            Formatting: select text and press <b>B</b> to apply <code>**bold**</code>. Select lines and press <b>•</b> for bullets.
+            Formatting: select text and press <b>B</b> to apply <code>**bold**</code>. Press <b>•</b> to toggle bullet typing.
           </p>
         </div>
 
