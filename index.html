@@ -1,85 +1,332 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CV Builder</title>
-  <link rel="stylesheet" href="./styles.css" />
-</head>
-<body>
-  <header class="topbar">
-    <div class="brand">CV Builder</div>
-    <div class="actions">
-      <button id="logoutBtn" class="btn ghost" style="display:none;">Log out</button>
-    </div>
-  </header>
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  <main class="container">
-    <section id="locked" class="card" style="display:none;">
-      <h1>Access required</h1>
-      <p>You need access to use the CV Builder.</p>
-      <p class="muted">
-        If you just purchased: check your email for your login link.
-      </p>
-      <div class="row">
-        <a class="btn" id="buyLink" href="#" target="_blank" rel="noreferrer">Buy access</a>
-      </div>
-      <hr />
-      <p class="muted small">
-        Have a magic link? Open the link from your email (it ends with <code>/magic.html?token=...</code>).
-      </p>
-    </section>
+:root {
+  --cv-bg: #f9f6f0;
+  --cv-heading: #2c2c2c;
+  --cv-body: #3a3a3a;
+  --cv-light: #7a7a7a;
+  --cv-accent: #b8a88a;
+  --cv-border: #d6cdb8;
+  --cv-rule: rgba(184,168,138,0.3);
+}
 
-    <section id="app" style="display:none;">
-      <div class="grid">
-        <div class="card">
-          <h2>Edit content</h2>
+html { font-size: 16px; }
+body {
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #111;
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+}
 
-          <label class="label">Full name</label>
-          <input id="name" class="input" placeholder="Jane Doe" />
+/* Optional helpers */
+.no-print {}
 
-          <label class="label">Title</label>
-          <input id="title" class="input" placeholder="Nurse / Engineer / ..." />
+/* ──────────────────────────────────────────────
+   CV TEMPLATE (scoped to .cv so it won't break UI)
+   ────────────────────────────────────────────── */
 
-          <label class="label">Email</label>
-          <input id="email" class="input" placeholder="jane@email.com" />
+.cv {
+  width: 210mm;
+  min-height: 297mm;
+  background: var(--cv-bg);
+  border: 2px solid var(--cv-border);
+  margin: 20px auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--cv-body);
+}
 
-          <label class="label">Phone</label>
-          <input id="phone" class="input" placeholder="+47 ..." />
+/* ── Header ── */
+.cv .cv-header {
+  text-align: center;
+  padding: 38px 40px 20px;
+  border-bottom: 1px solid var(--cv-rule);
+}
 
-          <label class="label">Profile (short summary)</label>
-          <textarea id="summary" class="textarea" rows="5" placeholder="Short profile summary..."></textarea>
+.cv .cv-name {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--cv-heading);
+}
 
-          <label class="label">Experience (one per line)</label>
-          <textarea id="experience" class="textarea" rows="6" placeholder="2023–2025 — Role, Company
-2021–2023 — ..."></textarea>
+.cv .cv-title {
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 9.5px;
+  font-weight: 300;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--cv-light);
+  margin-top: 6px;
+}
 
-          <label class="label">Education (one per line)</label>
-          <textarea id="education" class="textarea" rows="5" placeholder="2020–2023 — Degree, School
-..."></textarea>
+.cv .cv-contact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0 18px;
+  margin-top: 14px;
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 8.5px;
+  color: var(--cv-body);
+}
 
-          <label class="label">Skills (comma-separated)</label>
-          <input id="skills" class="input" placeholder="Communication, Teamwork, ..." />
+.cv .cv-contact .sep { color: var(--cv-light); }
 
-          <div class="row">
-            <button id="printBtn" class="btn">Download as PDF (Print)</button>
-            <button id="downloadHtmlBtn" class="btn ghost">Download HTML</button>
-          </div>
+/* ── Summary ── */
+.cv .cv-summary { padding: 18px 40px 14px; }
 
-          <p class="muted small">
-            The PDF button opens your browser's print dialog (choose “Save as PDF”).
-          </p>
-        </div>
+.cv .body-text {
+  font-size: 9px;
+  line-height: 1.7;
+  color: var(--cv-body);
+}
 
-        <div class="card">
-          <h2>Preview</h2>
-          <div id="preview" class="cv"></div>
-        </div>
-      </div>
-    </section>
-  </main>
+/* ── Two-column body ── */
+.cv .cv-body {
+  display: flex;
+  flex: 1;
+  padding: 0 40px 24px;
+  gap: 30px;
+}
 
-  <script src="./templates.js"></script>
-  <script src="./app.js"></script>
-</body>
-</html>
+.cv .cv-left  { width: 34%; display: flex; flex-direction: column; gap: 14px; }
+.cv .cv-right { flex: 1;  display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Section titles ── */
+.cv .section-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: var(--cv-heading);
+  border-bottom: 1px solid var(--cv-rule);
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+}
+
+/* ── Base text inside CV ── */
+.cv p, .cv li, .cv span {
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ── Education / Cert blocks ── */
+.cv .edu-block { margin-bottom: 8px; }
+
+.cv .edu-block h3 {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--cv-heading);
+}
+
+.cv .edu-block p {
+  font-size: 8.5px;
+  color: var(--cv-body);
+}
+
+.cv .edu-block .date {
+  font-size: 8px;
+  color: var(--cv-light);
+}
+
+.cv .edu-block .honors {
+  font-size: 8px;
+  color: var(--cv-light);
+  font-style: italic;
+}
+
+/* ── Certifications ── */
+.cv .cert-item { margin-bottom: 6px; }
+
+.cv .cert-item h3 {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--cv-heading);
+}
+
+.cv .cert-item p {
+  font-size: 8px;
+  color: var(--cv-light);
+}
+
+/* ── Lists (skills, experience, achievements) ── */
+.cv .skill-list,
+.cv .exp-bullets,
+.cv .achievement-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.cv .skill-list li,
+.cv .exp-bullets li,
+.cv .achievement-list li {
+  font-size: 8.5px;
+  line-height: 1.6;
+  color: var(--cv-body);
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-bottom: 2px;
+}
+
+.cv .skill-list li::before,
+.cv .exp-bullets li::before,
+.cv .achievement-list li::before {
+  content: "";
+  margin-top: 5px;
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: 50%;
+  background: var(--cv-accent);
+  flex-shrink: 0;
+}
+
+/* ── Experience entries ── */
+.cv .exp-entry { margin-bottom: 12px; }
+
+.cv .exp-entry h3 {
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cv-heading);
+}
+
+.cv .exp-entry .meta {
+  font-size: 8.5px;
+  color: var(--cv-light);
+  margin: 1px 0 4px;
+}
+
+/* ── Achievements ── */
+.cv .achievement-list li { margin-bottom: 2px; }
+
+/* ── Volunteer ── */
+.cv .vol-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.cv .vol-header h3 {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--cv-heading);
+}
+
+.cv .vol-header .date {
+  font-size: 8px;
+  color: var(--cv-light);
+}
+
+.cv .vol-sub {
+  font-size: 8.5px;
+  color: var(--cv-light);
+  margin: 0 0 4px;
+}
+
+/* ── Languages ── */
+.cv .lang-list p {
+  font-size: 8.5px;
+  color: var(--cv-body);
+  margin: 2px 0;
+}
+
+/* ──────────────────────────────────────────────
+   Optional: simple editor/button styles (safe)
+   ────────────────────────────────────────────── */
+
+.btn-print {
+  display: inline-block;
+  margin: 16px auto;
+  padding: 10px 28px;
+  background: #2c2c2c;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.btn-print:hover { opacity: 0.9; }
+
+.editor {
+  max-width: 760px;
+  margin: 30px auto;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+.editor h2 { font-size: 18px; margin-bottom: 16px; color: #333; }
+.editor label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  margin: 10px 0 3px;
+}
+.editor input, .editor textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+}
+.editor textarea { min-height: 80px; resize: vertical; }
+.editor button {
+  margin-top: 16px;
+  padding: 10px 24px;
+  background: #2c2c2c;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.editor button:hover { opacity: 0.9; }
+
+/* ── Print styles ── */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
+
+  /* Hide everything except the CV */
+  .no-print,
+  .editor,
+  .btn-print,
+  header.topbar,
+  #locked,
+  #logoutBtn,
+  button,
+  a.btn {
+    display: none !important;
+  }
+
+  .cv {
+    width: 210mm;
+    height: 297mm;
+    margin: 0;
+    border: 2px solid var(--cv-border);
+    box-shadow: none;
+    page-break-after: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
