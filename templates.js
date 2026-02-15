@@ -51,19 +51,14 @@
     });
   }
 
-  // Generic section renderer: title + content (bullets or paragraphs)
   function renderSimpleSection({ title, content, mode, boldFirstLine }) {
     const items = lines(content);
-
     if (!items.length) return "";
 
-    // paragraph mode: join as <p> lines
     if (mode === "paragraph") {
       const ps = items
         .map((t, idx) => {
-          if (boldFirstLine && idx === 0) {
-            return `<p><strong>${esc(t)}</strong></p>`;
-          }
+          if (boldFirstLine && idx === 0) return `<p><strong>${esc(t)}</strong></p>`;
           return `<p>${esc(t)}</p>`;
         })
         .join("");
@@ -75,15 +70,13 @@
       `;
     }
 
-    // bullets mode
     const lis = items
       .map((t, idx) => {
-        if (boldFirstLine && idx === 0) {
-          return `<li><strong>${esc(t)}</strong></li>`;
-        }
+        if (boldFirstLine && idx === 0) return `<li><strong>${esc(t)}</strong></li>`;
         return `<li>${esc(t)}</li>`;
       })
       .join("");
+
     return `
       <section>
         <h2 class="section-title">${esc(title)}</h2>
@@ -189,7 +182,7 @@
   window.renderCV = function renderCV(data) {
     const raw = data || {};
 
-    // Demo/default content (shown until user types)
+    // Default demo text (shows until user types)
     const defaults = {
       name: "Sarah Johnson",
       title: "Registered Nurse · BSN, RN",
@@ -209,21 +202,18 @@
         "Team Leadership & Mentoring\nCritical Thinking\nPatient & Family Education\nTime Management\nInterdisciplinary Collaboration",
       languages: "English — Native\nSpanish — Conversational",
       experience:
-        "Senior Registered Nurse – ICU\nSt. David's Medical Center, Austin, TX | January 2021 – Present\nProvide direct care for 4–6 critically ill patients per shift in a 32-bed ICU, including post-surgical, cardiac, and respiratory cases\nReduced hospital-acquired infection rates by 18% through implementation of enhanced hygiene and monitoring protocols\nMentor and precept 12+ new graduate nurses annually on unit protocols, charting standards, and clinical best practices\nMaintain 98% patient satisfaction scores consistently across quarterly Press Ganey surveys\nCollaborate with multidisciplinary teams including physicians, pharmacists, and respiratory therapists on individualized care plans\n\nRegistered Nurse – Emergency Department\nSeton Medical Center, Austin, TX | June 2018 – December 2020\nTriaged and assessed 30+ patients daily in a high-volume Level I trauma center serving 85,000+ annual visits\nAdministered medications, IV therapy, and emergency interventions with zero medication errors over 2.5 years\nRecognized as Employee of the Quarter (Q3 2019) for exceptional patient care and team collaboration\nMaintained accurate real-time documentation using Epic EHR system for all patient encounters\n\nStaff Nurse – Medical-Surgical Unit\nDell Children's Medical Center, Austin, TX | August 2016 – May 2018\nDelivered compassionate care to 20+ pediatric patients daily aged 2–17 across medical and surgical units\nMonitored and documented vital signs, lab results, and medication responses with 100% charting compliance\nEducated 500+ families on post-discharge care plans, medication schedules, and follow-up procedures",
+        "Senior Registered Nurse – ICU\nSt. David's Medical Center, Austin, TX | January 2021 – Present\nProvide direct care for 4–6 critically ill patients per shift in a 32-bed ICU, including post-surgical, cardiac, and respiratory cases\nReduced hospital-acquired infection rates by 18% through implementation of enhanced hygiene and monitoring protocols\nMentor and precept 12+ new graduate nurses annually on unit protocols, charting standards, and clinical best practices\nMaintain 98% patient satisfaction scores consistently across quarterly Press Ganey surveys\nCollaborate with multidisciplinary teams including physicians, pharmacists, and respiratory therapists on individualized care plans\n\nRegistered Nurse – Emergency Department\nSeton Medical Center, Austin, TX | June 2018 – December 2020\nTriaged and assessed 30+ patients daily in a high-volume Level I trauma center serving 85,000+ annual visits\nAdministered medications, IV therapy, and emergency interventions with zero medication errors over 2.5 years\nRecognized as Employee of the Quarter (Q3 2019) for exceptional patient care and team collaboration\nMaintained accurate real-time documentation using Epic EHR system for all patient encounters",
       achievements:
         "Spearheaded ICU sepsis screening protocol resulting in 22% faster identification and 15% reduction in mortality\nDeveloped new-hire orientation program adopted hospital-wide, reducing onboarding time by 3 weeks\nPublished research on nurse-led ventilator weaning protocols in the Journal of Critical Care Nursing (2022)\nAwarded Daisy Award for Extraordinary Nurses (2021) — nominated by patients and families",
       volunteer:
         "Volunteer Nurse | 2019 – Present\nAustin Free Clinic · Community Health Outreach\nProvide free health screenings and vaccinations to 200+ underserved community members annually",
+      custom1: "",
+      custom2: "",
     };
 
-    // Merge: empty field -> default
     const d = {};
-    for (const k in defaults) {
-      d[k] = hasText(raw[k]) ? raw[k] : defaults[k];
-    }
+    for (const k in defaults) d[k] = hasText(raw[k]) ? raw[k] : defaults[k];
 
-    // 🔧 Sections config (editable via app.js/index.html if you add fields)
-    // You can pass raw.sections as JSON (string or object). If missing, use defaults.
     const defaultSections = {
       summary: { enabled: true, title: "Professional Summary" },
       education: { enabled: true, title: "Education" },
@@ -234,18 +224,11 @@
       experience: { enabled: true, title: "Professional Experience" },
       achievements: { enabled: true, title: "Clinical Achievements", mode: "bullets", boldFirstLine: false },
       volunteer: { enabled: true, title: "Volunteer Experience" },
+      custom1: { enabled: false, title: "Custom Section 1", mode: "bullets", boldFirstLine: false, column: "right" },
+      custom2: { enabled: false, title: "Custom Section 2", mode: "bullets", boldFirstLine: false, column: "right" },
     };
 
-    let sections = defaultSections;
-    try {
-      if (raw.sections && typeof raw.sections === "string") {
-        sections = { ...defaultSections, ...JSON.parse(raw.sections) };
-      } else if (raw.sections && typeof raw.sections === "object") {
-        sections = { ...defaultSections, ...raw.sections };
-      }
-    } catch {
-      sections = defaultSections;
-    }
+    const sections = { ...defaultSections, ...(raw.sections || {}) };
 
     // Contact line
     const contactParts = [d.phone, d.email, d.location, d.linkedin].filter(Boolean);
@@ -256,7 +239,45 @@
       })
       .join("");
 
-    // Left column sections
+    // Summary
+    const summaryHTML =
+      sections.summary?.enabled
+        ? `
+          <section class="cv-summary">
+            <h2 class="section-title">${esc(sections.summary.title || "Professional Summary")}</h2>
+            <p class="body-text">${esc(d.summary)}</p>
+          </section>
+        `
+        : "";
+
+    // Custom sections renderer
+    function renderCustom(key) {
+      const cfg = sections[key];
+      if (!cfg?.enabled) return "";
+      const content = d[key] || "";
+      return renderSimpleSection({
+        title: cfg.title || "Custom Section",
+        content,
+        mode: cfg.mode || "bullets",
+        boldFirstLine: !!cfg.boldFirstLine,
+      });
+    }
+
+    const customLeft = [renderCustom("custom1"), renderCustom("custom2")].filter(Boolean);
+    const customRight = [renderCustom("custom1"), renderCustom("custom2")].filter(Boolean);
+
+    // Place custom sections by column
+    const leftCustomHTML = ["custom1", "custom2"]
+      .filter((k) => sections[k]?.enabled && (sections[k].column || "right") === "left")
+      .map((k) => renderCustom(k))
+      .join("");
+
+    const rightCustomHTML = ["custom1", "custom2"]
+      .filter((k) => sections[k]?.enabled && (sections[k].column || "right") === "right")
+      .map((k) => renderCustom(k))
+      .join("");
+
+    // Left column
     const leftHTML = [
       sections.education?.enabled ? renderEducationSection(sections.education.title, d.education) : "",
       sections.licenses?.enabled ? renderLicensesSection(sections.licenses.title, d.licenses) : "",
@@ -284,9 +305,10 @@
             boldFirstLine: !!sections.languages.boldFirstLine,
           })
         : "",
+      leftCustomHTML,
     ].join("");
 
-    // Right column sections
+    // Right column
     const rightHTML = [
       sections.experience?.enabled ? renderExperienceSection(sections.experience.title, d.experience) : "",
       sections.achievements?.enabled
@@ -298,16 +320,8 @@
           })
         : "",
       sections.volunteer?.enabled ? renderVolunteerSection(sections.volunteer.title, d.volunteer) : "",
+      rightCustomHTML,
     ].join("");
-
-    const summaryHTML = sections.summary?.enabled
-      ? `
-        <section class="cv-summary">
-          <h2 class="section-title">${esc(sections.summary.title || "Professional Summary")}</h2>
-          <p class="body-text">${esc(d.summary)}</p>
-        </section>
-      `
-      : "";
 
     return `
       <div class="cv">
