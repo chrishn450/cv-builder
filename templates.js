@@ -8,6 +8,24 @@
       .replace(/>/g, "&gt;");
   }
 
+  // Render **bold** while keeping everything else escaped.
+  // Steps:
+  // 1) Split on **...** patterns
+  // 2) Escape each piece
+  // 3) Wrap bold parts in <strong>
+  function fmtInline(text) {
+    const t = String(text ?? "");
+    if (!t) return "";
+    const parts = t.split(/(\*\*[^*]+\*\*)/g);
+    return parts
+      .map((p) => {
+        const m = p.match(/^\*\*([^*]+)\*\*$/);
+        if (m) return `<strong>${esc(m[1])}</strong>`;
+        return esc(p);
+      })
+      .join("");
+  }
+
   function hasText(v) {
     return v != null && String(v).trim().length > 0;
   }
@@ -51,6 +69,7 @@
     });
   }
 
+  // mode: "bullets" | "paragraph"
   function renderSimpleSection({ title, content, mode, boldFirstLine }) {
     const items = lines(content);
     if (!items.length) return "";
@@ -58,8 +77,9 @@
     if (mode === "paragraph") {
       const ps = items
         .map((t, idx) => {
-          if (boldFirstLine && idx === 0) return `<p><strong>${esc(t)}</strong></p>`;
-          return `<p>${esc(t)}</p>`;
+          const inner = fmtInline(t);
+          if (boldFirstLine && idx === 0) return `<p><strong>${inner}</strong></p>`;
+          return `<p>${inner}</p>`;
         })
         .join("");
       return `
@@ -72,8 +92,9 @@
 
     const lis = items
       .map((t, idx) => {
-        if (boldFirstLine && idx === 0) return `<li><strong>${esc(t)}</strong></li>`;
-        return `<li>${esc(t)}</li>`;
+        const inner = fmtInline(t);
+        if (boldFirstLine && idx === 0) return `<li><strong>${inner}</strong></li>`;
+        return `<li>${inner}</li>`;
       })
       .join("");
 
@@ -88,18 +109,23 @@
   function renderExperienceSection(title, experienceText) {
     const exps = parseExperience(experienceText);
     if (!exps.length) return "";
+
     const expHTML = exps
       .map((e) => {
-        const bullets = (e.bullets || []).map((b) => `<li>${esc(b)}</li>`).join("");
+        const bullets = (e.bullets || [])
+          .map((b) => `<li>${fmtInline(b)}</li>`)
+          .join("");
+
         return `
           <div class="exp-entry">
-            <h3>${esc(e.title)}</h3>
-            ${e.meta ? `<p class="meta">${esc(e.meta)}</p>` : ""}
+            <h3>${fmtInline(e.title)}</h3>
+            ${e.meta ? `<p class="meta">${fmtInline(e.meta)}</p>` : ""}
             ${bullets ? `<ul class="exp-bullets">${bullets}</ul>` : ""}
           </div>
         `;
       })
       .join("");
+
     return `
       <section>
         <h2 class="section-title">${esc(title)}</h2>
@@ -111,17 +137,19 @@
   function renderEducationSection(title, educationText) {
     const edu = parseEducation(educationText);
     if (!edu.length) return "";
+
     const eduHTML = edu
       .map(
         (e) => `
         <div class="edu-block">
-          <h3>${esc(e.degree)}</h3>
-          ${e.school ? `<p>${esc(e.school)}</p>` : ""}
-          ${e.date ? `<p class="date">${esc(e.date)}</p>` : ""}
-          ${e.honors ? `<p class="honors">${esc(e.honors)}</p>` : ""}
+          <h3>${fmtInline(e.degree)}</h3>
+          ${e.school ? `<p>${fmtInline(e.school)}</p>` : ""}
+          ${e.date ? `<p class="date">${fmtInline(e.date)}</p>` : ""}
+          ${e.honors ? `<p class="honors">${fmtInline(e.honors)}</p>` : ""}
         </div>`
       )
       .join("");
+
     return `
       <section>
         <h2 class="section-title">${esc(title)}</h2>
@@ -133,14 +161,16 @@
   function renderLicensesSection(title, licensesText) {
     const licLines = lines(licensesText);
     if (!licLines.length) return "";
+
     let licHTML = "";
     for (let j = 0; j < licLines.length; j += 2) {
       licHTML += `
         <div class="cert-item">
-          <h3>${esc(licLines[j] || "")}</h3>
-          ${licLines[j + 1] ? `<p>${esc(licLines[j + 1])}</p>` : ""}
+          <h3>${fmtInline(licLines[j] || "")}</h3>
+          ${licLines[j + 1] ? `<p>${fmtInline(licLines[j + 1])}</p>` : ""}
         </div>`;
     }
+
     return `
       <section>
         <h2 class="section-title">${esc(title)}</h2>
@@ -152,6 +182,7 @@
   function renderVolunteerSection(title, volunteerText) {
     const volLines = lines(volunteerText);
     if (!volLines.length) return "";
+
     let volTitle = volLines[0] || "";
     let volDate = "";
     const m = volTitle.match(/^(.+?)\s*\|\s*(.+)$/);
@@ -163,17 +194,17 @@
     const volBullets = volLines.slice(2);
 
     const bulletsHTML = volBullets.length
-      ? `<ul class="exp-bullets">${volBullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>`
+      ? `<ul class="exp-bullets">${volBullets.map((b) => `<li>${fmtInline(b)}</li>`).join("")}</ul>`
       : "";
 
     return `
       <section>
         <h2 class="section-title">${esc(title)}</h2>
         <div class="vol-header">
-          <h3>${esc(volTitle)}</h3>
-          ${volDate ? `<span class="date">${esc(volDate)}</span>` : ""}
+          <h3>${fmtInline(volTitle)}</h3>
+          ${volDate ? `<span class="date">${fmtInline(volDate)}</span>` : ""}
         </div>
-        ${volSub ? `<p class="vol-sub">${esc(volSub)}</p>` : ""}
+        ${volSub ? `<p class="vol-sub">${fmtInline(volSub)}</p>` : ""}
         ${bulletsHTML}
       </section>
     `;
@@ -182,7 +213,6 @@
   window.renderCV = function renderCV(data) {
     const raw = data || {};
 
-    // Default demo text (shows until user types)
     const defaults = {
       name: "Sarah Johnson",
       title: "Registered Nurse · BSN, RN",
@@ -191,22 +221,22 @@
       location: "Austin, TX 78701",
       linkedin: "linkedin.com/in/sarahjohnsonrn",
       summary:
-        "Compassionate and detail-oriented Registered Nurse with 7+ years of progressive experience in acute care, emergency, and critical care settings. Proven ability to manage 4–6 critically ill patients per shift while maintaining 98% patient satisfaction scores. Skilled in patient assessment, evidence-based care planning, and interdisciplinary collaboration. Committed to delivering measurable outcomes and continuous quality improvement in fast-paced hospital environments.",
+        "Compassionate and detail-oriented Registered Nurse with 7+ years of progressive experience in acute care, emergency, and critical care settings.",
       education:
         "Master of Science in Nursing\nThe University of Texas at Austin\n2016 – 2018\n\nBachelor of Science in Nursing\nThe University of Texas at Austin\n2012 – 2016\nMagna Cum Laude · GPA 3.85",
       licenses:
-        "Registered Nurse (RN)\nTexas Board of Nursing · #TX-892341\nCCRN – Critical Care\nAACN · Expires March 2026\nACLS\nAmerican Heart Association · Exp. Aug 2026\nBLS / CPR\nAmerican Heart Association · Exp. Aug 2026\nTNCC\nEmergency Nurses Association",
+        "Registered Nurse (RN)\nTexas Board of Nursing · #TX-892341\nCCRN – Critical Care\nAACN · Expires March 2026",
       clinicalSkills:
-        "Patient Assessment & Triage\nIV Therapy & Venipuncture\nWound Care & Dressing Changes\nMedication Administration\nVentilator Management\nHemodynamic Monitoring\nElectronic Health Records (Epic)\nCare Plan Development\nInfection Control Protocols",
+        "Patient Assessment & Triage\nIV Therapy & Venipuncture\nWound Care & Dressing Changes",
       coreCompetencies:
-        "Team Leadership & Mentoring\nCritical Thinking\nPatient & Family Education\nTime Management\nInterdisciplinary Collaboration",
+        "Team Leadership & Mentoring\nCritical Thinking\nTime Management",
       languages: "English — Native\nSpanish — Conversational",
       experience:
-        "Senior Registered Nurse – ICU\nSt. David's Medical Center, Austin, TX | January 2021 – Present\nProvide direct care for 4–6 critically ill patients per shift in a 32-bed ICU, including post-surgical, cardiac, and respiratory cases\nReduced hospital-acquired infection rates by 18% through implementation of enhanced hygiene and monitoring protocols\nMentor and precept 12+ new graduate nurses annually on unit protocols, charting standards, and clinical best practices\nMaintain 98% patient satisfaction scores consistently across quarterly Press Ganey surveys\nCollaborate with multidisciplinary teams including physicians, pharmacists, and respiratory therapists on individualized care plans\n\nRegistered Nurse – Emergency Department\nSeton Medical Center, Austin, TX | June 2018 – December 2020\nTriaged and assessed 30+ patients daily in a high-volume Level I trauma center serving 85,000+ annual visits\nAdministered medications, IV therapy, and emergency interventions with zero medication errors over 2.5 years\nRecognized as Employee of the Quarter (Q3 2019) for exceptional patient care and team collaboration\nMaintained accurate real-time documentation using Epic EHR system for all patient encounters",
+        "Senior Registered Nurse – ICU\nSt. David's Medical Center, Austin, TX | January 2021 – Present\n- Provide direct care for 4–6 critically ill patients per shift\n- Maintain 98% patient satisfaction scores",
       achievements:
-        "Spearheaded ICU sepsis screening protocol resulting in 22% faster identification and 15% reduction in mortality\nDeveloped new-hire orientation program adopted hospital-wide, reducing onboarding time by 3 weeks\nPublished research on nurse-led ventilator weaning protocols in the Journal of Critical Care Nursing (2022)\nAwarded Daisy Award for Extraordinary Nurses (2021) — nominated by patients and families",
+        "Spearheaded ICU sepsis screening protocol\nDeveloped new-hire orientation program",
       volunteer:
-        "Volunteer Nurse | 2019 – Present\nAustin Free Clinic · Community Health Outreach\nProvide free health screenings and vaccinations to 200+ underserved community members annually",
+        "Volunteer Nurse | 2019 – Present\nAustin Free Clinic · Community Health Outreach\n- Provide free health screenings",
       custom1: "",
       custom2: "",
     };
@@ -230,43 +260,35 @@
 
     const sections = { ...defaultSections, ...(raw.sections || {}) };
 
-    // Contact line
     const contactParts = [d.phone, d.email, d.location, d.linkedin].filter(Boolean);
     const contactHTML = contactParts
       .map((p, i) => {
         const sep = i < contactParts.length - 1 ? ' <span class="sep">|</span> ' : "";
-        return "<span>" + esc(p) + "</span>" + sep;
+        return "<span>" + fmtInline(p) + "</span>" + sep;
       })
       .join("");
 
-    // Summary
     const summaryHTML =
       sections.summary?.enabled
         ? `
           <section class="cv-summary">
             <h2 class="section-title">${esc(sections.summary.title || "Professional Summary")}</h2>
-            <p class="body-text">${esc(d.summary)}</p>
+            <p class="body-text">${fmtInline(d.summary)}</p>
           </section>
         `
         : "";
 
-    // Custom sections renderer
     function renderCustom(key) {
       const cfg = sections[key];
       if (!cfg?.enabled) return "";
-      const content = d[key] || "";
       return renderSimpleSection({
         title: cfg.title || "Custom Section",
-        content,
+        content: d[key] || "",
         mode: cfg.mode || "bullets",
         boldFirstLine: !!cfg.boldFirstLine,
       });
     }
 
-    const customLeft = [renderCustom("custom1"), renderCustom("custom2")].filter(Boolean);
-    const customRight = [renderCustom("custom1"), renderCustom("custom2")].filter(Boolean);
-
-    // Place custom sections by column
     const leftCustomHTML = ["custom1", "custom2"]
       .filter((k) => sections[k]?.enabled && (sections[k].column || "right") === "left")
       .map((k) => renderCustom(k))
@@ -277,7 +299,6 @@
       .map((k) => renderCustom(k))
       .join("");
 
-    // Left column
     const leftHTML = [
       sections.education?.enabled ? renderEducationSection(sections.education.title, d.education) : "",
       sections.licenses?.enabled ? renderLicensesSection(sections.licenses.title, d.licenses) : "",
@@ -308,7 +329,6 @@
       leftCustomHTML,
     ].join("");
 
-    // Right column
     const rightHTML = [
       sections.experience?.enabled ? renderExperienceSection(sections.experience.title, d.experience) : "",
       sections.achievements?.enabled
@@ -326,8 +346,8 @@
     return `
       <div class="cv">
         <header class="cv-header">
-          <h1 class="cv-name">${esc(d.name)}</h1>
-          <p class="cv-title">${esc(d.title)}</p>
+          <h1 class="cv-name">${fmtInline(d.name)}</h1>
+          <p class="cv-title">${fmtInline(d.title)}</p>
           <div class="cv-contact">${contactHTML}</div>
         </header>
 
