@@ -14,8 +14,6 @@ export default async function handler(req, res) {
     if (req.method !== "POST")
       return json(res, 405, { error: "Method not allowed" });
 
-    // NB: Hvis Payhip sender form-urlencoded, må readJsonBody være robust
-    // (vi oppdaterte _utils.js tidligere til å støtte både JSON og form-urlencoded).
     const payload = await readJsonBody(req);
 
     // 1) Verify webhook (MIDlertidig AV for debugging)
@@ -62,7 +60,8 @@ export default async function handler(req, res) {
     }
 
     // 4) Upsert customer (grant access)
-    await supabaseFetch("/rest/v1/customers", {
+    // IMPORTANT: on_conflict=email is required for merge-duplicates to work
+    await supabaseFetch("/rest/v1/customers?on_conflict=email", {
       method: "POST",
       headers: { Prefer: "resolution=merge-duplicates" },
       body: { email, has_access: true },
