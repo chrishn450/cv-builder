@@ -1,4 +1,4 @@
-// templates.js (FULL) – exposes window.renderCV(data) → HTML string
+// templates.js – exposes window.renderCV(data) → HTML string
 (function () {
   function esc(s) {
     if (s == null) return "";
@@ -51,40 +51,44 @@
     return s.replace(/^([•\-·]\s+)/, "");
   }
 
-  // FIX Nr1: merge "wrapped lines" (template defaults) into previous bullet
-  function isBulletLine(line) {
-    return /^([•\-·]\s+)/.test(String(line || "").trim());
-  }
-
-  function mergeWrappedLinesIntoBullets(linesArr) {
+  // --- FIX Nr1: merge wrapped lines into previous bullet when text is coming from template-like wrapping.
+  // Rule: If a line does NOT look like a new bullet starter and previous bullet exists, append it.
+  function mergeWrappedLinesIntoBullets(rawLines) {
     const out = [];
-    for (const raw of (linesArr || [])) {
-      const line = String(raw || "").trim();
-      if (!line) continue;
+    rawLines.forEach((ln) => {
+      const line = String(ln || "").trim();
+      if (!line) return;
 
-      if (isBulletLine(line)) {
+      const isExplicitBullet = /^([•\-·]\s+)/.test(line);
+      const looksLikeNewBullet =
+        isExplicitBullet ||
+        /^[A-Z0-9(]/.test(line) === false ? false : false;
+
+      // If it starts with bullet prefix => new bullet
+      if (isExplicitBullet) {
         out.push(stripBulletPrefix(line));
-        continue;
+        return;
       }
 
-      // continuation line
-      if (out.length) {
+      // If no bullet prefix: treat as continuation if we already started bullets
+      if (out.length > 0) {
         out[out.length - 1] = (out[out.length - 1] + " " + line).replace(/\s+/g, " ").trim();
       } else {
         out.push(line);
       }
-    }
+    });
+
     return out;
   }
 
   function parseExperience(s) {
     return blocks(s).map((block) => {
       const ls = block.split("\n").map((l) => l.trim()).filter(Boolean);
-      return {
-        title: ls[0] || "",
-        meta: ls[1] || "",
-        bullets: mergeWrappedLinesIntoBullets(ls.slice(2)),
-      };
+      const title = ls[0] || "";
+      const meta = ls[1] || "";
+      const rawBullets = ls.slice(2);
+      const bullets = mergeWrappedLinesIntoBullets(rawBullets);
+      return { title, meta, bullets };
     });
   }
 
@@ -101,7 +105,6 @@
   }
 
   function parseVolunteer(s) {
-    // Multiple blocks separated by blank line
     return blocks(s).map((block) => {
       const ls = block.split("\n").map((l) => l.trim()).filter(Boolean);
 
@@ -115,9 +118,9 @@
         volDate = m[2];
       }
 
-      // Or "Title 2019 – Present" / "Title 2019-2020" (dash variants)
+      // Or "Title 2019 – Present"
       if (!volDate) {
-        const m2 = volTitle.match(/^(.*?)(\b\d{4}\s*[-–—]\s*(?:Present|\d{4})\b)$/);
+        const m2 = volTitle.match(/^(.*?)(\b\d{4}\s*–\s*(?:Present|\d{4})\b)$/);
         if (m2) {
           volTitle = m2[1].trim();
           volDate = m2[2].trim();
@@ -125,7 +128,8 @@
       }
 
       const volSub = ls[1] || "";
-      const volBullets = mergeWrappedLinesIntoBullets(ls.slice(2));
+      const rawBullets = ls.slice(2);
+      const volBullets = mergeWrappedLinesIntoBullets(rawBullets);
 
       return { volTitle, volDate, volSub, volBullets };
     });
@@ -133,13 +137,13 @@
 
   // mode: "bullets" | "paragraph"
   function renderSimpleSection({ title, content, mode, boldFirstLine }) {
-    const items = mergeWrappedLinesIntoBullets(lines(content));
+    const items = lines(content);
     if (!items.length) return "";
 
     if (mode === "paragraph") {
       const ps = items
         .map((t, idx) => {
-          const inner = fmtInline(t);
+          const inner = fmtInline(t, { preserveNewlines: false });
           if (boldFirstLine && idx === 0) return `<p><strong>${inner}</strong></p>`;
           return `<p>${inner}</p>`;
         })
@@ -152,9 +156,10 @@
       `;
     }
 
+    // bullets: one li per line
     const lis = items
       .map((t, idx) => {
-        const inner = fmtInline(stripBulletPrefix(t));
+        const inner = fmtInline(stripBulletPrefix(t), { preserveNewlines: true });
         if (boldFirstLine && idx === 0) return `<li><strong>${inner}</strong></li>`;
         return `<li>${inner}</li>`;
       })
@@ -175,13 +180,13 @@
     const expHTML = exps
       .map((e) => {
         const bullets = (e.bullets || [])
-          .map((b) => `<li>${fmtInline(b)}</li>`)
+          .map((b) => `<li>${fmtInline(b, { preserveNewlines: true })}</li>`)
           .join("");
 
         return `
           <div class="exp-entry">
             <h3>${fmtInline(e.title)}</h3>
-            ${e.meta ? `<p class="meta">${fmtInline(e.meta)}</p>` : ""}
+            ${e.meta ? `<p class="meta">${fmtInline(e.meta, { preserveNewlines: true })}</p>` : ""}
             ${bullets ? `<ul class="exp-bullets">${bullets}</ul>` : ""}
           </div>
         `;
@@ -246,8 +251,8 @@
     if (!vols.length) return "";
 
     const volHTML = vols.map((v) => {
-      const bulletsHTML = v.volBullets.length
-        ? `<ul class="exp-bullets">${v.volBullets.map((b) => `<li>${fmtInline(b)}</li>`).join("")}</ul>`
+      const bulletsHTML = (v.volBullets && v.volBullets.length)
+        ? `<ul class="exp-bullets">${v.volBullets.map((b) => `<li>${fmtInline(b, { preserveNewlines: true })}</li>`).join("")}</ul>`
         : "";
 
       return `
@@ -270,18 +275,22 @@
     `;
   }
 
-  const defaultsByLang = {
-    en: {
+  window.renderCV = function renderCV(data) {
+    const raw = data || {};
+
+    const defaults = {
       name: "Sarah Johnson",
       title: "Registered Nurse · BSN, RN",
       phone: "(555) 123-4567",
       email: "sarah.johnson@email.com",
       location: "Austin, TX 78701",
       linkedin: "linkedin.com/in/sarahjohnsonrn",
+
       summary:
         "Compassionate and detail-oriented Registered Nurse with 7+ years of progressive experience in acute care, emergency, and critical care settings. Proven ability to manage\n" +
         "4–6 critically ill patients per shift while maintaining 98% patient satisfaction scores. Skilled in patient assessment, evidence-based care planning, and interdisciplinary\n" +
         "collaboration. Committed to delivering measurable outcomes and continuous quality improvement in fast-paced hospital environments.",
+
       education:
         "Master of Science in Nursing\n" +
         "The University of Texas at Austin\n" +
@@ -290,6 +299,7 @@
         "The University of Texas at Austin\n" +
         "2012 – 2016\n" +
         "Magna Cum Laude · GPA 3.85",
+
       licenses:
         "Registered Nurse (RN)\n" +
         "Texas Board of Nursing · #TX-892341\n" +
@@ -301,6 +311,7 @@
         "American Heart Association · Exp. Aug 2026\n" +
         "TNCC\n" +
         "Emergency Nurses Association",
+
       clinicalSkills:
         "Patient Assessment & Triage\n" +
         "IV Therapy & Venipuncture\n" +
@@ -311,15 +322,18 @@
         "Electronic Health Records (Epic)\n" +
         "Care Plan Development\n" +
         "Infection Control Protocols",
+
       coreCompetencies:
         "Team Leadership & Mentoring\n" +
         "Critical Thinking\n" +
         "Patient & Family Education\n" +
         "Time Management\n" +
         "Interdisciplinary Collaboration",
+
       languages:
         "English — Native\n" +
         "Spanish — Conversational",
+
       experience:
         "SENIOR REGISTERED NURSE – ICU\n" +
         "St. David's Medical Center, Austin, TX | January 2021 – Present\n" +
@@ -345,207 +359,56 @@
         "Monitored and documented vital signs, lab results, and medication responses with 100% charting\n" +
         "compliance\n" +
         "Educated 500+ families on post-discharge care plans, medication schedules, and follow-up procedures",
+
       achievements:
         "Spearheaded ICU sepsis screening protocol resulting in 22% faster identification and 15% reduction in mortality\n" +
         "Developed new-hire orientation program adopted hospital-wide, reducing onboarding time by 3 weeks\n" +
         "Published research on nurse-led ventilator weaning protocols in the Journal of Critical Care Nursing (2022)\n" +
         "Awarded Daisy Award for Extraordinary Nurses (2021) — nominated by patients and families",
+
       volunteer:
-        "Volunteer Nurse | 2019 – Present\n" +
+        "Volunteer Nurse 2019 – Present\n" +
         "Austin Free Clinic · Community Health Outreach\n" +
         "Provide free health screenings and vaccinations to 200+ underserved community members annually",
-      custom1: "",
-      custom2: "",
-    },
-    no: {
-      name: "Sarah Johnson",
-      title: "Sykepleier · BSN, RN",
-      phone: "(555) 123-4567",
-      email: "sarah.johnson@email.com",
-      location: "Austin, TX 78701",
-      linkedin: "linkedin.com/in/sarahjohnsonrn",
-      summary:
-        "Resultatorientert og omsorgsfull sykepleier med 7+ års erfaring fra akuttmottak og intensiv. Dokumentert evne til å håndtere 4–6 kritisk syke pasienter per vakt og samtidig opprettholde høy pasienttilfredshet. Sterk på klinisk vurdering, evidensbasert pleieplanlegging og tverrfaglig samarbeid. Motiveres av målbare forbedringer og kvalitetsarbeid i et høyt tempo.",
-      education:
-        "Master i sykepleie\n" +
-        "The University of Texas at Austin\n" +
-        "2016 – 2018\n\n" +
-        "Bachelor i sykepleie\n" +
-        "The University of Texas at Austin\n" +
-        "2012 – 2016\n" +
-        "Magna Cum Laude · GPA 3.85",
-      licenses:
-        "Autorisasjon (RN)\n" +
-        "Texas Board of Nursing · #TX-892341\n" +
-        "CCRN – Intensiv\n" +
-        "AACN · Utløper mars 2026\n" +
-        "ACLS\n" +
-        "American Heart Association · Utløper aug 2026\n" +
-        "BLS / CPR\n" +
-        "American Heart Association · Utløper aug 2026",
-      clinicalSkills:
-        "Pasientvurdering og triage\n" +
-        "IV-behandling og venepunksjon\n" +
-        "Sårbehandling\n" +
-        "Medikamentadministrasjon\n" +
-        "Ventilatorhåndtering\n" +
-        "Hemodynamisk monitorering\n" +
-        "EHR (Epic)\n" +
-        "Pleieplan og dokumentasjon\n" +
-        "Infeksjonsforebygging",
-      coreCompetencies:
-        "Veiledning og opplæring\n" +
-        "Kritisk tenkning\n" +
-        "Pasient- og pårørendeundervisning\n" +
-        "Prioritering og tidsstyring\n" +
-        "Tverrfaglig samarbeid",
-      languages:
-        "Engelsk — Morsmål\n" +
-        "Spansk — Samtalenivå",
-      experience:
-        "SENIOR SYKEPLEIER – INTENSIV\n" +
-        "St. David's Medical Center, Austin, TX | Jan 2021 – Nå\n" +
-        "Direkte pasientbehandling for 4–6 kritisk syke pasienter per vakt i en 32-sengs intensiv\n" +
-        "Reduserte sykehusinfeksjoner med 18% gjennom forbedrede hygiene- og monitoreringsrutiner\n" +
-        "Veiledet 12+ nyutdannede årlig i rutiner, dokumentasjon og klinisk beste praksis\n" +
-        "Opprettholdt 98% pasienttilfredshet (Press Ganey)\n" +
-        "Samarbeidet tett med leger, farmasøyter og respiratorterapeuter om individuelle behandlingsplaner",
-      achievements:
-        "Innførte sepsis-screening som ga 22% raskere identifisering og 15% lavere mortalitet\n" +
-        "Utviklet opplæringsprogram som reduserte onboarding med 3 uker\n" +
-        "Publiserte fagartikkel om sykepleierledet ventilatoravvenning (2022)",
-      volunteer:
-        "Frivillig sykepleier | 2019 – Nå\n" +
-        "Austin Free Clinic · Community Health Outreach\n" +
-        "Gjennomførte gratis helsesjekk og vaksinasjon for 200+ personer årlig",
-      custom1: "",
-      custom2: "",
-    },
-    de: {
-      name: "Sarah Johnson",
-      title: "Gesundheits- und Krankenpflegerin · BSN, RN",
-      phone: "(555) 123-4567",
-      email: "sarah.johnson@email.com",
-      location: "Austin, TX 78701",
-      linkedin: "linkedin.com/in/sarahjohnsonrn",
-      summary:
-        "Engagierte und detailorientierte Pflegefachkraft mit 7+ Jahren Erfahrung in Akut-, Notfall- und Intensivpflege. Nachweisliche Fähigkeit, 4–6 kritisch kranke Patient:innen pro Schicht zu betreuen und dabei sehr hohe Patientenzufriedenheit zu erreichen. Stark in klinischer Einschätzung, evidenzbasierter Pflegeplanung und interdisziplinärer Zusammenarbeit.",
-      education:
-        "Master of Science in Nursing\n" +
-        "The University of Texas at Austin\n" +
-        "2016 – 2018\n\n" +
-        "Bachelor of Science in Nursing\n" +
-        "The University of Texas at Austin\n" +
-        "2012 – 2016\n" +
-        "Magna Cum Laude · GPA 3.85",
-      licenses:
-        "Registered Nurse (RN)\n" +
-        "Texas Board of Nursing · #TX-892341\n" +
-        "CCRN – Intensiv\n" +
-        "AACN · Gültig bis März 2026\n" +
-        "ACLS\n" +
-        "AHA · Gültig bis Aug 2026",
-      clinicalSkills:
-        "Klinische Einschätzung & Triage\n" +
-        "IV-Therapie\n" +
-        "Wundversorgung\n" +
-        "Medikamentengabe\n" +
-        "Beatmungsmanagement\n" +
-        "Hämodynamisches Monitoring\n" +
-        "EHR (Epic)\n" +
-        "Pflegeplanung\n" +
-        "Infektionsprävention",
-      coreCompetencies:
-        "Teamführung & Mentoring\n" +
-        "Kritisches Denken\n" +
-        "Patienten- & Angehörigenedukation\n" +
-        "Zeitmanagement\n" +
-        "Interdisziplinäre Zusammenarbeit",
-      languages:
-        "Englisch — Muttersprache\n" +
-        "Spanisch — Konversationssicher",
-      experience:
-        "SENIOR REGISTERED NURSE – ICU\n" +
-        "St. David's Medical Center, Austin, TX | Jan 2021 – Heute\n" +
-        "Betreuung von 4–6 kritisch kranken Patient:innen pro Schicht auf einer 32-Betten-ICU\n" +
-        "Reduzierung nosokomialer Infektionen um 18% durch verbesserte Hygiene- und Monitoring-Protokolle\n" +
-        "Mentoring von 12+ Berufsanfänger:innen pro Jahr\n" +
-        "Konstant 98% Patientenzufriedenheit (Press Ganey)\n" +
-        "Enge Zusammenarbeit mit Ärzt:innen, Apotheke und Respiratory Therapy",
-      achievements:
-        "Sepsis-Screening-Protokoll: 22% schnellere Identifikation und 15% niedrigere Mortalität\n" +
-        "Onboarding-Programm: Einarbeitungszeit um 3 Wochen reduziert",
-      volunteer:
-        "Ehrenamtliche Pflegekraft | 2019 – Heute\n" +
-        "Austin Free Clinic · Community Health Outreach\n" +
-        "Kostenlose Screenings und Impfungen für 200+ Personen pro Jahr",
-      custom1: "",
-      custom2: "",
-    }
-  };
 
-  window.renderCV = function renderCV(data) {
-    const raw = data || {};
-    const lang = raw.uiLang || "en";
-
-    // Defaults by language
-    const defaults = defaultsByLang[lang] || defaultsByLang.en;
+      custom1: "",
+      custom2: "",
+    };
 
     const d = {};
     for (const k in defaults) d[k] = hasText(raw[k]) ? raw[k] : defaults[k];
 
-    const defaultSectionsByLang = {
-      en: {
-        summary: { enabled: true, title: "Professional Summary" },
-        education: { enabled: true, title: "Education" },
-        licenses: { enabled: true, title: "Licenses & Certifications" },
-        clinicalSkills: { enabled: true, title: "Clinical Skills", mode: "bullets", boldFirstLine: false },
-        coreCompetencies: { enabled: true, title: "Core Competencies", mode: "bullets", boldFirstLine: false },
-        languages: { enabled: true, title: "Languages", mode: "paragraph", boldFirstLine: false },
-        experience: { enabled: true, title: "Professional Experience" },
-        achievements: { enabled: true, title: "Clinical Achievements", mode: "bullets", boldFirstLine: false },
-        volunteer: { enabled: true, title: "Volunteer Experience" },
-        custom1: { enabled: false, title: "Custom Section 1", mode: "bullets", boldFirstLine: false, column: "right" },
-        custom2: { enabled: false, title: "Custom Section 2", mode: "bullets", boldFirstLine: false, column: "right" },
-      },
-      no: {
-        summary: { enabled: true, title: "Profesjonell profil" },
-        education: { enabled: true, title: "Utdanning" },
-        licenses: { enabled: true, title: "Lisenser og sertifiseringer" },
-        clinicalSkills: { enabled: true, title: "Kliniske ferdigheter", mode: "bullets", boldFirstLine: false },
-        coreCompetencies: { enabled: true, title: "Kjernekompetanse", mode: "bullets", boldFirstLine: false },
-        languages: { enabled: true, title: "Språk", mode: "paragraph", boldFirstLine: false },
-        experience: { enabled: true, title: "Erfaring" },
-        achievements: { enabled: true, title: "Resultater", mode: "bullets", boldFirstLine: false },
-        volunteer: { enabled: true, title: "Frivillig erfaring" },
-        custom1: { enabled: false, title: "Egendefinert seksjon 1", mode: "bullets", boldFirstLine: false, column: "right" },
-        custom2: { enabled: false, title: "Egendefinert seksjon 2", mode: "bullets", boldFirstLine: false, column: "right" },
-      },
-      de: {
-        summary: { enabled: true, title: "Profil" },
-        education: { enabled: true, title: "Ausbildung" },
-        licenses: { enabled: true, title: "Lizenzen & Zertifikate" },
-        clinicalSkills: { enabled: true, title: "Klinische Fähigkeiten", mode: "bullets", boldFirstLine: false },
-        coreCompetencies: { enabled: true, title: "Kernkompetenzen", mode: "bullets", boldFirstLine: false },
-        languages: { enabled: true, title: "Sprachen", mode: "paragraph", boldFirstLine: false },
-        experience: { enabled: true, title: "Berufserfahrung" },
-        achievements: { enabled: true, title: "Erfolge", mode: "bullets", boldFirstLine: false },
-        volunteer: { enabled: true, title: "Ehrenamt" },
-        custom1: { enabled: false, title: "Benutzerdefiniert 1", mode: "bullets", boldFirstLine: false, column: "right" },
-        custom2: { enabled: false, title: "Benutzerdefiniert 2", mode: "bullets", boldFirstLine: false, column: "right" },
+    const defaultSections = {
+      summary: { enabled: true, title: "Professional Summary" },
+      education: { enabled: true, title: "Education" },
+      licenses: { enabled: true, title: "Licenses & Certifications" },
+      clinicalSkills: { enabled: true, title: "Clinical Skills", mode: "bullets", boldFirstLine: false },
+      coreCompetencies: { enabled: true, title: "Core Competencies", mode: "bullets", boldFirstLine: false },
+      languages: { enabled: true, title: "Languages", mode: "paragraph", boldFirstLine: false },
+      experience: { enabled: true, title: "Professional Experience" },
+      achievements: { enabled: true, title: "Clinical Achievements", mode: "bullets", boldFirstLine: false },
+      volunteer: { enabled: true, title: "Volunteer Experience" },
+      custom1: { enabled: false, title: "Custom Section 1", mode: "bullets", boldFirstLine: false, column: "right" },
+      custom2: { enabled: false, title: "Custom Section 2", mode: "bullets", boldFirstLine: false, column: "right" },
+      contact: {
+        show_title: true,
+        show_email: true,
+        show_phone: true,
+        show_location: true,
+        show_linkedin: true
       }
     };
 
-    const sections = { ...(defaultSectionsByLang[lang] || defaultSectionsByLang.en), ...(raw.sections || {}) };
+    const sections = { ...defaultSections, ...(raw.sections || {}) };
 
-    // Contact visibility (Nr 4)
-    const vis = raw.contactVisibility || {};
-    const contactParts = [
-      vis.phone === false ? "" : d.phone,
-      vis.email === false ? "" : d.email,
-      vis.location === false ? "" : d.location,
-      vis.linkedin === false ? "" : d.linkedin,
-    ].filter(Boolean);
+    // Contact show/hide
+    const contactCfg = sections.contact || defaultSections.contact;
+
+    const contactParts = [];
+    if (contactCfg.show_phone && d.phone) contactParts.push(d.phone);
+    if (contactCfg.show_email && d.email) contactParts.push(d.email);
+    if (contactCfg.show_location && d.location) contactParts.push(d.location);
+    if (contactCfg.show_linkedin && d.linkedin) contactParts.push(d.linkedin);
 
     const contactHTML = contactParts
       .map((p, i) => {
@@ -554,11 +417,13 @@
       })
       .join("");
 
+    const showTitle = contactCfg.show_title !== false;
+
     const summaryHTML =
       sections.summary?.enabled
         ? `
           <section class="cv-summary">
-            <h2 class="section-title">${esc(sections.summary.title || (defaultSectionsByLang[lang]?.summary?.title || "Professional Summary"))}</h2>
+            <h2 class="section-title">${esc(sections.summary.title || "Professional Summary")}</h2>
             <p class="body-text">${fmtInline(d.summary, { preserveNewlines: true })}</p>
           </section>
         `
@@ -633,7 +498,7 @@
       <div class="cv">
         <header class="cv-header">
           <h1 class="cv-name">${fmtInline(d.name)}</h1>
-          <p class="cv-title">${fmtInline(d.title)}</p>
+          ${showTitle ? `<p class="cv-title">${fmtInline(d.title)}</p>` : ``}
           <div class="cv-contact">${contactHTML}</div>
         </header>
 
