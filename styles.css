@@ -564,3 +564,20 @@ hr{
     print-color-adjust: exact;
   }
 }
+/* --- Fullscreen overlay (fix) --- */
+.panel.is-fullscreen{
+  position: fixed !important;
+  inset: 74px 16px 16px 16px !important;
+  z-index: 9999 !important;
+  overflow: auto;
+}
+
+/* Backdrop behind fullscreen panel */
+.fullscreen-backdrop{
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px);
+}
+
