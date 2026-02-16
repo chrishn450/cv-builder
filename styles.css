@@ -38,22 +38,66 @@ body{
 
 .actions{ display:flex; gap:10px; align-items:center; }
 
-.lang-pill{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.06);
-  font-weight: 800;
-  font-size: 12px;
-}
-
 .container{
   max-width: 1500px;
   margin: 0 auto;
   padding: 18px 18px 30px;
+}
+
+/* ──────────────────────────────────────────────
+   Language dropdown (fix white + hard to use)
+────────────────────────────────────────────── */
+.lang-wrap{ position: relative; }
+.lang-btn{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.lang-btn .chev{ opacity:0.85; }
+
+.lang-menu{
+  position:absolute;
+  right:0;
+  top: calc(100% + 10px);
+  width: 280px;
+  background: rgba(10, 14, 28, 0.98);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 14px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+  padding: 10px;
+  z-index: 1000;
+}
+
+.lang-search{ padding: 2px 2px 10px; }
+
+.lang-listbox{
+  max-height: 320px;
+  overflow:auto;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 8px;
+}
+
+.lang-item{
+  width:100%;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  cursor:pointer;
+  color: rgba(233,238,252,0.92);
+}
+.lang-item:hover{
+  background: rgba(255,255,255,0.06);
+}
+.lang-item .muted{
+  font-size: 12px;
+  opacity: 0.85;
+}
+.lang-item.active{
+  outline: 2px solid rgba(47,107,255,0.55);
+  background: rgba(47,107,255,0.10);
 }
 
 /* ──────────────────────────────────────────────
@@ -129,7 +173,7 @@ hr{
   color: #e9eefc;
   outline: none;
 
-  /* consistent font everywhere (Nr 7) */
+  /* FIX: consistent font everywhere (Nr 7) */
   font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-weight: 400;
   font-size: 14px;
@@ -202,7 +246,7 @@ hr{
 }
 .toggle input { transform: translateY(1px); }
 
-/* Toolbar */
+/* Toolbar (US-style: B •) */
 .toolbar{
   display:flex;
   gap:8px;
@@ -234,64 +278,7 @@ hr{
 }
 
 /* ──────────────────────────────────────────────
-   Modal (language picker)
-────────────────────────────────────────────── */
-.modal{
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(6px);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding: 16px;
-}
-.modal-card{
-  width: min(520px, 100%);
-  background: rgba(15, 20, 40, 0.98);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 16px;
-  box-shadow: 0 20px 70px rgba(0,0,0,0.55);
-  padding: 14px;
-}
-.modal-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom: 10px;
-}
-.modal-title{
-  font-weight: 900;
-  letter-spacing: 0.01em;
-}
-.lang-list-ui{
-  margin-top: 10px;
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 12px;
-  overflow: hidden;
-  max-height: 340px;
-  overflow-y: auto;
-}
-.lang-item{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding: 10px 12px;
-  cursor:pointer;
-  background: rgba(255,255,255,0.03);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.lang-item:hover{ background: rgba(255,255,255,0.06); }
-.lang-item .code{ opacity: 0.65; font-size: 12px; }
-.lang-item.active{
-  background: rgba(47,107,255,0.18);
-  border-bottom-color: rgba(47,107,255,0.18);
-}
-
-/* ──────────────────────────────────────────────
-   3-panel grid + resizers
+   NEW: 3-panel grid + resizers
 ────────────────────────────────────────────── */
 .grid3{
   display:grid;
@@ -314,6 +301,7 @@ hr{
 @media (max-width: 1180px){
   .grid3{ grid-template-columns: 1fr; }
   .v-resizer{ display:none; }
+  .lang-menu{ width: 92vw; max-width: 360px; }
 }
 
 /* Panel hide */
@@ -392,22 +380,11 @@ hr{
   border-top: 1px solid rgba(255,255,255,0.10);
   padding-top: 10px;
 }
-.sugg-item{
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.18);
-  border-radius: 12px;
-  padding: 10px;
-  margin-top: 10px;
-}
-.sugg-item .topic{
-  font-weight: 900;
-  font-size: 12px;
-  margin-bottom: 6px;
-}
 .sugg-buttons{
   display:flex;
   gap:10px;
-  margin-top: 10px;
+  flex-wrap:wrap;
+  margin-top: 8px;
 }
 
 /* thinking bubble */
@@ -440,8 +417,17 @@ hr{
   --cv-border: #d6cdb8;
   --cv-rule: rgba(184,168,138,0.3);
 
-  /* one source of truth */
+  /* one source of truth for dot size */
   --cv-dot-size: 3.5px;
+}
+
+/* One source of truth for the CV dot */
+.cv-dot{
+  width: var(--cv-dot-size);
+  height: var(--cv-dot-size);
+  border-radius: 50%;
+  background: var(--cv-accent);
+  display: inline-block;
 }
 
 /* Bullet toggle button = SAME dot as CV */
@@ -558,25 +544,28 @@ hr{
 .cv .cert-item p{ font-size: 8px; margin:0; color: var(--cv-light); }
 
 .cv .skill-list,
-.cv .exp-bullets{
+.cv .exp-bullets,
+.cv .achievement-list{
   list-style:none;
   padding:0;
   margin:0;
 }
 
 .cv .skill-list li,
-.cv .exp-bullets li{
+.cv .exp-bullets li,
+.cv .achievement-list li{
   font-size: 8.5px;
   line-height: 1.6;
   color: var(--cv-body);
   display:flex;
   align-items:flex-start;
   gap:7px;
-  margin-bottom: 4px; /* litt mer luft så det tydelig er separate bullets */
+  margin-bottom:2px;
 }
 
 .cv .skill-list li::before,
-.cv .exp-bullets li::before{
+.cv .exp-bullets li::before,
+.cv .achievement-list li::before{
   content:"";
   margin-top: 5px;
   flex-shrink:0;
@@ -608,13 +597,7 @@ hr{
   gap: 10px;
 }
 .cv .vol-header h3{ font-size: 9.5px; font-weight: 600; margin:0; color: var(--cv-heading); }
-.cv .vol-header .date{
-  margin-left: auto;
-  font-size: 8px;
-  color: var(--cv-light);
-  white-space: nowrap;
-  text-align: right;
-}
+.cv .vol-header .date{ font-size: 8px; color: var(--cv-light); white-space: nowrap; }
 
 .cv .vol-sub{
   font-size: 8.5px;
@@ -641,20 +624,10 @@ hr{
     color:#111 !important;
   }
 
-  /* Hide everything except #preview */
-  .topbar,
-  #panel-editor,
-  #panel-ai,
-  .v-resizer,
-  .panel-actions,
-  .ai-chat,
-  .ai-compose,
-  .btn,
-  button,
-  a { display:none !important; }
+  .topbar, .container, #locked, #logoutBtn, .btn, button, a,
+  .panel-actions, .v-resizer, .ai-chat, .ai-compose, .lang-wrap { display:none !important; }
 
-  /* IMPORTANT: do not hide .container */
-  #panel-preview, #preview, .cv { display:block !important; }
+  #preview, .cv { display:block !important; }
 
   .cv{
     width: 210mm !important;
@@ -665,5 +638,6 @@ hr{
     print-color-adjust: exact;
   }
 
+  /* avoid splitting entries awkwardly */
   .cv section, .cv .exp-entry, .cv li { break-inside: avoid; }
 }
