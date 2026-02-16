@@ -580,4 +580,12 @@ hr{
   background: rgba(0,0,0,0.55);
   backdrop-filter: blur(6px);
 }
+/* One source of truth for the CV dot */
+.cv-dot{
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: 50%;
+  background: var(--cv-accent);
+  display: inline-block;
+}
 
