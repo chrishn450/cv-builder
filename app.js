@@ -2,14 +2,10 @@
 (function () {
   const qs = (id) => document.getElementById(id);
 
-  // ---------------------------
-  // Core UI refs
-  // ---------------------------
   const preview = qs("preview");
   const printBtn = qs("printBtn");
   const downloadHtmlBtn = qs("downloadHtmlBtn");
 
-  // Only these are "simple" fields. Structured sections are handled separately.
   const FIELD_IDS = [
     "name","title","email","phone","location","linkedin",
     "summary","clinicalSkills","coreCompetencies","languages",
@@ -31,7 +27,6 @@
     });
   }
 
-  // Store only user overrides (so preview can stay "original" until user types)
   const STORAGE_KEY = "cv_builder_user_overrides_structured_v2";
 
   function loadState() {
@@ -66,7 +61,6 @@
       const el = qs(id);
       if (!el) return;
 
-      // Keep empty unless user override exists
       if (state.data[id] != null && String(state.data[id]).length > 0) el.value = String(state.data[id]);
       else el.value = "";
 
@@ -103,9 +97,7 @@
     });
   }
 
-  // ---------------------------
-  // Toolbar helpers (Bold + Bullet)
-  // ---------------------------
+  // ---------- Toolbar helpers (Bold + Bullet) ----------
   function wrapSelectionWith(el, left, right) {
     const v = el.value || "";
     const start = el.selectionStart ?? 0;
@@ -228,9 +220,7 @@
     });
   }
 
-  // ---------------------------
-  // Structured sections refs
-  // ---------------------------
+  // ---------- Structured sections ----------
   const eduRoot = qs("educationBlocks");
   const addEduBtn = qs("addEducationBlock");
   const eduHidden = qs("education");
@@ -260,7 +250,6 @@
     else state.data[fieldKey] = value;
   }
 
-  // ----- Education blocks -> education text (blocks separated by blank line)
   function eduToText(blocks) {
     return (blocks || [])
       .map((b) => {
@@ -283,7 +272,6 @@
 
   function renderEducation() {
     if (!eduRoot) return;
-
     ensureArray("educationBlocks", 2, () => ({ degree: "", school: "", date: "", honors: "" }));
     eduRoot.innerHTML = "";
 
@@ -360,7 +348,6 @@
     });
   }
 
-  // ----- Licenses blocks -> lines in pairs (title + detail)
   function licToText(items) {
     const lines = [];
     (items || []).forEach((it) => {
@@ -369,7 +356,7 @@
       if (!t && !d) return;
       if (t) lines.push(t);
       if (d) lines.push(d);
-      else lines.push(""); // keep pairing
+      else lines.push("");
     });
     while (lines.length && String(lines[lines.length - 1]).trim() === "") lines.pop();
     return lines.join("\n");
@@ -384,7 +371,6 @@
 
   function renderLicenses() {
     if (!licRoot) return;
-
     ensureArray("licenseBlocks", 2, () => ({ title: "", detail: "" }));
     licRoot.innerHTML = "";
 
@@ -444,7 +430,6 @@
     });
   }
 
-  // ----- Experience jobs -> blocks with title/meta + bullets
   function expToText(jobs) {
     return (jobs || [])
       .map((j) => {
@@ -466,7 +451,6 @@
 
   function renderExperience() {
     if (!expRoot) return;
-
     ensureArray("experienceJobs", 3, () => ({ title: "", meta: "", bullets: [] }));
     expRoot.innerHTML = "";
 
@@ -487,7 +471,7 @@
 
         <div class="toolbar" data-exp-toolbar="${idx}">
           <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-          <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullet typing"></button>
+          <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
         </div>
 
         <label class="label">Bullets (one per line)</label>
@@ -550,7 +534,6 @@
     });
   }
 
-  // ----- Volunteer blocks (multiple blocks)
   function volToText(vols) {
     return (vols || [])
       .map((v) => {
@@ -572,7 +555,6 @@
 
   function renderVolunteer() {
     if (!volRoot) return;
-
     ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
     volRoot.innerHTML = "";
 
@@ -593,7 +575,7 @@
 
         <div class="toolbar" data-vol-toolbar="${idx}">
           <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-          <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullet typing"></button>
+          <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
         </div>
 
         <label class="label">Bullets (one per line)</label>
@@ -656,49 +638,37 @@
     });
   }
 
-  // ---------------------------
-  // Print
-  // ---------------------------
-  if (printBtn) {
-    printBtn.addEventListener("click", () => window.print());
-  }
+  // ---- Print
+  if (printBtn) printBtn.addEventListener("click", () => window.print());
 
-  // ---------------------------
-  // Download HTML (standalone + identical)
-  // ---------------------------
+  // ---- Download HTML
   if (downloadHtmlBtn) {
     downloadHtmlBtn.addEventListener("click", async () => {
       try {
         const cssText = await fetch("/styles.css", { cache: "no-store" }).then(r => r.text());
-
         const html = `<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CV</title>
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-
   <style>${cssText}</style>
 </head>
 <body style="margin:0; padding:0; background:white;">
   ${preview ? preview.innerHTML : ""}
 </body>
 </html>`;
-
         const blob = new Blob([html], { type: "text/html;charset=utf-8" });
         const url = URL.createObjectURL(blob);
-
         const a = document.createElement("a");
         a.href = url;
         a.download = "cv.html";
         document.body.appendChild(a);
         a.click();
         a.remove();
-
         URL.revokeObjectURL(url);
       } catch (err) {
         console.error("Export failed:", err);
@@ -708,7 +678,170 @@
   }
 
   // ---------------------------
-  // AI Coach (memory + thinking + accept/reject)
+  // Layout controls: hide + fullscreen + resizers
+  // ---------------------------
+  const grid = qs("grid3");
+
+  function setGridColumns(cols) {
+    if (!grid) return;
+    grid.style.gridTemplateColumns = cols;
+    try { localStorage.setItem("cv_grid_cols_v1", cols); } catch {}
+  }
+
+  function restoreGridColumns() {
+    if (!grid) return;
+    try {
+      const saved = localStorage.getItem("cv_grid_cols_v1");
+      if (saved) grid.style.gridTemplateColumns = saved;
+    } catch {}
+  }
+
+  function computeVisiblePanels() {
+    const editor = qs("panel-editor");
+    const previewP = qs("panel-preview");
+    const ai = qs("panel-ai");
+    return {
+      editor: editor && !editor.classList.contains("is-hidden"),
+      preview: previewP && !previewP.classList.contains("is-hidden"),
+      ai: ai && !ai.classList.contains("is-hidden"),
+    };
+  }
+
+  function normalizeGridForVisibility() {
+    const v = computeVisiblePanels();
+    // default ratios when all visible:
+    // 1.25fr | 10px | 1fr | 10px | 0.85fr
+    if (v.editor && v.preview && v.ai) {
+      setGridColumns("1.25fr 10px 1fr 10px 0.85fr");
+      return;
+    }
+    if (v.editor && v.preview && !v.ai) {
+      setGridColumns("1.25fr 10px 1fr");
+      return;
+    }
+    if (v.editor && !v.preview && v.ai) {
+      setGridColumns("1.25fr 10px 1fr");
+      return;
+    }
+    if (!v.editor && v.preview && v.ai) {
+      setGridColumns("1fr 10px 0.85fr");
+      return;
+    }
+    if (v.editor && !v.preview && !v.ai) {
+      setGridColumns("1fr");
+      return;
+    }
+    if (!v.editor && v.preview && !v.ai) {
+      setGridColumns("1fr");
+      return;
+    }
+    if (!v.editor && !v.preview && v.ai) {
+      setGridColumns("1fr");
+      return;
+    }
+    // fallback
+    setGridColumns("1fr");
+  }
+
+  function setupPanelButtons() {
+    document.querySelectorAll('[data-action="hide"]').forEach(btn => {
+      btn.addEventListener("click", () => {
+        const target = btn.getAttribute("data-target");
+        const panel = qs(`panel-${target}`);
+        if (!panel) return;
+        panel.classList.toggle("is-hidden");
+        normalizeGridForVisibility();
+      });
+    });
+
+    document.querySelectorAll('[data-action="fullscreen"]').forEach(btn => {
+      btn.addEventListener("click", () => {
+        const target = btn.getAttribute("data-target");
+        const panel = qs(`panel-${target}`);
+        if (!panel) return;
+
+        const isOn = panel.classList.toggle("is-fullscreen");
+
+        // when a panel is fullscreen, block scroll behind
+        document.body.style.overflow = isOn ? "hidden" : "";
+      });
+    });
+  }
+
+  function setupResizer(resizerId, leftPanelId, rightPanelId, isSecond) {
+    const resizer = qs(resizerId);
+    if (!resizer || !grid) return;
+
+    let dragging = false;
+
+    const startDrag = (e) => {
+      dragging = true;
+      e.preventDefault();
+      document.body.style.cursor = "col-resize";
+    };
+
+    const stopDrag = () => {
+      dragging = false;
+      document.body.style.cursor = "";
+    };
+
+    const onMove = (e) => {
+      if (!dragging) return;
+
+      const rect = grid.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const total = rect.width;
+
+      // Build column widths depending on which panels are visible
+      const v = computeVisiblePanels();
+
+      // We only support drag when all 3 visible (best UX).
+      if (!(v.editor && v.preview && v.ai)) return;
+
+      // Convert to percentages:
+      // columns: editor | r1 | preview | r2 | ai
+      const rW = 10; // resizer width
+      const usable = total - rW - rW - 28; // gaps approx; safe-ish
+      const minPct = 18; // minimum per panel
+
+      // target split points
+      let editorPct = Math.max(minPct, Math.min(60, (x / total) * 100));
+      let remaining = 100 - editorPct;
+      let previewPct, aiPct;
+
+      // second resizer affects preview/ai balance
+      if (isSecond) {
+        // keep editor as-is, split remaining by mouse position relative to preview+ai zone
+        // approximate: mouse position mapped into remaining
+        const afterEditorPx = x - (total * (editorPct / 100));
+        const afterEditorPct = (afterEditorPx / total) * 100;
+        previewPct = Math.max(minPct, Math.min(remaining - minPct, afterEditorPct));
+        aiPct = remaining - previewPct;
+      } else {
+        // first resizer affects editor/preview+ai. Keep preview/ai ratio approx by current columns
+        // default preview:ai = 1 : 0.85
+        const ratioPreview = 1;
+        const ratioAi = 0.85;
+        const sum = ratioPreview + ratioAi;
+        previewPct = remaining * (ratioPreview / sum);
+        aiPct = remaining * (ratioAi / sum);
+      }
+
+      // clamp again
+      if (previewPct < minPct) { previewPct = minPct; aiPct = remaining - previewPct; }
+      if (aiPct < minPct) { aiPct = minPct; previewPct = remaining - aiPct; }
+
+      // apply as explicit fr-like percentages
+      setGridColumns(`${editorPct}fr 10px ${previewPct}fr 10px ${aiPct}fr`);
+    };
+
+    resizer.addEventListener("mousedown", startDrag);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", stopDrag);
+  }
+
+  // ---------------------------
+  // AI Coach (robust binding + memory + accept/reject)
   // ---------------------------
   const AI_HISTORY_KEY = "cv_builder_ai_history_v1";
 
@@ -717,9 +850,7 @@
       const raw = localStorage.getItem(AI_HISTORY_KEY);
       const arr = JSON.parse(raw || "[]");
       if (!Array.isArray(arr)) return [];
-      return arr
-        .filter(x => x && (x.role === "user" || x.role === "assistant") && typeof x.content === "string")
-        .slice(-20);
+      return arr.filter(x => x && (x.role === "user" || x.role === "assistant") && typeof x.content === "string").slice(-20);
     } catch {
       return [];
     }
@@ -742,10 +873,7 @@
   }
 
   function escapeHtml(s) {
-    return String(s ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+    return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   }
 
   function addMsg(role, title, text) {
@@ -856,21 +984,18 @@
     const accept = div.querySelector("[data-accept]");
     const reject = div.querySelector("[data-reject]");
 
-    if (accept) {
-      accept.addEventListener("click", () => {
-        applyChanges(changes || []);
-        accept.disabled = true;
-        if (reject) reject.disabled = true;
-        accept.textContent = "Applied ✓";
-      });
-    }
-    if (reject) {
-      reject.addEventListener("click", () => {
-        accept && (accept.disabled = true);
-        reject.disabled = true;
-        reject.textContent = "Rejected";
-      });
-    }
+    accept?.addEventListener("click", () => {
+      applyChanges(changes || []);
+      accept.disabled = true;
+      if (reject) reject.disabled = true;
+      accept.textContent = "Applied ✓";
+    });
+
+    reject?.addEventListener("click", () => {
+      if (accept) accept.disabled = true;
+      reject.disabled = true;
+      reject.textContent = "Rejected";
+    });
   }
 
   async function sendToAI(userText) {
@@ -892,19 +1017,18 @@
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(payload?.error || "AI request failed");
 
-      thinking && thinking.remove();
+      thinking?.remove();
 
       const msg = payload?.message || "Here are my suggestions.";
       const changes = payload?.changes || payload?.patches || payload?.actions || [];
 
-      // store assistant reply in history (lightweight)
       aiHistory.push({ role: "assistant", content: msg });
       saveAIHistory(aiHistory);
 
       renderSuggestionCard(msg, changes);
 
     } catch (err) {
-      thinking && thinking.remove();
+      thinking?.remove();
       console.error(err);
 
       const fallback = language === "no"
@@ -919,44 +1043,43 @@
   }
 
   function setupAIUI() {
+    // MUST exist now because index.html defines them.
     const aiSend = qs("aiSend");
     const aiClear = qs("aiClear");
     const aiInput = qs("aiInput");
     const chat = qs("aiChat");
 
-    if (aiClear && chat) {
-      aiClear.addEventListener("click", () => {
-        chat.innerHTML = "";
-        aiHistory = [];
-        saveAIHistory(aiHistory);
-      });
+    if (!aiSend || !aiInput || !chat) {
+      console.warn("AI UI elements missing. Check IDs: aiSend, aiInput, aiChat, aiClear");
+      return;
     }
 
-    if (aiSend && aiInput) {
-      const go = () => {
-        const text = String(aiInput.value || "").trim();
-        if (!text) return;
+    aiClear?.addEventListener("click", () => {
+      chat.innerHTML = "";
+      aiHistory = [];
+      saveAIHistory(aiHistory);
+    });
 
-        addMsg("user", "You", text);
+    const go = () => {
+      const text = String(aiInput.value || "").trim();
+      if (!text) return;
 
-        // store user msg in history
-        aiHistory.push({ role: "user", content: text });
-        saveAIHistory(aiHistory);
+      addMsg("user", "You", text);
+      aiHistory.push({ role: "user", content: text });
+      saveAIHistory(aiHistory);
 
-        aiInput.value = "";
-        sendToAI(text);
-      };
+      aiInput.value = "";
+      sendToAI(text);
+    };
 
-      aiSend.addEventListener("click", go);
+    aiSend.addEventListener("click", go);
 
-      // Ctrl/Cmd+Enter to send
-      aiInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-          e.preventDefault();
-          go();
-        }
-      });
-    }
+    aiInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        go();
+      }
+    });
   }
 
   // ---------------------------
@@ -978,6 +1101,14 @@
   renderExperience();
   renderVolunteer();
 
+  // Layout: buttons + resizers + restore saved
+  setupPanelButtons();
+  restoreGridColumns();
+  normalizeGridForVisibility();
+  setupResizer("resizer-1", "panel-editor", "panel-preview", false);
+  setupResizer("resizer-2", "panel-preview", "panel-ai", true);
+
+  // AI
   setupAIUI();
 
   saveState();
