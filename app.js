@@ -1,10 +1,18 @@
-// app.js (FULL)
+// app.js (FULL) — with AI Coach panel (right), suggestions + accept/reject
 (function () {
   const qs = (id) => document.getElementById(id);
 
   const preview = qs("preview");
   const printBtn = qs("printBtn");
   const downloadHtmlBtn = qs("downloadHtmlBtn");
+  const aiReviewBtn = qs("aiReviewBtn");
+
+  // AI chat UI
+  const aiChatLog = qs("aiChatLog");
+  const aiChatInput = qs("aiChatInput");
+  const aiSendBtn = qs("aiSendBtn");
+  const aiClearBtn = qs("aiClearBtn");
+  const aiSuggestions = qs("aiSuggestions");
 
   // Only these are "simple" fields. Structured sections are handled separately.
   const FIELD_IDS = [
@@ -18,7 +26,26 @@
     "languages","experience","achievements","volunteer","custom1","custom2",
   ];
 
-  const state = { data: {}, sections: {} };
+  const state = {
+    data: {},
+    sections: {},
+    layout: {
+      padX: 40,     // px
+      gap: 30,      // px
+      leftWidth: 34 // percent
+    }
+  };
+
+  function applyLayoutToPreview() {
+    // apply CSS vars on the preview container so exported HTML/print stays consistent
+    const root = preview?.querySelector(".cv");
+    const target = root || preview; // fallback
+    if (!target) return;
+
+    target.style.setProperty("--cv-pad-x", `${state.layout.padX}px`);
+    target.style.setProperty("--cv-gap", `${state.layout.gap}px`);
+    target.style.setProperty("--cv-left-width", `${state.layout.leftWidth}%`);
+  }
 
   function render() {
     if (!preview || typeof window.renderCV !== "function") return;
@@ -26,10 +53,11 @@
       ...state.data,
       sections: state.sections,
     });
+    applyLayoutToPreview();
   }
 
   // Store only user overrides (so preview can stay "original" until user types)
-  const STORAGE_KEY = "cv_builder_user_overrides_structured_v2";
+  const STORAGE_KEY = "cv_builder_user_overrides_structured_v3";
 
   function loadState() {
     try {
@@ -39,12 +67,13 @@
       if (!parsed || typeof parsed !== "object") return;
       state.data = parsed.data || {};
       state.sections = parsed.sections || {};
+      state.layout = parsed.layout || state.layout;
     } catch (_) {}
   }
 
   function saveState() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: state.data, sections: state.sections }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: state.data, sections: state.sections, layout: state.layout }));
     } catch (_) {}
   }
 
@@ -63,7 +92,6 @@
       const el = qs(id);
       if (!el) return;
 
-      // Keep empty unless user override exists
       if (state.data[id] != null && String(state.data[id]).length > 0) el.value = String(state.data[id]);
       else el.value = "";
 
@@ -207,7 +235,6 @@
     });
   }
 
-  // ---- Simple toolbars for textareas (summary/skills/etc)
   function bindSimpleToolbars() {
     document.querySelectorAll(".toolbar[data-for]").forEach((tb) => {
       const fieldId = tb.getAttribute("data-for");
@@ -253,7 +280,6 @@
     else state.data[fieldKey] = value;
   }
 
-  // ----- Education blocks -> education text (blocks separated by blank line)
   function eduToText(blocks) {
     return (blocks || [])
       .map((b) => {
@@ -353,7 +379,6 @@
     });
   }
 
-  // ----- Licenses blocks -> lines in pairs (title + detail)
   function licToText(items) {
     const lines = [];
     (items || []).forEach((it) => {
@@ -362,7 +387,7 @@
       if (!t && !d) return;
       if (t) lines.push(t);
       if (d) lines.push(d);
-      else lines.push(""); // keep pairing
+      else lines.push("");
     });
     while (lines.length && String(lines[lines.length - 1]).trim() === "") lines.pop();
     return lines.join("\n");
@@ -437,7 +462,6 @@
     });
   }
 
-  // ----- Experience jobs -> blocks with title/meta + bullets
   function expToText(jobs) {
     return (jobs || [])
       .map((j) => {
@@ -543,11 +567,10 @@
     });
   }
 
-  // ----- Volunteer blocks (multiple blocks)
   function volToText(vols) {
     return (vols || [])
       .map((v) => {
-        const header = (v.header || "").trim(); // "Volunteer Nurse 2019 – Present" OR "Title | Date"
+        const header = (v.header || "").trim();
         const sub = (v.sub || "").trim();
         const bullets = (v.bullets || []).map((x) => String(x || "").trim()).filter(Boolean);
         return [header, sub, ...bullets].filter(Boolean).join("\n");
@@ -666,13 +689,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CV</title>
-
-  <!-- Google Fonts (if used) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-
-  <!-- Embed ALL CSS so file works standalone -->
   <style>${cssText}</style>
 </head>
 <body style="margin:0; padding:0; background:white;">
@@ -698,7 +717,244 @@
     });
   }
 
-  // INIT show app (auth kan kobles tilbake hos deg)
+  // ──────────────────────────────────────────────
+  // AI helpers
+  // ──────────────────────────────────────────────
+  function detectLanguageFromText(t) {
+    // very light: if contains norwegian letters or common words, treat as NO
+    const s = String(t || "");
+    if (/[æøå]/i.test(s)) return "no";
+    if (/\b(ikke|og|jeg|du|kan|vil|må|skal)\b/i.test(s)) return "no";
+    return "en";
+  }
+
+  function getCVSnapshotForAI() {
+    // send structured + rendered text
+    return {
+      text: (preview?.innerText || "").trim(),
+      data: state.data,
+      sections: state.sections,
+      layout: state.layout
+    };
+  }
+
+  function addChatMsg(role, text) {
+    if (!aiChatLog) return;
+    const div = document.createElement("div");
+    div.className = `ai-msg ${role}`;
+    div.textContent = text;
+    aiChatLog.appendChild(div);
+    aiChatLog.scrollTop = aiChatLog.scrollHeight;
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  // Apply AI patch ops safely
+  // Supports:
+  // - set on: data.<field>, sections.<key>.<prop>, layout.<padX|gap|leftWidth>
+  function applyChanges(changes) {
+    (changes || []).forEach((c) => {
+      if (!c || c.op !== "set") return;
+
+      const path = String(c.path || "");
+      const value = c.value;
+
+      // data.field
+      if (path.startsWith("data.")) {
+        const key = path.slice("data.".length);
+        state.data[key] = value;
+        const el = qs(key);
+        if (el) el.value = value;
+        return;
+      }
+
+      // direct field alias (summary, clinicalSkills, etc.)
+      if (FIELD_IDS.includes(path) || ["education","licenses","experience","volunteer"].includes(path)) {
+        state.data[path] = value;
+        const el = qs(path);
+        if (el) el.value = value;
+        return;
+      }
+
+      // sections.key.prop
+      if (path.startsWith("sections.")) {
+        const parts = path.split(".");
+        const key = parts[1];
+        const prop = parts[2];
+        if (!key || !prop) return;
+        if (!state.sections[key]) state.sections[key] = {};
+        state.sections[key][prop] = value;
+
+        if (prop === "title") {
+          const ti = qs(`sec_${key}_title`);
+          if (ti) ti.value = value;
+        }
+        if (prop === "enabled") {
+          const en = qs(`sec_${key}_enabled`);
+          if (en) en.checked = !!value;
+        }
+        return;
+      }
+
+      // layout.padX / layout.gap / layout.leftWidth
+      if (path.startsWith("layout.")) {
+        const k = path.slice("layout.".length);
+        if (k === "padX" || k === "gap" || k === "leftWidth") {
+          state.layout[k] = Number(value);
+          return;
+        }
+      }
+    });
+
+    saveState();
+    render();
+  }
+
+  function renderSuggestions(list) {
+    if (!aiSuggestions) return;
+    aiSuggestions.innerHTML = "";
+
+    if (!list || !list.length) return;
+
+    list.forEach((s) => {
+      const card = document.createElement("div");
+      card.className = "sugg-card";
+
+      const before = s.preview?.before ?? "";
+      const after = s.preview?.after ?? "";
+
+      card.innerHTML = `
+        <div class="row" style="justify-content:space-between; margin-top:0;">
+          <div>
+            <b>${escapeHtml(s.title || "Forslag")}</b>
+            <div class="muted small">${escapeHtml(s.why || "")}</div>
+          </div>
+          <div class="row" style="margin-top:0;">
+            <button class="btn ghost" type="button" data-acc="${escapeHtml(s.id)}">Accept</button>
+            <button class="btn ghost" type="button" data-rej="${escapeHtml(s.id)}">Reject</button>
+          </div>
+        </div>
+
+        ${(before || after) ? `
+          <div class="diff">
+            <div>
+              <div class="muted small">Before</div>
+              <div class="diffbox">${escapeHtml(before)}</div>
+            </div>
+            <div>
+              <div class="muted small">After</div>
+              <div class="diffbox">${escapeHtml(after)}</div>
+            </div>
+          </div>
+        ` : ""}
+      `;
+
+      aiSuggestions.appendChild(card);
+
+      const acc = card.querySelector(`[data-acc="${CSS.escape(s.id)}"]`);
+      const rej = card.querySelector(`[data-rej="${CSS.escape(s.id)}"]`);
+
+      if (acc) {
+        acc.addEventListener("click", () => {
+          applyChanges(s.changes || []);
+          card.remove();
+        });
+      }
+      if (rej) {
+        rej.addEventListener("click", () => card.remove());
+      }
+    });
+  }
+
+  async function callAI(userMessage, mode) {
+    const snap = getCVSnapshotForAI();
+    const language = detectLanguageFromText(userMessage || snap.text);
+
+    const res = await fetch("/api/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: mode || "chat",
+        language,
+        message: userMessage || "",
+        cv: snap
+      })
+    });
+
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload?.error || "AI request failed");
+    return payload;
+  }
+
+  // AI Review button → asks AI for review + suggestions
+  async function runReview() {
+    if (!aiReviewBtn) return;
+    aiReviewBtn.disabled = true;
+    aiReviewBtn.textContent = "AI…";
+
+    try {
+      addChatMsg("user", "Gi meg en review av CV-en og forslag til forbedringer.");
+      const payload = await callAI("Gi meg en review av CV-en og forslag til forbedringer.", "review");
+
+      addChatMsg("assistant", payload.reply || "");
+      renderSuggestions(payload.suggestions || []);
+    } catch (e) {
+      console.error(e);
+      alert("AI review failed. Check Vercel logs.");
+    } finally {
+      aiReviewBtn.disabled = false;
+      aiReviewBtn.textContent = "AI Review";
+    }
+  }
+
+  // Chat send
+  async function sendChat() {
+    const msg = String(aiChatInput?.value || "").trim();
+    if (!msg) return;
+
+    if (aiSendBtn) {
+      aiSendBtn.disabled = true;
+      aiSendBtn.textContent = "…";
+    }
+
+    try {
+      addChatMsg("user", msg);
+      aiChatInput.value = "";
+
+      const payload = await callAI(msg, "chat");
+      addChatMsg("assistant", payload.reply || "");
+      renderSuggestions(payload.suggestions || []);
+    } catch (e) {
+      console.error(e);
+      alert("AI chat failed. Check Vercel logs.");
+    } finally {
+      if (aiSendBtn) {
+        aiSendBtn.disabled = false;
+        aiSendBtn.textContent = "Send";
+      }
+    }
+  }
+
+  if (aiSendBtn) aiSendBtn.addEventListener("click", sendChat);
+  if (aiChatInput) {
+    aiChatInput.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        sendChat();
+      }
+    });
+  }
+  if (aiClearBtn) {
+    aiClearBtn.addEventListener("click", () => {
+      if (aiChatLog) aiChatLog.innerHTML = "";
+      if (aiSuggestions) aiSuggestions.innerHTML = "";
+    });
+  }
+  if (aiReviewBtn) aiReviewBtn.addEventListener("click", runReview);
+
+  // INIT show app
   const app = qs("app");
   const locked = qs("locked");
   if (app) app.style.display = "block";
