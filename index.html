@@ -4,9 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CV Builder</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -32,7 +34,7 @@
     </section>
 
     <section id="app" style="display:none;">
-      <div class="grid">
+      <div class="grid grid-3">
         <!-- LEFT: editor -->
         <div class="card">
           <h2>Edit content</h2>
@@ -93,7 +95,6 @@
               <button id="addEducationBlock" class="btn ghost" type="button">+ Add education</button>
             </div>
 
-            <!-- hidden aggregate field for renderer -->
             <textarea id="education" class="textarea" rows="6" style="display:none;"></textarea>
           </div>
 
@@ -116,7 +117,6 @@
               <button id="addLicenseBlock" class="btn ghost" type="button">+ Add license</button>
             </div>
 
-            <!-- hidden aggregate field -->
             <textarea id="licenses" class="textarea" rows="6" style="display:none;"></textarea>
           </div>
 
@@ -196,7 +196,6 @@
               <button id="addExperienceJob" class="btn ghost" type="button">+ Add job</button>
             </div>
 
-            <!-- hidden aggregate field -->
             <textarea id="experience" class="textarea" rows="10" style="display:none;"></textarea>
           </div>
 
@@ -219,7 +218,7 @@
             <textarea id="achievements" class="textarea" rows="4" placeholder="One per line..."></textarea>
           </div>
 
-          <!-- VOLUNTEER (structured: 3 blocks) -->
+          <!-- VOLUNTEER (structured blocks) -->
           <div class="field">
             <div class="field-head">
               <label class="label">Volunteer</label>
@@ -238,7 +237,6 @@
               <button id="addVolunteerBlock" class="btn ghost" type="button">+ Add volunteer</button>
             </div>
 
-            <!-- hidden aggregate field -->
             <textarea id="volunteer" class="textarea" rows="6" style="display:none;"></textarea>
           </div>
 
@@ -284,7 +282,8 @@
 
           <div class="row">
             <button id="printBtn" class="btn">Print / Save as PDF</button>
-            <button id="downloadHtmlBtn" class="btn ghost">Download HTML</button>
+            <button id="downloadHtmlBtn" class="btn ghost" type="button">Download HTML</button>
+            <button id="aiReviewBtn" class="btn ghost" type="button">AI Review</button>
           </div>
 
           <p class="muted small">
@@ -292,10 +291,33 @@
           </p>
         </div>
 
-        <!-- RIGHT: preview -->
+        <!-- MIDDLE: preview -->
         <div class="card">
           <h2>Preview</h2>
-          <div id="preview" class="cv"></div>
+          <div id="preview"></div>
+        </div>
+
+        <!-- RIGHT: AI chat -->
+        <div class="card ai-card">
+          <div class="row" style="justify-content:space-between; margin-top:0;">
+            <h2 style="margin:0;">AI Coach</h2>
+            <button id="aiClearBtn" class="btn ghost" type="button" style="padding:6px 10px;">Clear</button>
+          </div>
+
+          <div class="muted small" style="margin-bottom:10px;">
+            Spør meg om review, forbedringer, nye bullet points, eller layout. Du må alltid godkjenne før endringer gjøres.
+          </div>
+
+          <div id="aiChatLog" class="ai-log"></div>
+
+          <div class="ai-input-row">
+            <textarea id="aiChatInput" class="textarea" rows="3" placeholder="Skriv her… f.eks: 'Kan du forbedre summary og gi 3 forslag til bullets i siste jobb?'" ></textarea>
+            <button id="aiSendBtn" class="btn" type="button">Send</button>
+          </div>
+
+          <hr />
+
+          <div id="aiSuggestions" class="ai-suggestions"></div>
         </div>
       </div>
     </section>
