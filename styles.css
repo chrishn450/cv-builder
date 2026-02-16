@@ -1,3 +1,4 @@
+/* styles.css (FULL) */
 /* ──────────────────────────────────────────────
    Base
 ────────────────────────────────────────────── */
@@ -115,6 +116,11 @@ hr{
   padding: 10px 12px;
   color: #e9eefc;
   outline: none;
+
+  /* FIX: consistent font everywhere (Nr 7) */
+  font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  font-size: 14px;
 }
 
 .textarea{ resize: vertical; }
@@ -211,27 +217,6 @@ hr{
   justify-content: center;
   padding: 0;
 }
-/* Bullet toggle button = SAME dot as CV */
-.tbtn.tdot{
-  width: 34px;
-  min-width: 34px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
-
-.tbtn.tdot::before{
-  content:"";
-  width: 3.5px;
-  height: 3.5px;
-  border-radius: 50%;
-  background: var(--cv-accent);
-
-  /* makes it look identical on dark UI */
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
-}
 .tbtn.active{
   outline: 2px solid rgba(47,107,255,0.6);
 }
@@ -258,16 +243,12 @@ hr{
 }
 
 @media (max-width: 1180px){
-  .grid3{
-    grid-template-columns: 1fr;
-  }
+  .grid3{ grid-template-columns: 1fr; }
   .v-resizer{ display:none; }
 }
 
 /* Panel hide */
-.panel.is-hidden{
-  display:none !important;
-}
+.panel.is-hidden{ display:none !important; }
 
 /* Fullscreen panel */
 .panel.is-fullscreen{
@@ -275,6 +256,15 @@ hr{
   inset: 74px 16px 16px 16px !important;
   z-index: 9999 !important;
   overflow: auto;
+}
+
+/* Backdrop behind fullscreen panel */
+.fullscreen-backdrop{
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px);
 }
 
 /* ──────────────────────────────────────────────
@@ -333,16 +323,6 @@ hr{
   border-top: 1px solid rgba(255,255,255,0.10);
   padding-top: 10px;
 }
-.sugg pre{
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-size: 12px;
-  margin: 8px 0;
-  background: rgba(0,0,0,0.25);
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.08);
-}
 .sugg-buttons{
   display:flex;
   gap:10px;
@@ -377,6 +357,27 @@ hr{
   --cv-accent: #b8a88a;
   --cv-border: #d6cdb8;
   --cv-rule: rgba(184,168,138,0.3);
+
+  /* FIX: one source of truth for dot size (Nr 3) */
+  --cv-dot-size: 3.5px;
+}
+
+/* One source of truth for the CV dot */
+.cv-dot{
+  width: var(--cv-dot-size);
+  height: var(--cv-dot-size);
+  border-radius: 50%;
+  background: var(--cv-accent);
+  display: inline-block;
+}
+
+/* Bullet toggle button = SAME dot as CV (Nr 3) */
+.tbtn.tdot::before{
+  content:"";
+  width: var(--cv-dot-size);
+  height: var(--cv-dot-size);
+  border-radius: 50%;
+  background: var(--cv-accent);
 }
 
 /* ──────────────────────────────────────────────
@@ -509,14 +510,11 @@ hr{
   content:"";
   margin-top: 5px;
   flex-shrink:0;
-
-  /* identical to .cv-dot */
-  width: 3.5px;
-  height: 3.5px;
+  width: var(--cv-dot-size);
+  height: var(--cv-dot-size);
   border-radius: 50%;
   background: var(--cv-accent);
 }
-
 
 .cv .exp-entry{ margin-bottom: 12px; }
 .cv .exp-entry h3{
@@ -537,9 +535,10 @@ hr{
   display:flex;
   justify-content: space-between;
   align-items: baseline;
+  gap: 10px;
 }
 .cv .vol-header h3{ font-size: 9.5px; font-weight: 600; margin:0; color: var(--cv-heading); }
-.cv .vol-header .date{ font-size: 8px; color: var(--cv-light); }
+.cv .vol-header .date{ font-size: 8px; color: var(--cv-light); white-space: nowrap; }
 
 .cv .vol-sub{
   font-size: 8.5px;
@@ -579,29 +578,7 @@ hr{
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-}
-/* --- Fullscreen overlay (fix) --- */
-.panel.is-fullscreen{
-  position: fixed !important;
-  inset: 74px 16px 16px 16px !important;
-  z-index: 9999 !important;
-  overflow: auto;
-}
 
-/* Backdrop behind fullscreen panel */
-.fullscreen-backdrop{
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(6px);
+  /* FIX: avoid splitting entries awkwardly (bonus) */
+  .cv section, .cv .exp-entry, .cv li { break-inside: avoid; }
 }
-/* One source of truth for the CV dot */
-.cv-dot{
-  width: 3.5px;
-  height: 3.5px;
-  border-radius: 50%;
-  background: var(--cv-accent);
-  display: inline-block;
-}
-
