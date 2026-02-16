@@ -1,5 +1,5 @@
 /* ──────────────────────────────────────────────
-   Base
+   Base (safe)
 ────────────────────────────────────────────── */
 *,
 *::before,
@@ -29,33 +29,93 @@ body{
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
-.brand{ font-weight: 700; letter-spacing: 0.02em; }
+
+.brand{
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 .actions{ display:flex; gap:10px; align-items:center; }
 
 .container{
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 22px 18px 40px;
 }
 
-/* 3-column layout */
-.grid{
-  display: grid;
-  gap: 18px;
+/* ──────────────────────────────────────────────
+   3-pane workspace (Editor | Preview | AI)
+   with draggable resizers
+────────────────────────────────────────────── */
+.workspace{
+  display:flex;
+  gap:0;
+  align-items: stretch;
+  width: 100%;
+  min-height: 70vh;
 }
-.grid-3{
-  grid-template-columns: 1fr 1fr 0.85fr;
+
+/* panes are flex items with variable widths */
+.pane{
+  min-width: 280px;
+  flex: 0 0 auto;
+}
+
+.pane-grow{
+  flex: 1 1 auto;
+  min-width: 320px;
+}
+
+/* draggable vertical resizer */
+.vresizer{
+  width: 10px;
+  cursor: col-resize;
+  position: relative;
+  flex: 0 0 10px;
+  user-select: none;
+  touch-action: none;
+}
+
+.vresizer::before{
+  content:"";
+  position:absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+}
+
+.vresizer:hover::before{
+  background: rgba(255,255,255,0.16);
 }
 
 @media (max-width: 1180px){
-  .grid-3{ grid-template-columns: 1fr 1fr; }
-  .ai-card{ grid-column: 1 / -1; }
-}
-@media (max-width: 980px){
-  .grid-3{ grid-template-columns: 1fr; }
-  .ai-card{ grid-column: auto; }
+  .workspace{
+    flex-direction: column;
+  }
+  .vresizer{
+    width: 100%;
+    height: 10px;
+    cursor: row-resize;
+    flex: 0 0 10px;
+  }
+  .vresizer::before{
+    left: 10px;
+    right: 10px;
+    top: 50%;
+    bottom: auto;
+    height: 2px;
+    width: auto;
+    transform: translateY(-50%);
+  }
 }
 
+/* ──────────────────────────────────────────────
+   Cards / fields
+────────────────────────────────────────────── */
 .card{
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.08);
@@ -64,15 +124,10 @@ body{
   box-shadow: 0 20px 60px rgba(0,0,0,0.28);
 }
 
-.subcard{
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
-  padding: 14px;
-  margin-top: 12px;
+.card h1, .card h2{
+  margin: 0 0 10px;
+  letter-spacing: 0.01em;
 }
-
-.card h1, .card h2{ margin: 0 0 10px; letter-spacing: 0.01em; }
 
 .row{
   display:flex;
@@ -106,7 +161,10 @@ hr{
 }
 
 .textarea{ resize: vertical; }
-.input::placeholder, .textarea::placeholder{ color: rgba(233,238,252,0.45); }
+
+.input::placeholder, .textarea::placeholder{
+  color: rgba(233,238,252,0.45);
+}
 
 .btn{
   display:inline-flex;
@@ -122,10 +180,188 @@ hr{
   cursor: pointer;
   font-weight: 600;
 }
+
 .btn:hover{ opacity: 0.95; }
-.btn.ghost{ background: transparent; color: #e9eefc; }
+
+.btn.ghost{
+  background: transparent;
+  color: #e9eefc;
+}
+
 .muted{ color: rgba(233,238,252,0.72); }
 .small{ font-size: 12px; }
+
+/* Mini controls next to labels */
+.field { margin-top: 14px; }
+.field-head {
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+}
+.field-controls{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.input.small{
+  max-width: 260px;
+  padding: 8px 10px;
+}
+
+.toggle{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-size: 12px;
+  color: rgba(233,238,252,0.75);
+}
+.toggle input { transform: translateY(1px); }
+
+/* Toolbar */
+.toolbar{
+  display:flex;
+  gap:8px;
+  margin: 8px 0 8px;
+}
+.tbtn{
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.9);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+.tbtn:hover{ background: rgba(255,255,255,0.10); }
+
+.tbtn.tdot{
+  width: 34px;
+  min-width: 34px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.tbtn.tdot::before{
+  content:"";
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: 50%;
+  background: var(--cv-accent);
+  display:block;
+}
+
+/* Subcards for structured blocks */
+.subcard{
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 12px;
+}
+
+/* ──────────────────────────────────────────────
+   AI Coach UI
+────────────────────────────────────────────── */
+.ai-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.ai-chat{
+  margin-top: 10px;
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 55vh;
+  overflow:auto;
+  padding-right: 4px;
+}
+
+.msg{
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.msg.user{
+  background: rgba(47,107,255,0.12);
+  border-color: rgba(47,107,255,0.25);
+}
+
+.msg.assistant{
+  background: rgba(255,255,255,0.06);
+}
+
+.msg .msg-title{
+  font-weight: 700;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: rgba(233,238,252,0.88);
+}
+
+.ai-actions{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+  margin-top: 10px;
+}
+
+.ai-actions .btn{
+  padding: 8px 12px;
+}
+
+/* Thinking spinner */
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top: 2px solid rgba(255,255,255,0.95);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex: 0 0 auto;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.thinking-row{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  color: rgba(233,238,252,0.75);
+  font-size: 12px;
+}
+
+/* Suggestions (Accept/Reject) */
+.sugg{
+  margin-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.10);
+  padding-top: 10px;
+}
+.sugg pre{
+  white-space: pre-wrap;
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  color: rgba(233,238,252,0.85);
+}
+
+.sugg-buttons{
+  display:flex;
+  gap:10px;
+  margin-top: 10px;
+}
 
 /* ──────────────────────────────────────────────
    CV Theme Variables
@@ -138,16 +374,10 @@ hr{
   --cv-accent: #b8a88a;
   --cv-border: #d6cdb8;
   --cv-rule: rgba(184,168,138,0.3);
-  --cv-bullet-size: 3.5px;
-
-  /* layout knobs (AI can suggest changes; we apply as CSS vars) */
-  --cv-pad-x: 40px;
-  --cv-gap: 30px;
-  --cv-left-width: 34%;
 }
 
 /* ──────────────────────────────────────────────
-   CV Template
+   CV Template (scoped)
 ────────────────────────────────────────────── */
 .cv{
   width: 210mm;
@@ -160,17 +390,16 @@ hr{
   flex-direction: column;
   overflow: hidden;
   color: var(--cv-body);
-  font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .cv .cv-header{
   text-align:center;
-  padding: 38px var(--cv-pad-x) 20px;
+  padding: 38px 40px 20px;
   border-bottom: 1px solid var(--cv-rule);
 }
 
 .cv .cv-name{
-  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  font-family: Georgia, "Times New Roman", serif;
   font-size: 28px;
   font-weight: 400;
   letter-spacing: 0.32em;
@@ -197,9 +426,10 @@ hr{
   font-size: 8.5px;
   color: var(--cv-body);
 }
+
 .cv .cv-contact .sep{ color: var(--cv-light); }
 
-.cv .cv-summary{ padding: 18px var(--cv-pad-x) 14px; }
+.cv .cv-summary{ padding: 18px 40px 14px; }
 
 .cv .body-text{
   font-size: 9px;
@@ -210,12 +440,12 @@ hr{
 .cv .cv-body{
   display:flex;
   flex: 1;
-  padding: 0 var(--cv-pad-x) 24px;
-  gap: var(--cv-gap);
+  padding: 0 40px 24px;
+  gap: 30px;
 }
 
 .cv .cv-left{
-  width: var(--cv-left-width);
+  width: 34%;
   display:flex;
   flex-direction:column;
   gap: 14px;
@@ -229,7 +459,7 @@ hr{
 }
 
 .cv .section-title{
-  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  font-family: Georgia, "Times New Roman", serif;
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.25em;
@@ -274,8 +504,8 @@ hr{
 .cv .achievement-list li::before{
   content:"";
   margin-top: 5px;
-  width: var(--cv-bullet-size);
-  height: var(--cv-bullet-size);
+  width: 3.5px;
+  height: 3.5px;
   border-radius: 50%;
   background: var(--cv-accent);
   flex-shrink:0;
@@ -317,138 +547,7 @@ hr{
 }
 
 /* ──────────────────────────────────────────────
-   Mini controls
-────────────────────────────────────────────── */
-.field { margin-top: 14px; }
-.field-head {
-  display:flex;
-  align-items:flex-end;
-  justify-content:space-between;
-  gap:12px;
-}
-.field-controls{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-.input.small{
-  max-width: 260px;
-  padding: 8px 10px;
-}
-.toggle{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  font-size: 12px;
-  color: rgba(255,255,255,0.75);
-}
-.toggle input { transform: translateY(1px); }
-
-/* ──────────────────────────────────────────────
-   Toolbar (B + dot)
-────────────────────────────────────────────── */
-.toolbar{
-  display:flex;
-  gap:8px;
-  margin: 8px 0 8px;
-}
-.tbtn{
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.9);
-  border-radius: 8px;
-  padding: 6px 10px;
-  cursor: pointer;
-  font-size: 13px;
-  line-height: 1;
-}
-.tbtn:hover{ background: rgba(255,255,255,0.10); }
-.tbtn.active{
-  background: rgba(255,255,255,0.14);
-  border-color: rgba(255,255,255,0.22);
-}
-
-.tbtn.tdot{
-  width: 34px;
-  min-width: 34px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
-.tbtn.tdot::before{
-  content:"";
-  width: var(--cv-bullet-size);
-  height: var(--cv-bullet-size);
-  border-radius: 50%;
-  background: var(--cv-accent);
-  display:block;
-}
-
-/* ──────────────────────────────────────────────
-   AI Chat UI
-────────────────────────────────────────────── */
-.ai-card{ display:flex; flex-direction:column; }
-.ai-log{
-  flex: 1;
-  min-height: 320px;
-  max-height: 520px;
-  overflow:auto;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
-  padding: 10px;
-}
-.ai-msg{
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(255,255,255,0.05);
-  margin-bottom: 10px;
-  white-space: pre-wrap;
-}
-.ai-msg.user{
-  border-color: rgba(47,107,255,0.35);
-  background: rgba(47,107,255,0.10);
-}
-.ai-msg.assistant{
-  border-color: rgba(255,255,255,0.12);
-}
-.ai-input-row{
-  display:flex;
-  gap:10px;
-  align-items:flex-start;
-  margin-top: 10px;
-}
-.ai-input-row .textarea{ flex: 1; }
-.ai-suggestions{ margin-top: 6px; }
-.sugg-card{
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
-  padding: 12px;
-  margin-top: 10px;
-}
-.sugg-card .diff{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 10px;
-}
-@media (max-width: 1180px){
-  .sugg-card .diff{ grid-template-columns: 1fr; }
-}
-.diffbox{
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 10px;
-  padding: 10px;
-  white-space: pre-wrap;
-}
-
-/* ──────────────────────────────────────────────
-   Print: ONLY the CV (hide editor + AI + titles)
+   Print: show ONLY the CV (A4)
 ────────────────────────────────────────────── */
 @page { size: A4; margin: 0; }
 
@@ -456,64 +555,44 @@ hr{
   html, body{
     margin:0 !important;
     padding:0 !important;
-    background:#fff !important;
+    background:white !important;
     color:#111 !important;
   }
 
+  /* hide app chrome/panels */
   .topbar,
+  .container,
   #locked,
   #logoutBtn,
   #buyLink,
   #printBtn,
   #downloadHtmlBtn,
-  #aiReviewBtn,
   .actions,
   .muted,
-  .small{
+  .small,
+  .workspace,
+  .card,
+  .pane,
+  .vresizer,
+  button,
+  a {
     display:none !important;
   }
 
-  .container{
-    max-width:none !important;
+  /* show CV only */
+  #preview{
+    display:block !important;
     margin:0 !important;
     padding:0 !important;
   }
 
-  .grid{ display:block !important; margin:0 !important; padding:0 !important; }
-
-  /* hide left editor + right AI chat entirely */
-  .grid > .card:first-child{ display:none !important; }
-  .grid > .card:last-child{ display:none !important; }
-
-  /* middle preview card becomes transparent */
-  .grid > .card:nth-child(2){
-    background:transparent !important;
-    border:none !important;
-    box-shadow:none !important;
-    padding:0 !important;
+  #preview .cv{
+    display:block !important;
+    width: 210mm !important;
+    height: 297mm !important;
     margin:0 !important;
-  }
-  .grid > .card:nth-child(2) h2{ display:none !important; }
-
-  #preview{ margin:0 !important; padding:0 !important; display:block !important; }
-
-  #preview .cv, .cv{
-    width:210mm !important;
-    height:297mm !important;
-    margin:0 !important;
-    overflow:hidden !important;
-    border:2px solid var(--cv-border) !important;
+    border: 2px solid var(--cv-border) !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-
-  .cv section,
-  .cv .exp-entry,
-  .cv .edu-block,
-  .cv .cert-item{
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
   }
 }
