@@ -13,6 +13,7 @@
     if (!t) return "";
 
     const parts = t.split(/(\*\*[^*]+\*\*)/g);
+
     const html = parts
       .map((p) => {
         const m = p.match(/^\*\*([^*]+)\*\*$/);
@@ -29,6 +30,14 @@
     return v != null && String(v).trim().length > 0;
   }
 
+  function lines(s) {
+    if (!s) return [];
+    return String(s)
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+  }
+
   function blocks(s) {
     if (!s) return [];
     return String(s)
@@ -42,36 +51,44 @@
     return s.replace(/^([•\-·]\s+)/, "");
   }
 
-  // Merge hard-wrapped lines so we DON'T create new bullets mid sentence.
-  // Heuristic: if a line does not start with bullet prefix and previous exists -> append to previous.
-  function mergeWrappedLines(linesArr) {
+  // --- FIX Nr1: merge wrapped lines into previous bullet when text is coming from template-like wrapping.
+  // Rule: If a line does NOT look like a new bullet starter and previous bullet exists, append it.
+  function mergeWrappedLinesIntoBullets(rawLines) {
     const out = [];
-    for (const raw of linesArr) {
-      const line = String(raw || "").trim();
-      if (!line) continue;
+    rawLines.forEach((ln) => {
+      const line = String(ln || "").trim();
+      if (!line) return;
 
-      const isBullet = /^([•\-·]\s+)/.test(line);
+      const isExplicitBullet = /^([•\-·]\s+)/.test(line);
+      const looksLikeNewBullet =
+        isExplicitBullet ||
+        /^[A-Z0-9(]/.test(line) === false ? false : false;
 
-      if (!isBullet && out.length > 0) {
-        out[out.length - 1] = (out[out.length - 1] + " " + line).trim();
+      // If it starts with bullet prefix => new bullet
+      if (isExplicitBullet) {
+        out.push(stripBulletPrefix(line));
+        return;
+      }
+
+      // If no bullet prefix: treat as continuation if we already started bullets
+      if (out.length > 0) {
+        out[out.length - 1] = (out[out.length - 1] + " " + line).replace(/\s+/g, " ").trim();
       } else {
         out.push(line);
       }
-    }
+    });
+
     return out;
   }
 
   function parseExperience(s) {
     return blocks(s).map((block) => {
-      let ls = block.split("\n").map((l) => l.trim());
-      ls = ls.filter(Boolean);
-
+      const ls = block.split("\n").map((l) => l.trim()).filter(Boolean);
       const title = ls[0] || "";
       const meta = ls[1] || "";
-      const rest = ls.slice(2);
-
-      const merged = mergeWrappedLines(rest).map(stripBulletPrefix);
-      return { title, meta, bullets: merged };
+      const rawBullets = ls.slice(2);
+      const bullets = mergeWrappedLinesIntoBullets(rawBullets);
+      return { title, meta, bullets };
     });
   }
 
@@ -89,9 +106,9 @@
 
   function parseVolunteer(s) {
     return blocks(s).map((block) => {
-      const lsRaw = block.split("\n").map((l) => l.trim()).filter(Boolean);
+      const ls = block.split("\n").map((l) => l.trim()).filter(Boolean);
 
-      let volTitle = lsRaw[0] || "";
+      let volTitle = ls[0] || "";
       let volDate = "";
 
       // Support "Title | Date"
@@ -110,29 +127,23 @@
         }
       }
 
-      const volSub = lsRaw[1] || "";
-      const rest = lsRaw.slice(2);
-      const merged = mergeWrappedLines(rest).map(stripBulletPrefix);
+      const volSub = ls[1] || "";
+      const rawBullets = ls.slice(2);
+      const volBullets = mergeWrappedLinesIntoBullets(rawBullets);
 
-      return { volTitle, volDate, volSub, volBullets: merged };
+      return { volTitle, volDate, volSub, volBullets };
     });
   }
 
-  function linesSmart(s) {
-    if (!s) return [];
-    const raw = String(s).split("\n").map((l) => l.trim());
-    return mergeWrappedLines(raw).filter(Boolean);
-  }
-
   // mode: "bullets" | "paragraph"
-  function renderSimpleSection({ title, content, mode, boldFirstLine, ulClass }) {
-    const items = linesSmart(content);
+  function renderSimpleSection({ title, content, mode, boldFirstLine }) {
+    const items = lines(content);
     if (!items.length) return "";
 
     if (mode === "paragraph") {
       const ps = items
         .map((t, idx) => {
-          const inner = fmtInline(t);
+          const inner = fmtInline(t, { preserveNewlines: false });
           if (boldFirstLine && idx === 0) return `<p><strong>${inner}</strong></p>`;
           return `<p>${inner}</p>`;
         })
@@ -145,9 +156,10 @@
       `;
     }
 
+    // bullets: one li per line
     const lis = items
       .map((t, idx) => {
-        const inner = fmtInline(stripBulletPrefix(t));
+        const inner = fmtInline(stripBulletPrefix(t), { preserveNewlines: true });
         if (boldFirstLine && idx === 0) return `<li><strong>${inner}</strong></li>`;
         return `<li>${inner}</li>`;
       })
@@ -156,7 +168,7 @@
     return `
       <section>
         <h2 class="section-title">${esc(title)}</h2>
-        <ul class="${esc(ulClass || "skill-list")}">${lis}</ul>
+        <ul class="skill-list">${lis}</ul>
       </section>
     `;
   }
@@ -168,13 +180,13 @@
     const expHTML = exps
       .map((e) => {
         const bullets = (e.bullets || [])
-          .map((b) => `<li>${fmtInline(b)}</li>`)
+          .map((b) => `<li>${fmtInline(b, { preserveNewlines: true })}</li>`)
           .join("");
 
         return `
           <div class="exp-entry">
             <h3>${fmtInline(e.title)}</h3>
-            ${e.meta ? `<p class="meta">${fmtInline(e.meta)}</p>` : ""}
+            ${e.meta ? `<p class="meta">${fmtInline(e.meta, { preserveNewlines: true })}</p>` : ""}
             ${bullets ? `<ul class="exp-bullets">${bullets}</ul>` : ""}
           </div>
         `;
@@ -214,7 +226,7 @@
   }
 
   function renderLicensesSection(title, licensesText) {
-    const licLines = linesSmart(licensesText);
+    const licLines = lines(licensesText);
     if (!licLines.length) return "";
 
     let licHTML = "";
@@ -238,13 +250,12 @@
     const vols = parseVolunteer(volunteerText);
     if (!vols.length) return "";
 
-    const volHTML = vols
-      .map((v) => {
-        const bulletsHTML = v.volBullets.length
-          ? `<ul class="exp-bullets">${v.volBullets.map((b) => `<li>${fmtInline(b)}</li>`).join("")}</ul>`
-          : "";
+    const volHTML = vols.map((v) => {
+      const bulletsHTML = (v.volBullets && v.volBullets.length)
+        ? `<ul class="exp-bullets">${v.volBullets.map((b) => `<li>${fmtInline(b, { preserveNewlines: true })}</li>`).join("")}</ul>`
+        : "";
 
-        return `
+      return `
         <div class="exp-entry">
           <div class="vol-header">
             <h3>${fmtInline(v.volTitle)}</h3>
@@ -254,8 +265,7 @@
           ${bulletsHTML}
         </div>
       `;
-      })
-      .join("");
+    }).join("");
 
     return `
       <section>
@@ -265,54 +275,9 @@
     `;
   }
 
-  const I18N_SECTION_DEFAULTS = {
-    en: {
-      summary: "Professional Summary",
-      education: "Education",
-      licenses: "Licenses & Certifications",
-      clinicalSkills: "Clinical Skills",
-      coreCompetencies: "Core Competencies",
-      languages: "Languages",
-      experience: "Professional Experience",
-      achievements: "Clinical Achievements",
-      volunteer: "Volunteer Experience",
-      custom1: "Custom Section 1",
-      custom2: "Custom Section 2",
-    },
-    no: {
-      summary: "Profesjonell Profil",
-      education: "Utdanning",
-      licenses: "Lisenser & Sertifiseringer",
-      clinicalSkills: "Kliniske Ferdigheter",
-      coreCompetencies: "Kjernekompetanse",
-      languages: "Språk",
-      experience: "Arbeidserfaring",
-      achievements: "Resultater",
-      volunteer: "Frivillig Erfaring",
-      custom1: "Egendefinert Seksjon 1",
-      custom2: "Egendefinert Seksjon 2",
-    },
-    de: {
-      summary: "Berufsprofil",
-      education: "Ausbildung",
-      licenses: "Lizenzen & Zertifikate",
-      clinicalSkills: "Klinische Fähigkeiten",
-      coreCompetencies: "Kernkompetenzen",
-      languages: "Sprachen",
-      experience: "Berufserfahrung",
-      achievements: "Erfolge",
-      volunteer: "Ehrenamt",
-      custom1: "Eigener Abschnitt 1",
-      custom2: "Eigener Abschnitt 2",
-    },
-  };
-
   window.renderCV = function renderCV(data) {
     const raw = data || {};
-    const uiLang = raw.uiLang || "en";
-    const T = I18N_SECTION_DEFAULTS[uiLang] || I18N_SECTION_DEFAULTS.en;
 
-    // FULL defaults (original-ish)
     const defaults = {
       name: "Sarah Johnson",
       title: "Registered Nurse · BSN, RN",
@@ -322,10 +287,9 @@
       linkedin: "linkedin.com/in/sarahjohnsonrn",
 
       summary:
-        "Compassionate and detail-oriented Registered Nurse with 7+ years of progressive experience in acute care, emergency, and critical care settings.\n" +
-        "Proven ability to manage 4–6 critically ill patients per shift while maintaining 98% patient satisfaction scores.\n" +
-        "Skilled in patient assessment, evidence-based care planning, and interdisciplinary collaboration.\n" +
-        "Committed to delivering measurable outcomes and continuous quality improvement in fast-paced hospital environments.",
+        "Compassionate and detail-oriented Registered Nurse with 7+ years of progressive experience in acute care, emergency, and critical care settings. Proven ability to manage\n" +
+        "4–6 critically ill patients per shift while maintaining 98% patient satisfaction scores. Skilled in patient assessment, evidence-based care planning, and interdisciplinary\n" +
+        "collaboration. Committed to delivering measurable outcomes and continuous quality improvement in fast-paced hospital environments.",
 
       education:
         "Master of Science in Nursing\n" +
@@ -373,17 +337,28 @@
       experience:
         "SENIOR REGISTERED NURSE – ICU\n" +
         "St. David's Medical Center, Austin, TX | January 2021 – Present\n" +
-        "Provide direct care for 4–6 critically ill patients per shift in a 32-bed ICU, including post-surgical, cardiac, and respiratory cases\n" +
-        "Reduced hospital-acquired infection rates by 18% through implementation of enhanced hygiene and monitoring protocols\n" +
-        "Mentor and precept 12+ new graduate nurses annually on unit protocols, charting standards, and clinical best practices\n" +
+        "Provide direct care for 4–6 critically ill patients per shift in a 32-bed ICU, including post-surgical, cardiac,\n" +
+        "and respiratory cases\n" +
+        "Reduced hospital-acquired infection rates by 18% through implementation of enhanced hygiene and\n" +
+        "monitoring protocols\n" +
+        "Mentor and precept 12+ new graduate nurses annually on unit protocols, charting standards, and clinical\n" +
+        "best practices\n" +
         "Maintain 98% patient satisfaction scores consistently across quarterly Press Ganey surveys\n" +
-        "Collaborate with multidisciplinary teams including physicians, pharmacists, and respiratory therapists on individualized care plans\n\n" +
+        "Collaborate with multidisciplinary teams including physicians, pharmacists, and respiratory therapists on\n" +
+        "individualized care plans\n\n" +
         "REGISTERED NURSE – EMERGENCY DEPARTMENT\n" +
         "Seton Medical Center, Austin, TX | June 2018 – December 2020\n" +
         "Triaged and assessed 30+ patients daily in a high-volume Level I trauma center serving 85,000+ annual visits\n" +
-        "Administered medications, IV therapy, and emergency interventions with zero medication errors over 2.5 years\n" +
+        "Administered medications, IV therapy, and emergency interventions with zero medication errors over 2.5\n" +
+        "years\n" +
         "Recognized as Employee of the Quarter (Q3 2019) for exceptional patient care and team collaboration\n" +
-        "Maintained accurate real-time documentation using Epic EHR system for all patient encounters",
+        "Maintained accurate real-time documentation using Epic EHR system for all patient encounters\n\n" +
+        "STAFF NURSE – MEDICAL-SURGICAL UNIT\n" +
+        "Dell Children's Medical Center, Austin, TX | August 2016 – May 2018\n" +
+        "Delivered compassionate care to 20+ pediatric patients daily aged 2–17 across medical and surgical units\n" +
+        "Monitored and documented vital signs, lab results, and medication responses with 100% charting\n" +
+        "compliance\n" +
+        "Educated 500+ families on post-discharge care plans, medication schedules, and follow-up procedures",
 
       achievements:
         "Spearheaded ICU sepsis screening protocol resulting in 22% faster identification and 15% reduction in mortality\n" +
@@ -392,7 +367,7 @@
         "Awarded Daisy Award for Extraordinary Nurses (2021) — nominated by patients and families",
 
       volunteer:
-        "Volunteer Nurse | 2019 – Present\n" +
+        "Volunteer Nurse 2019 – Present\n" +
         "Austin Free Clinic · Community Health Outreach\n" +
         "Provide free health screenings and vaccinations to 200+ underserved community members annually",
 
@@ -404,22 +379,37 @@
     for (const k in defaults) d[k] = hasText(raw[k]) ? raw[k] : defaults[k];
 
     const defaultSections = {
-      summary: { enabled: true, title: T.summary },
-      education: { enabled: true, title: T.education },
-      licenses: { enabled: true, title: T.licenses },
-      clinicalSkills: { enabled: true, title: T.clinicalSkills, mode: "bullets", boldFirstLine: false },
-      coreCompetencies: { enabled: true, title: T.coreCompetencies, mode: "bullets", boldFirstLine: false },
-      languages: { enabled: true, title: T.languages, mode: "paragraph", boldFirstLine: false },
-      experience: { enabled: true, title: T.experience },
-      achievements: { enabled: true, title: T.achievements, mode: "bullets", boldFirstLine: false },
-      volunteer: { enabled: true, title: T.volunteer },
-      custom1: { enabled: false, title: T.custom1, mode: "bullets", boldFirstLine: false, column: "right" },
-      custom2: { enabled: false, title: T.custom2, mode: "bullets", boldFirstLine: false, column: "right" },
+      summary: { enabled: true, title: "Professional Summary" },
+      education: { enabled: true, title: "Education" },
+      licenses: { enabled: true, title: "Licenses & Certifications" },
+      clinicalSkills: { enabled: true, title: "Clinical Skills", mode: "bullets", boldFirstLine: false },
+      coreCompetencies: { enabled: true, title: "Core Competencies", mode: "bullets", boldFirstLine: false },
+      languages: { enabled: true, title: "Languages", mode: "paragraph", boldFirstLine: false },
+      experience: { enabled: true, title: "Professional Experience" },
+      achievements: { enabled: true, title: "Clinical Achievements", mode: "bullets", boldFirstLine: false },
+      volunteer: { enabled: true, title: "Volunteer Experience" },
+      custom1: { enabled: false, title: "Custom Section 1", mode: "bullets", boldFirstLine: false, column: "right" },
+      custom2: { enabled: false, title: "Custom Section 2", mode: "bullets", boldFirstLine: false, column: "right" },
+      contact: {
+        show_title: true,
+        show_email: true,
+        show_phone: true,
+        show_location: true,
+        show_linkedin: true
+      }
     };
 
     const sections = { ...defaultSections, ...(raw.sections || {}) };
 
-    const contactParts = [d.phone, d.email, d.location, d.linkedin].filter(Boolean);
+    // Contact show/hide
+    const contactCfg = sections.contact || defaultSections.contact;
+
+    const contactParts = [];
+    if (contactCfg.show_phone && d.phone) contactParts.push(d.phone);
+    if (contactCfg.show_email && d.email) contactParts.push(d.email);
+    if (contactCfg.show_location && d.location) contactParts.push(d.location);
+    if (contactCfg.show_linkedin && d.linkedin) contactParts.push(d.linkedin);
+
     const contactHTML = contactParts
       .map((p, i) => {
         const sep = i < contactParts.length - 1 ? ' <span class="sep">|</span> ' : "";
@@ -427,11 +417,13 @@
       })
       .join("");
 
+    const showTitle = contactCfg.show_title !== false;
+
     const summaryHTML =
       sections.summary?.enabled
         ? `
           <section class="cv-summary">
-            <h2 class="section-title">${esc(sections.summary.title || T.summary)}</h2>
+            <h2 class="section-title">${esc(sections.summary.title || "Professional Summary")}</h2>
             <p class="body-text">${fmtInline(d.summary, { preserveNewlines: true })}</p>
           </section>
         `
@@ -441,11 +433,10 @@
       const cfg = sections[key];
       if (!cfg?.enabled) return "";
       return renderSimpleSection({
-        title: cfg.title || T[key] || "Custom Section",
+        title: cfg.title || "Custom Section",
         content: d[key] || "",
         mode: cfg.mode || "bullets",
         boldFirstLine: !!cfg.boldFirstLine,
-        ulClass: "skill-list",
       });
     }
 
@@ -468,7 +459,6 @@
             content: d.clinicalSkills,
             mode: sections.clinicalSkills.mode || "bullets",
             boldFirstLine: !!sections.clinicalSkills.boldFirstLine,
-            ulClass: "skill-list",
           })
         : "",
       sections.coreCompetencies?.enabled
@@ -477,7 +467,6 @@
             content: d.coreCompetencies,
             mode: sections.coreCompetencies.mode || "bullets",
             boldFirstLine: !!sections.coreCompetencies.boldFirstLine,
-            ulClass: "skill-list",
           })
         : "",
       sections.languages?.enabled
@@ -499,7 +488,6 @@
             content: d.achievements,
             mode: sections.achievements.mode || "bullets",
             boldFirstLine: !!sections.achievements.boldFirstLine,
-            ulClass: "achievement-list",
           })
         : "",
       sections.volunteer?.enabled ? renderVolunteerSection(sections.volunteer.title, d.volunteer) : "",
@@ -510,7 +498,7 @@
       <div class="cv">
         <header class="cv-header">
           <h1 class="cv-name">${fmtInline(d.name)}</h1>
-          <p class="cv-title">${fmtInline(d.title)}</p>
+          ${showTitle ? `<p class="cv-title">${fmtInline(d.title)}</p>` : ``}
           <div class="cv-contact">${contactHTML}</div>
         </header>
 
