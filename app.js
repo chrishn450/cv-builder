@@ -744,29 +744,86 @@
   }
 
   function setupPanelButtons() {
-    document.querySelectorAll('[data-action="hide"]').forEach(btn => {
-      btn.addEventListener("click", () => {
-        const target = btn.getAttribute("data-target");
-        const panel = qs(`panel-${target}`);
-        if (!panel) return;
-        panel.classList.toggle("is-hidden");
-        normalizeGridForVisibility();
-      });
+  const showPanelsBtn = qs("showPanelsBtn");
+
+  function setBodyLocked(on){
+    document.body.style.overflow = on ? "hidden" : "";
+  }
+
+  function closeAnyFullscreen(){
+    document.querySelectorAll(".panel.is-fullscreen").forEach(p => p.classList.remove("is-fullscreen"));
+    document.querySelectorAll(".fullscreen-backdrop").forEach(b => b.remove());
+    setBodyLocked(false);
+  }
+
+  function openFullscreen(panel){
+    closeAnyFullscreen();
+
+    // create backdrop
+    const bd = document.createElement("div");
+    bd.className = "fullscreen-backdrop";
+    bd.addEventListener("click", closeAnyFullscreen);
+    document.body.appendChild(bd);
+
+    panel.classList.add("is-fullscreen");
+    setBodyLocked(true);
+  }
+
+  document.querySelectorAll('[data-action="hide"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      const target = btn.getAttribute("data-target");
+      const panel = qs(`panel-${target}`);
+      if (!panel) return;
+
+      // if hiding a fullscreen panel, close fullscreen first
+      if (panel.classList.contains("is-fullscreen")) {
+        closeAnyFullscreen();
+      }
+
+      panel.classList.toggle("is-hidden");
+      normalizeGridForVisibility();
     });
+  });
 
-    document.querySelectorAll('[data-action="fullscreen"]').forEach(btn => {
-      btn.addEventListener("click", () => {
-        const target = btn.getAttribute("data-target");
-        const panel = qs(`panel-${target}`);
-        if (!panel) return;
+  document.querySelectorAll('[data-action="fullscreen"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      const target = btn.getAttribute("data-target");
+      const panel = qs(`panel-${target}`);
+      if (!panel) return;
 
-        const isOn = panel.classList.toggle("is-fullscreen");
+      // if hidden, unhide first
+      panel.classList.remove("is-hidden");
 
-        // when a panel is fullscreen, block scroll behind
-        document.body.style.overflow = isOn ? "hidden" : "";
-      });
+      if (panel.classList.contains("is-fullscreen")) {
+        closeAnyFullscreen();
+      } else {
+        openFullscreen(panel);
+      }
+      normalizeGridForVisibility();
+    });
+  });
+
+  // ESC closes fullscreen
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeAnyFullscreen();
+  });
+
+  // Panels button toggles hidden panels back on
+  if (showPanelsBtn) {
+    showPanelsBtn.addEventListener("click", () => {
+      const editor = qs("panel-editor");
+      const previewP = qs("panel-preview");
+      const ai = qs("panel-ai");
+
+      // Simple behavior: show all panels again
+      editor?.classList.remove("is-hidden");
+      previewP?.classList.remove("is-hidden");
+      ai?.classList.remove("is-hidden");
+
+      normalizeGridForVisibility();
     });
   }
+}
 
   function setupResizer(resizerId, leftPanelId, rightPanelId, isSecond) {
     const resizer = qs(resizerId);
