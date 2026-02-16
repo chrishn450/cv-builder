@@ -1015,7 +1015,7 @@
 
       // expected payload: { message: "...", changes: [...] }
       const msg = payload?.message || "Here are my suggestions.";
-      const changes = payload?.changes || [];
+      const changes = payload?.changes || payload?.patches || payload?.actions || [];
 
       renderSuggestionCard(msg, changes);
 
