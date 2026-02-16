@@ -4,8 +4,8 @@
 
   const preview = qs("preview");
   const printBtn = qs("printBtn");
-  const downloadPdfBtn = qs("downloadPdfBtn");
   const downloadHtmlBtn = qs("downloadHtmlBtn");
+  const downloadPdfBtn = qs("downloadPdfBtn");
 
   const FIELD_IDS = [
     "name","title","email","phone","location","linkedin",
@@ -18,46 +18,78 @@
     "languages","experience","achievements","volunteer","custom1","custom2",
   ];
 
-  const CONTACT_SHOW_IDS = ["show_title","show_email","show_phone","show_location","show_linkedin"];
+  const state = { data: {}, sections: {}, uiLang: "en" };
 
-  const state = { data: {}, sections: {}, ui: { lang: "en" } };
-
-  function render() {
-    if (!preview || typeof window.renderCV !== "function") return;
-    preview.innerHTML = window.renderCV({
-      ...state.data,
-      sections: state.sections,
-    });
-  }
-
+  // ---------------------------
+  // Storage
+  // ---------------------------
   const STORAGE_KEY = "cv_builder_user_overrides_structured_v3";
+  const LANG_KEY = "cv_builder_ui_lang_v1";
 
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== "object") return;
-      state.data = parsed.data || {};
-      state.sections = parsed.sections || {};
-      state.ui = parsed.ui || state.ui;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") {
+          state.data = parsed.data || {};
+          state.sections = parsed.sections || {};
+        }
+      }
+    } catch (_) {}
+
+    try {
+      const l = localStorage.getItem(LANG_KEY);
+      if (l) state.uiLang = l;
     } catch (_) {}
   }
 
   function saveState() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: state.data, sections: state.sections, ui: state.ui }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: state.data, sections: state.sections }));
+    } catch (_) {}
+    try {
+      localStorage.setItem(LANG_KEY, state.uiLang);
     } catch (_) {}
   }
 
-  function ensureContactSection() {
-    if (!state.sections.contact) state.sections.contact = {};
-    // defaults true
-    CONTACT_SHOW_IDS.forEach((k) => {
-      if (state.sections.contact[k] == null) state.sections.contact[k] = true;
+  // ---------------------------
+  // Render
+  // ---------------------------
+  function render() {
+    if (!preview || typeof window.renderCV !== "function") return;
+    preview.innerHTML = window.renderCV({
+      ...state.data,
+      sections: state.sections,
+      uiLang: state.uiLang,
     });
   }
 
+  // Keep UI inputs in sync after AI applies patches
+  function refreshInputsFromState() {
+    FIELD_IDS.forEach((id) => {
+      const el = qs(id);
+      if (!el) return;
+      el.value = state.data[id] != null ? String(state.data[id]) : "";
+    });
+
+    SECTION_KEYS.forEach((k) => {
+      const en = qs(`sec_${k}_enabled`);
+      const ti = qs(`sec_${k}_title`);
+      if (en && state.sections?.[k]?.enabled != null) en.checked = !!state.sections[k].enabled;
+      if (ti && state.sections?.[k]?.title) ti.value = state.sections[k].title;
+    });
+
+    // re-render structured blocks so left menu matches data
+    renderEducation();
+    renderLicenses();
+    renderExperience();
+    renderVolunteer();
+  }
+
+  // ---------------------------
+  // Sections init
+  // ---------------------------
   function initSectionsFromUI() {
     SECTION_KEYS.forEach((k) => {
       if (!state.sections[k]) state.sections[k] = {};
@@ -66,38 +98,6 @@
       if (en) state.sections[k].enabled = !!en.checked;
       if (ti) state.sections[k].title = ti.value;
     });
-
-    ensureContactSection();
-    CONTACT_SHOW_IDS.forEach((id) => {
-      const el = qs(id);
-      if (!el) return;
-      state.sections.contact[id] = !!el.checked;
-    });
-  }
-
-  function syncUIFromState() {
-    // simple fields
-    FIELD_IDS.forEach((id) => {
-      const el = qs(id);
-      if (!el) return;
-      const val = state.data[id];
-      el.value = val != null ? String(val) : "";
-    });
-
-    // section toggles + titles
-    SECTION_KEYS.forEach((k) => {
-      const en = qs(`sec_${k}_enabled`);
-      const ti = qs(`sec_${k}_title`);
-      if (en && state.sections?.[k]?.enabled != null) en.checked = !!state.sections[k].enabled;
-      if (ti && state.sections?.[k]?.title) ti.value = state.sections[k].title;
-    });
-
-    ensureContactSection();
-    CONTACT_SHOW_IDS.forEach((id) => {
-      const el = qs(id);
-      if (!el) return;
-      el.checked = state.sections.contact[id] !== false;
-    });
   }
 
   function bindSimpleInputs() {
@@ -105,9 +105,7 @@
       const el = qs(id);
       if (!el) return;
 
-      // initial
-      if (state.data[id] != null && String(state.data[id]).length > 0) el.value = String(state.data[id]);
-      else el.value = "";
+      el.value = state.data[id] != null ? String(state.data[id]) : "";
 
       el.addEventListener("input", () => {
         state.data[id] = el.value;
@@ -117,7 +115,6 @@
       });
     });
 
-    // section toggles
     SECTION_KEYS.forEach((k) => {
       const en = qs(`sec_${k}_enabled`);
       const ti = qs(`sec_${k}_title`);
@@ -141,25 +138,12 @@
         });
       }
     });
-
-    // contact show/hide
-    ensureContactSection();
-    CONTACT_SHOW_IDS.forEach((id) => {
-      const el = qs(id);
-      if (!el) return;
-      // initial from state
-      el.checked = state.sections.contact[id] !== false;
-
-      el.addEventListener("change", () => {
-        ensureContactSection();
-        state.sections.contact[id] = !!el.checked;
-        saveState();
-        render();
-      });
-    });
   }
 
-  // ---------- Toolbar helpers (Bold + Bullet) ----------
+  // ---------------------------
+  // Toolbar helpers (BOLD only)
+  // NOTE: No auto-bullets now. Enter is normal.
+  // ---------------------------
   function wrapSelectionWith(el, left, right) {
     const v = el.value || "";
     const start = el.selectionStart ?? 0;
@@ -168,80 +152,8 @@
     el.setSelectionRange(start + left.length, end + left.length);
   }
 
-  const BULLET = "• ";
-
-  function setBulletButtonState(tb, on) {
-    const btn = tb.querySelector('[data-action="bullets"]');
-    if (!btn) return;
-    btn.classList.toggle("active", !!on);
-    btn.setAttribute("aria-pressed", String(!!on));
-  }
-
-  function getLineStart(v, pos) {
-    return v.lastIndexOf("\n", pos - 1) + 1;
-  }
-
-  function lineHasBulletPrefix(v, lineStart) {
-    const head2 = v.slice(lineStart, lineStart + 2);
-    return head2 === "• " || head2 === "- ";
-  }
-
-  function ensureBulletPrefixAtCurrentLine(el) {
-    const v = el.value || "";
-    const pos = el.selectionStart ?? v.length;
-    const lineStart = getLineStart(v, pos);
-    if (lineHasBulletPrefix(v, lineStart)) return;
-
-    el.value = v.slice(0, lineStart) + BULLET + v.slice(lineStart);
-    const newPos = pos + BULLET.length;
-    el.setSelectionRange(newPos, newPos);
-  }
-
-  function insertBulletNewline(el) {
-    const v = el.value || "";
-    const pos = el.selectionStart ?? v.length;
-    const insert = "\n" + BULLET;
-    el.value = v.slice(0, pos) + insert + v.slice(pos);
-    el.setSelectionRange(pos + insert.length, pos + insert.length);
-  }
-
-  function removeEmptyBulletLine(el) {
-    const v = el.value || "";
-    const pos = el.selectionStart ?? v.length;
-    const lineStart = getLineStart(v, pos);
-    const lineEndIdx = v.indexOf("\n", lineStart);
-    const lineEnd = lineEndIdx === -1 ? v.length : lineEndIdx;
-    const line = v.slice(lineStart, lineEnd);
-
-    if ((line.startsWith("• ") && line.trim() === "•") || (line.startsWith("- ") && line.trim() === "-")) {
-      el.value = v.slice(0, lineStart) + v.slice(lineStart + 2);
-      const newPos = Math.max(lineStart, pos - 2);
-      el.setSelectionRange(newPos, newPos);
-    }
-  }
-
   function bindToolbar(tb, target, onChange) {
     if (!tb || !target) return;
-    target.dataset.bulletOn = target.dataset.bulletOn || "";
-    setBulletButtonState(tb, target.dataset.bulletOn === "1");
-
-    target.addEventListener("keydown", (e) => {
-      // Only intercept Enter when bullet mode is on
-      if (target.dataset.bulletOn !== "1") return;
-
-      if (e.key === "Enter") {
-        e.preventDefault();
-        insertBulletNewline(target);
-        onChange();
-        return;
-      }
-      if (e.key === "Backspace") {
-        setTimeout(() => {
-          removeEmptyBulletLine(target);
-          onChange();
-        }, 0);
-      }
-    });
 
     tb.querySelectorAll(".tbtn").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -254,15 +166,15 @@
           return;
         }
 
+        // Bullet button: inserts "• " at cursor, BUT does NOT auto-bullet on Enter.
         if (action === "bullets") {
-          const on = target.dataset.bulletOn === "1" ? "" : "1";
-          target.dataset.bulletOn = on;
-          setBulletButtonState(tb, on === "1");
-
-          if (on === "1") {
-            ensureBulletPrefixAtCurrentLine(target);
-            onChange();
-          }
+          const pos = target.selectionStart ?? (target.value || "").length;
+          const v = target.value || "";
+          target.value = v.slice(0, pos) + "• " + v.slice(pos);
+          const np = pos + 2;
+          target.setSelectionRange(np, np);
+          onChange();
+          return;
         }
       });
     });
@@ -283,7 +195,9 @@
     });
   }
 
-  // ---------- Structured sections ----------
+  // ---------------------------
+  // Structured sections
+  // ---------------------------
   const eduRoot = qs("educationBlocks");
   const addEduBtn = qs("addEducationBlock");
   const eduHidden = qs("education");
@@ -506,7 +420,7 @@
   }
 
   function syncExperience() {
-    ensureArray("experienceJobs", 3, () => ({ title: "", meta: "", bullets: [] }));
+    ensureArray("experienceJobs", 2, () => ({ title: "", meta: "", bullets: [] }));
     const txt = expToText(state.data.experienceJobs);
     if (expHidden) expHidden.value = txt;
     setOverrideField("experience", txt);
@@ -514,7 +428,7 @@
 
   function renderExperience() {
     if (!expRoot) return;
-    ensureArray("experienceJobs", 3, () => ({ title: "", meta: "", bullets: [] }));
+    ensureArray("experienceJobs", 2, () => ({ title: "", meta: "", bullets: [] }));
     expRoot.innerHTML = "";
 
     state.data.experienceJobs.forEach((job, idx) => {
@@ -534,7 +448,7 @@
 
         <div class="toolbar" data-exp-toolbar="${idx}">
           <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-          <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
+          <button class="tbtn tdot" data-action="bullets" type="button" title="Insert bullet"></button>
         </div>
 
         <label class="label">Bullets (one per line)</label>
@@ -588,7 +502,7 @@
 
   if (addExpBtn) {
     addExpBtn.addEventListener("click", () => {
-      ensureArray("experienceJobs", 3, () => ({ title: "", meta: "", bullets: [] }));
+      ensureArray("experienceJobs", 2, () => ({ title: "", meta: "", bullets: [] }));
       state.data.experienceJobs.push({ title: "", meta: "", bullets: [] });
       syncExperience();
       saveState();
@@ -610,7 +524,7 @@
   }
 
   function syncVolunteer() {
-    ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
+    ensureArray("volunteerBlocks", 1, () => ({ header: "", sub: "", bullets: [] }));
     const txt = volToText(state.data.volunteerBlocks);
     if (volHidden) volHidden.value = txt;
     setOverrideField("volunteer", txt);
@@ -618,7 +532,7 @@
 
   function renderVolunteer() {
     if (!volRoot) return;
-    ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
+    ensureArray("volunteerBlocks", 1, () => ({ header: "", sub: "", bullets: [] }));
     volRoot.innerHTML = "";
 
     state.data.volunteerBlocks.forEach((v, idx) => {
@@ -630,15 +544,15 @@
           <button class="btn ghost" type="button" data-vol-remove="${idx}" style="padding:6px 10px;">Remove</button>
         </div>
 
-        <label class="label">Header (Title + Date)</label>
-        <input class="input" data-vol-header="${idx}" placeholder="Volunteer Nurse 2019 – Present" />
+        <label class="label">Header (Title | Dates)</label>
+        <input class="input" data-vol-header="${idx}" placeholder="Volunteer Nurse | 2019 – Present" />
 
         <label class="label">Sub line</label>
         <input class="input" data-vol-sub="${idx}" placeholder="Austin Free Clinic · Community Health Outreach" />
 
         <div class="toolbar" data-vol-toolbar="${idx}">
           <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-          <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
+          <button class="tbtn tdot" data-action="bullets" type="button" title="Insert bullet"></button>
         </div>
 
         <label class="label">Bullets (one per line)</label>
@@ -692,7 +606,7 @@
 
   if (addVolBtn) {
     addVolBtn.addEventListener("click", () => {
-      ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
+      ensureArray("volunteerBlocks", 1, () => ({ header: "", sub: "", bullets: [] }));
       state.data.volunteerBlocks.push({ header: "", sub: "", bullets: [] });
       syncVolunteer();
       saveState();
@@ -701,46 +615,14 @@
     });
   }
 
-  // ---- Export helpers (FIX: reliable PDF/print)
-  async function exportToPrintWindow({ autoPrint = true } = {}) {
-    const cssText = await fetch("/styles.css", { cache: "no-store" }).then(r => r.text());
-    const cvHtml = preview ? preview.innerHTML : "";
+  // ---------------------------
+  // Print (popup-free)
+  // ---------------------------
+  if (printBtn) printBtn.addEventListener("click", () => window.print());
 
-    const html = `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CV</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-  <style>${cssText}</style>
-</head>
-<body style="margin:0; padding:0; background:white;">
-  <div id="preview">${cvHtml}</div>
-  <script>
-    window.onload = () => {
-      ${autoPrint ? "setTimeout(() => window.print(), 50);" : ""}
-    };
-  </script>
-</body>
-</html>`;
-
-    const w = window.open("", "_blank", "noopener,noreferrer");
-    if (!w) {
-      alert("Pop-up blocked. Please allow pop-ups for export.");
-      return;
-    }
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-  }
-
-  if (printBtn) printBtn.addEventListener("click", () => exportToPrintWindow({ autoPrint: true }));
-  if (downloadPdfBtn) downloadPdfBtn.addEventListener("click", () => exportToPrintWindow({ autoPrint: true }));
-
-  // ---- Download HTML
+  // ---------------------------
+  // Download HTML
+  // ---------------------------
   if (downloadHtmlBtn) {
     downloadHtmlBtn.addEventListener("click", async () => {
       try {
@@ -777,7 +659,82 @@
   }
 
   // ---------------------------
-  // Layout controls: hide + fullscreen + resizers
+  // Download PDF (NO POPUP, NO BLANK PAGE)
+  // Uses html2pdf.bundle.min.js loaded in index.html
+  // ---------------------------
+  async function waitFonts() {
+    try {
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    } catch (_) {}
+  }
+
+  function buildPrintRootFromCV() {
+    const cv = document.querySelector(".cv");
+    if (!cv) return null;
+
+    const root = document.createElement("div");
+    root.style.background = "white";
+    root.style.padding = "0";
+    root.style.margin = "0";
+
+    const clone = cv.cloneNode(true);
+    clone.style.margin = "0";
+    root.appendChild(clone);
+
+    // offscreen mount (required for canvas render)
+    const mount = document.createElement("div");
+    mount.style.position = "fixed";
+    mount.style.left = "-99999px";
+    mount.style.top = "0";
+    mount.style.width = "210mm";
+    mount.style.background = "white";
+    mount.appendChild(root);
+
+    document.body.appendChild(mount);
+    return { mount, node: mount };
+  }
+
+  if (downloadPdfBtn) {
+    downloadPdfBtn.addEventListener("click", async () => {
+      if (!window.html2pdf) {
+        alert("PDF library not loaded.");
+        return;
+      }
+
+      const built = buildPrintRootFromCV();
+      if (!built) {
+        alert("No CV found to export.");
+        return;
+      }
+
+      downloadPdfBtn.disabled = true;
+      downloadPdfBtn.textContent = "Generating…";
+
+      try {
+        await waitFonts();
+
+        const opt = {
+          margin: 0,
+          filename: "cv.pdf",
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+        };
+
+        await window.html2pdf().set(opt).from(built.node).save();
+      } catch (e) {
+        console.error(e);
+        alert("PDF export failed.");
+      } finally {
+        built.mount?.remove();
+        downloadPdfBtn.disabled = false;
+        downloadPdfBtn.textContent = "Download PDF";
+      }
+    });
+  }
+
+  // ---------------------------
+  // Layout controls (unchanged from your working version)
   // ---------------------------
   const grid = qs("grid3");
 
@@ -808,10 +765,7 @@
 
   function normalizeGridForVisibility() {
     const v = computeVisiblePanels();
-    if (v.editor && v.preview && v.ai) {
-      setGridColumns("1.25fr 10px 1fr 10px 0.85fr");
-      return;
-    }
+    if (v.editor && v.preview && v.ai) { setGridColumns("1.25fr 10px 1fr 10px 0.85fr"); return; }
     if (v.editor && v.preview && !v.ai) { setGridColumns("1.25fr 10px 1fr"); return; }
     if (v.editor && !v.preview && v.ai) { setGridColumns("1.25fr 10px 1fr"); return; }
     if (!v.editor && v.preview && v.ai) { setGridColumns("1fr 10px 0.85fr"); return; }
@@ -821,9 +775,7 @@
   function setupPanelButtons() {
     const showPanelsBtn = qs("showPanelsBtn");
 
-    function setBodyLocked(on){
-      document.body.style.overflow = on ? "hidden" : "";
-    }
+    function setBodyLocked(on){ document.body.style.overflow = on ? "hidden" : ""; }
 
     function closeAnyFullscreen(){
       document.querySelectorAll(".panel.is-fullscreen").forEach(p => p.classList.remove("is-fullscreen"));
@@ -837,7 +789,6 @@
       bd.className = "fullscreen-backdrop";
       bd.addEventListener("click", closeAnyFullscreen);
       document.body.appendChild(bd);
-
       panel.classList.add("is-fullscreen");
       setBodyLocked(true);
     }
@@ -847,9 +798,7 @@
         const target = btn.getAttribute("data-target");
         const panel = qs(`panel-${target}`);
         if (!panel) return;
-
         if (panel.classList.contains("is-fullscreen")) closeAnyFullscreen();
-
         panel.classList.toggle("is-hidden");
         normalizeGridForVisibility();
       });
@@ -860,23 +809,14 @@
         const target = btn.getAttribute("data-target");
         const panel = qs(`panel-${target}`);
         if (!panel) return;
-
         panel.classList.remove("is-hidden");
-
         if (panel.classList.contains("is-fullscreen")) closeAnyFullscreen();
         else openFullscreen(panel);
-
         normalizeGridForVisibility();
       });
     });
 
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        document.querySelectorAll(".panel.is-fullscreen").forEach(p => p.classList.remove("is-fullscreen"));
-        document.querySelectorAll(".fullscreen-backdrop").forEach(b => b.remove());
-        document.body.style.overflow = "";
-      }
-    });
+    window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAnyFullscreen(); });
 
     if (showPanelsBtn) {
       showPanelsBtn.addEventListener("click", () => {
@@ -916,7 +856,6 @@
       if (!(v.editor && v.preview && v.ai)) return;
 
       const minPct = 18;
-
       let editorPct = Math.max(minPct, Math.min(60, (x / total) * 100));
       let remaining = 100 - editorPct;
 
@@ -947,278 +886,7 @@
   }
 
   // ---------------------------
-  // i18n (UI language)
-  // ---------------------------
-  const I18N = {
-    en: {
-      "app.title":"CV Builder",
-      "topbar.panels":"Panels",
-      "topbar.logout":"Log out",
-      "editor.title":"Edit content",
-      "preview.title":"Preview",
-      "ai.title":"AI Coach",
-      "ai.helptext":"Ask for review, improvements, new bullet points, or layout changes. You must approve suggestions before they are applied.",
-      "hint.send":"Tip: Ctrl/Cmd + Enter to send.",
-      "hint.toolbar":"Tip: Select text and press B for **bold**. Use • to toggle bullet typing.",
-      "common.show":"Show",
-      "common.hide":"Hide",
-      "common.fullscreen":"Fullscreen",
-      "common.clear":"Clear",
-      "common.send":"Send",
-      "common.cancel":"Cancel",
-      "btn.print":"Print",
-      "btn.downloadPdf":"Download PDF",
-      "btn.downloadHtml":"Download HTML",
-      "btn.addEducation":"+ Add education",
-      "btn.addLicense":"+ Add license",
-      "btn.addJob":"+ Add job",
-      "btn.addVolunteer":"+ Add volunteer",
-      "contact.fullName":"Full name",
-      "contact.title":"Title / Credentials",
-      "contact.email":"Email",
-      "contact.phone":"Phone",
-      "contact.location":"Location",
-      "contact.linkedin":"LinkedIn",
-      "lang.title":"Choose language",
-      "locked.title":"Access required",
-      "locked.body1":"You need access to use the CV Builder.",
-      "locked.body2":"If you just purchased: you will receive an email shortly with your secure login link.",
-      "locked.buy":"Buy access",
-      "locked.body3":"After purchase, you’ll receive an email shortly with your secure login link. Your access is valid for 30 days."
-    },
-    no: {
-      "app.title":"CV-bygger",
-      "topbar.panels":"Paneler",
-      "topbar.logout":"Logg ut",
-      "editor.title":"Rediger innhold",
-      "preview.title":"Forhåndsvisning",
-      "ai.title":"AI Coach",
-      "ai.helptext":"Be om gjennomgang, forbedringer, nye punkter eller layout. Du må godkjenne forslag før de brukes.",
-      "hint.send":"Tips: Ctrl/Cmd + Enter for å sende.",
-      "hint.toolbar":"Tips: Marker tekst og trykk B for **fet**. Bruk • for bullet-modus.",
-      "common.show":"Vis",
-      "common.hide":"Skjul",
-      "common.fullscreen":"Fullskjerm",
-      "common.clear":"Tøm",
-      "common.send":"Send",
-      "common.cancel":"Avbryt",
-      "btn.print":"Skriv ut",
-      "btn.downloadPdf":"Last ned PDF",
-      "btn.downloadHtml":"Last ned HTML",
-      "btn.addEducation":"+ Legg til utdanning",
-      "btn.addLicense":"+ Legg til lisens",
-      "btn.addJob":"+ Legg til jobb",
-      "btn.addVolunteer":"+ Legg til frivillig",
-      "contact.fullName":"Fullt navn",
-      "contact.title":"Tittel / Kompetanse",
-      "contact.email":"E-post",
-      "contact.phone":"Telefon",
-      "contact.location":"Sted",
-      "contact.linkedin":"LinkedIn",
-      "lang.title":"Velg språk",
-      "locked.title":"Tilgang kreves",
-      "locked.body1":"Du trenger tilgang for å bruke CV-byggeren.",
-      "locked.body2":"Hvis du nettopp kjøpte: du får en e-post snart med sikker innloggingslenke.",
-      "locked.buy":"Kjøp tilgang",
-      "locked.body3":"Etter kjøp får du en e-post snart med sikker innloggingslenke. Tilgangen varer i 30 dager."
-    },
-    de: {
-      "app.title":"CV Builder",
-      "topbar.panels":"Panels",
-      "topbar.logout":"Abmelden",
-      "editor.title":"Inhalte bearbeiten",
-      "preview.title":"Vorschau",
-      "ai.title":"KI-Coach",
-      "ai.helptext":"Bitte um Review, Verbesserungen, neue Bulletpoints oder Layout. Vorschläge müssen bestätigt werden.",
-      "hint.send":"Tipp: Strg/Cmd + Enter zum Senden.",
-      "hint.toolbar":"Tipp: Text markieren und B für **fett**. • für Bullet-Modus.",
-      "common.show":"Anzeigen",
-      "common.hide":"Ausblenden",
-      "common.fullscreen":"Vollbild",
-      "common.clear":"Leeren",
-      "common.send":"Senden",
-      "common.cancel":"Abbrechen",
-      "btn.print":"Drucken",
-      "btn.downloadPdf":"PDF herunterladen",
-      "btn.downloadHtml":"HTML herunterladen",
-      "btn.addEducation":"+ Ausbildung hinzufügen",
-      "btn.addLicense":"+ Lizenz hinzufügen",
-      "btn.addJob":"+ Job hinzufügen",
-      "btn.addVolunteer":"+ Ehrenamt hinzufügen",
-      "contact.fullName":"Vollständiger Name",
-      "contact.title":"Titel / Qualifikation",
-      "contact.email":"E-Mail",
-      "contact.phone":"Telefon",
-      "contact.location":"Ort",
-      "contact.linkedin":"LinkedIn",
-      "lang.title":"Sprache wählen"
-    }
-  };
-
-  const LANGS = [
-    { code: "en", name: "English" },
-    { code: "no", name: "Norsk" },
-    { code: "de", name: "Deutsch" },
-    { code: "sv", name: "Svenska" },
-    { code: "da", name: "Dansk" },
-    { code: "fr", name: "Français" },
-    { code: "es", name: "Español" },
-    { code: "it", name: "Italiano" },
-    { code: "nl", name: "Nederlands" },
-    { code: "pl", name: "Polski" },
-    { code: "pt", name: "Português" }
-  ];
-
-  function t(key) {
-    const lang = state.ui.lang || "en";
-    return (I18N[lang] && I18N[lang][key]) || (I18N.en[key]) || key;
-  }
-
-  function applyI18n() {
-    document.querySelectorAll("[data-i18n]").forEach((el) => {
-      const key = el.getAttribute("data-i18n");
-      if (!key) return;
-      const txt = t(key);
-      el.textContent = txt;
-    });
-
-    // update language pill
-    const pill = qs("langPill");
-    const current = LANGS.find(x => x.code === (state.ui.lang || "en"));
-    if (pill) pill.textContent = current ? current.name : "English";
-  }
-
-  // language modal
-  function setupLanguageModal() {
-    const btn = qs("langBtn");
-    const modal = qs("langModal");
-    const close = qs("langClose");
-    const cancel = qs("langCancel");
-    const search = qs("langSearch");
-    const list = qs("langList");
-
-    function open() {
-      if (!modal) return;
-      modal.style.display = "flex";
-      document.body.style.overflow = "hidden";
-      if (search) {
-        search.value = "";
-        search.focus();
-      }
-      renderList("");
-    }
-
-    function hide() {
-      if (!modal) return;
-      modal.style.display = "none";
-      document.body.style.overflow = "";
-    }
-
-    function renderList(filter) {
-      if (!list) return;
-      const q = String(filter || "").toLowerCase().trim();
-      const items = LANGS.filter(l =>
-        !q || l.name.toLowerCase().includes(q) || l.code.toLowerCase().includes(q)
-      );
-
-      list.innerHTML = items.map(l => {
-        const active = l.code === state.ui.lang ? "active" : "";
-        return `<div class="lang-item ${active}" data-lang="${l.code}">
-          <div>${l.name}</div>
-          <div class="code">${l.code}</div>
-        </div>`;
-      }).join("");
-
-      list.querySelectorAll("[data-lang]").forEach((row) => {
-        row.addEventListener("click", () => {
-          const code = row.getAttribute("data-lang");
-          if (!code) return;
-          state.ui.lang = code;
-          saveState();
-          applyI18n();
-          // also set default section titles if user hasn't customized them:
-          applyDefaultSectionTitlesForLanguage();
-          render();
-          hide();
-        });
-      });
-    }
-
-    if (btn) btn.addEventListener("click", open);
-    if (close) close.addEventListener("click", hide);
-    if (cancel) cancel.addEventListener("click", hide);
-    if (modal) modal.addEventListener("click", (e) => {
-      if (e.target === modal) hide();
-    });
-    if (search) search.addEventListener("input", () => renderList(search.value));
-  }
-
-  function applyDefaultSectionTitlesForLanguage() {
-    // Only overwrite if user hasn't changed it (we store a marker)
-    // If you want always-translate, remove these checks.
-    const lang = state.ui.lang || "en";
-
-    const defaults = {
-      en: {
-        summary: "Professional Summary",
-        education: "Education",
-        licenses: "Licenses & Certifications",
-        clinicalSkills: "Clinical Skills",
-        coreCompetencies: "Core Competencies",
-        languages: "Languages",
-        experience: "Professional Experience",
-        achievements: "Clinical Achievements",
-        volunteer: "Volunteer Experience",
-        custom1: "Custom Section 1",
-        custom2: "Custom Section 2",
-      },
-      no: {
-        summary: "Profesjonell oppsummering",
-        education: "Utdanning",
-        licenses: "Lisenser og sertifiseringer",
-        clinicalSkills: "Kliniske ferdigheter",
-        coreCompetencies: "Kjernekompetanse",
-        languages: "Språk",
-        experience: "Arbeidserfaring",
-        achievements: "Resultater / Utmerkelser",
-        volunteer: "Frivillig erfaring",
-        custom1: "Egendefinert seksjon 1",
-        custom2: "Egendefinert seksjon 2",
-      },
-      de: {
-        summary: "Profil",
-        education: "Ausbildung",
-        licenses: "Lizenzen & Zertifikate",
-        clinicalSkills: "Fachliche Fähigkeiten",
-        coreCompetencies: "Kernkompetenzen",
-        languages: "Sprachen",
-        experience: "Berufserfahrung",
-        achievements: "Erfolge",
-        volunteer: "Ehrenamt",
-        custom1: "Benutzerdefiniert 1",
-        custom2: "Benutzerdefiniert 2",
-      }
-    };
-
-    const map = defaults[lang] || defaults.en;
-
-    SECTION_KEYS.forEach((k) => {
-      if (!state.sections[k]) state.sections[k] = {};
-      // only set if empty
-      if (!state.sections[k].title || String(state.sections[k].title).trim() === "") {
-        state.sections[k].title = map[k] || state.sections[k].title || k;
-      }
-      // also update UI input fields
-      const ti = qs(`sec_${k}_title`);
-      if (ti && map[k]) ti.value = state.sections[k].title;
-    });
-
-    saveState();
-    render();
-  }
-
-  // ---------------------------
-  // AI Coach (per-suggestion accept + sync to UI)
+  // AI Coach (individual suggestions + accept updates UI)
   // ---------------------------
   const AI_HISTORY_KEY = "cv_builder_ai_history_v2";
 
@@ -1238,6 +906,17 @@
   }
 
   let aiHistory = loadAIHistory();
+
+  function detectLanguageFromText(t) {
+    const s = String(t || "");
+    if (state.uiLang) return state.uiLang;
+    if (/[æøåÆØÅ]/.test(s) || /\b(hvordan|kan du|jeg|ikke|dette|endre|hvor)\b/i.test(s)) return "no";
+    return "en";
+  }
+
+  function snapshotForAI() {
+    return { data: state.data, sections: state.sections, uiLang: state.uiLang };
+  }
 
   function escapeHtml(s) {
     return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -1270,122 +949,107 @@
     return div;
   }
 
-  const ALLOWED_SET_PATHS = new Set([
-    "data.name","data.title","data.email","data.phone","data.location","data.linkedin",
-    "data.summary","data.education","data.licenses","data.clinicalSkills","data.coreCompetencies",
-    "data.languages","data.experience","data.achievements","data.volunteer","data.custom1","data.custom2",
+  function applyChanges(changes) {
+    if (!Array.isArray(changes)) return;
 
-    "sections.summary.enabled","sections.summary.title",
-    "sections.education.enabled","sections.education.title",
-    "sections.licenses.enabled","sections.licenses.title",
-    "sections.clinicalSkills.enabled","sections.clinicalSkills.title",
-    "sections.coreCompetencies.enabled","sections.coreCompetencies.title",
-    "sections.languages.enabled","sections.languages.title",
-    "sections.experience.enabled","sections.experience.title",
-    "sections.achievements.enabled","sections.achievements.title",
-    "sections.volunteer.enabled","sections.volunteer.title",
-    "sections.custom1.enabled","sections.custom1.title",
-    "sections.custom2.enabled","sections.custom2.title",
+    const ALLOWED_SET_PATHS = new Set([
+      "data.name","data.title","data.email","data.phone","data.location","data.linkedin",
+      "data.summary","data.education","data.licenses","data.clinicalSkills","data.coreCompetencies",
+      "data.languages","data.experience","data.achievements","data.volunteer","data.custom1","data.custom2",
+      "sections.summary.enabled","sections.summary.title",
+      "sections.education.enabled","sections.education.title",
+      "sections.licenses.enabled","sections.licenses.title",
+      "sections.clinicalSkills.enabled","sections.clinicalSkills.title",
+      "sections.coreCompetencies.enabled","sections.coreCompetencies.title",
+      "sections.languages.enabled","sections.languages.title",
+      "sections.experience.enabled","sections.experience.title",
+      "sections.achievements.enabled","sections.achievements.title",
+      "sections.volunteer.enabled","sections.volunteer.title",
+      "sections.custom1.enabled","sections.custom1.title",
+      "sections.custom2.enabled","sections.custom2.title"
+    ]);
 
-    // contact show/hide
-    "sections.contact.show_title",
-    "sections.contact.show_email",
-    "sections.contact.show_phone",
-    "sections.contact.show_location",
-    "sections.contact.show_linkedin"
-  ]);
-
-  function setByPath(obj, path, value) {
-    const parts = path.split(".");
-    let cur = obj;
-    for (let i = 0; i < parts.length - 1; i++) {
-      const k = parts[i];
-      if (cur[k] == null || typeof cur[k] !== "object") cur[k] = {};
-      cur = cur[k];
-    }
-    cur[parts[parts.length - 1]] = value;
-  }
-
-  function applyChangePatch(patch) {
-    if (!patch || patch.op !== "set" || typeof patch.path !== "string") return;
-    if (!ALLOWED_SET_PATHS.has(patch.path)) return;
-
-    if (patch.path.startsWith("data.")) {
-      const p = patch.path.replace(/^data\./, "");
-      state.data[p] = patch.value;
-      if (String(patch.value ?? "").trim() === "") delete state.data[p];
-    } else if (patch.path.startsWith("sections.")) {
-      const p = patch.path.replace(/^sections\./, "");
-      setByPath(state.sections, p, patch.value);
+    function setByPath(obj, path, value) {
+      const parts = path.split(".");
+      let cur = obj;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const k = parts[i];
+        if (cur[k] == null || typeof cur[k] !== "object") cur[k] = {};
+        cur = cur[k];
+      }
+      cur[parts[parts.length - 1]] = value;
     }
 
-    // After applying patches: sync UI inputs + structured blocks + preview
+    changes.forEach((c) => {
+      if (!c || c.op !== "set" || typeof c.path !== "string") return;
+      if (!ALLOWED_SET_PATHS.has(c.path)) return;
+
+      if (c.path.startsWith("data.")) {
+        const p = c.path.replace(/^data\./, "");
+        state.data[p] = c.value;
+        if (String(c.value ?? "").trim() === "") delete state.data[p];
+      } else if (c.path.startsWith("sections.")) {
+        const p = c.path.replace(/^sections\./, "");
+        setByPath(state.sections, p, c.value);
+      }
+    });
+
     saveState();
-    syncUIFromState();
-
-    // Re-render structured blocks from current state (so left panel matches)
-    renderEducation();
-    renderLicenses();
-    renderExperience();
-    renderVolunteer();
-
     render();
+    refreshInputsFromState(); // IMPORTANT: updates left menu too
   }
 
-  function renderSuggestionCard(payload) {
+  function renderSuggestionItemCard(item) {
     const chat = qs("aiChat");
     if (!chat) return;
 
-    const message = payload?.message || "";
-    const suggestions = Array.isArray(payload?.suggestions) ? payload.suggestions : [];
+    const title = item?.title || "Suggestion";
+    const message = item?.message || "";
+    const changes = Array.isArray(item?.changes) ? item.changes : [];
 
     const div = document.createElement("div");
     div.className = "msg assistant";
+
+    const hasChanges = changes.length > 0;
+
     div.innerHTML = `
-      <div class="msg-title">Suggestion</div>
+      <div class="msg-title">${escapeHtml(title)}</div>
       <div>${escapeHtml(message).replace(/\n/g,"<br>")}</div>
-      ${suggestions.length ? `<div class="sugg">
-        <div class="muted small">Choose which suggestions to apply:</div>
-        ${suggestions.map((s, idx) => `
-          <div class="sugg-item" data-sugg="${idx}">
-            <div class="topic">${escapeHtml(s.topic || "Suggestion")}</div>
-            <div>${escapeHtml(String(s.preview || "")).replace(/\n/g,"<br>")}</div>
-            <div class="sugg-buttons">
-              <button class="btn" type="button" data-accept="${idx}">Accept</button>
-              <button class="btn ghost" type="button" data-reject="${idx}">Reject</button>
-            </div>
+
+      ${hasChanges ? `
+        <div class="sugg">
+          <div class="muted small">Proposed changes (accept applies only this suggestion):</div>
+          <div class="sugg-buttons">
+            <button class="btn" type="button" data-accept>Accept</button>
+            <button class="btn ghost" type="button" data-reject>Reject</button>
           </div>
-        `).join("")}
-      </div>` : ``}
+        </div>
+      ` : ``}
     `;
     chat.prepend(div);
 
-    suggestions.forEach((s, idx) => {
-      const accept = div.querySelector(`[data-accept="${idx}"]`);
-      const reject = div.querySelector(`[data-reject="${idx}"]`);
-      accept?.addEventListener("click", () => {
-        // Apply all patches for this single suggestion
-        const patches = Array.isArray(s.patches) ? s.patches : [];
-        patches.forEach(applyChangePatch);
-        accept.disabled = true;
-        if (reject) reject.disabled = true;
-        accept.textContent = "Applied ✓";
-      });
-      reject?.addEventListener("click", () => {
-        if (accept) accept.disabled = true;
-        reject.disabled = true;
-        reject.textContent = "Rejected";
-      });
-    });
-  }
+    if (!hasChanges) return;
 
-  function snapshotForAI() {
-    return { data: state.data, sections: state.sections, ui: state.ui };
+    const accept = div.querySelector("[data-accept]");
+    const reject = div.querySelector("[data-reject]");
+
+    accept?.addEventListener("click", () => {
+      applyChanges(changes);
+      accept.disabled = true;
+      if (reject) reject.disabled = true;
+      accept.textContent = "Applied ✓";
+    });
+
+    reject?.addEventListener("click", () => {
+      if (accept) accept.disabled = true;
+      reject.disabled = true;
+      reject.textContent = "Rejected";
+    });
   }
 
   async function sendToAI(userText) {
     const thinking = addThinking();
-    const uiLang = state.ui.lang || "en";
+    const language = detectLanguageFromText(userText);
 
     try {
       const res = await fetch("/api/ai", {
@@ -1393,7 +1057,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userText,
-          language: uiLang,
+          language,
           snapshot: snapshotForAI(),
           history: aiHistory
         })
@@ -1404,23 +1068,34 @@
 
       thinking?.remove();
 
-      aiHistory.push({ role: "assistant", content: payload?.message || "" });
-      saveAIHistory(aiHistory);
+      // New: payload.suggestions preferred
+      if (Array.isArray(payload?.suggestions) && payload.suggestions.length) {
+        payload.suggestions.forEach((s) => renderSuggestionItemCard(s));
+      } else {
+        // Backward compatible
+        renderSuggestionItemCard({
+          title: "Suggestion",
+          message: payload?.message || "Here are my suggestions.",
+          changes: payload?.changes || []
+        });
+      }
 
-      renderSuggestionCard(payload);
+      const histMsg = payload?.message || "OK";
+      aiHistory.push({ role: "assistant", content: histMsg });
+      saveAIHistory(aiHistory);
 
     } catch (err) {
       thinking?.remove();
       console.error(err);
 
-      const fallback = uiLang === "no"
+      const fallback = language === "no"
         ? "Beklager — noe gikk galt. Prøv igjen."
-        : (uiLang === "de" ? "Entschuldigung — etwas ist schiefgelaufen. Bitte erneut versuchen." : "Sorry — something went wrong. Please try again.");
+        : "Sorry — something went wrong. Please try again.";
 
       aiHistory.push({ role: "assistant", content: fallback });
       saveAIHistory(aiHistory);
 
-      renderSuggestionCard({ message: fallback, suggestions: [] });
+      renderSuggestionItemCard({ title: "Error", message: fallback, changes: [] });
     }
   }
 
@@ -1471,10 +1146,8 @@
   if (app) app.style.display = "block";
   if (locked) locked.style.display = "none";
 
-  // Boot
   loadState();
   initSectionsFromUI();
-  syncUIFromState();
   bindSimpleInputs();
   bindSimpleToolbars();
 
@@ -1490,11 +1163,6 @@
   setupResizer("resizer-2", true);
 
   setupAIUI();
-
-  // Language
-  if (!state.ui.lang) state.ui.lang = "en";
-  setupLanguageModal();
-  applyI18n();
 
   saveState();
   render();
