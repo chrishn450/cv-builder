@@ -1,5 +1,5 @@
 /* ──────────────────────────────────────────────
-   Base (safe)
+   Base
 ────────────────────────────────────────────── */
 *,
 *::before,
@@ -29,28 +29,31 @@ body{
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
-
-.brand{
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
+.brand{ font-weight: 700; letter-spacing: 0.02em; }
 .actions{ display:flex; gap:10px; align-items:center; }
 
 .container{
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 22px 18px 40px;
 }
 
+/* 3-column layout */
 .grid{
   display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 18px;
 }
+.grid-3{
+  grid-template-columns: 1fr 1fr 0.85fr;
+}
 
+@media (max-width: 1180px){
+  .grid-3{ grid-template-columns: 1fr 1fr; }
+  .ai-card{ grid-column: 1 / -1; }
+}
 @media (max-width: 980px){
-  .grid{ grid-template-columns: 1fr; }
+  .grid-3{ grid-template-columns: 1fr; }
+  .ai-card{ grid-column: auto; }
 }
 
 .card{
@@ -61,7 +64,6 @@ body{
   box-shadow: 0 20px 60px rgba(0,0,0,0.28);
 }
 
-/* Inner blocks (structured editors) */
 .subcard{
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.08);
@@ -70,10 +72,7 @@ body{
   margin-top: 12px;
 }
 
-.card h1, .card h2{
-  margin: 0 0 10px;
-  letter-spacing: 0.01em;
-}
+.card h1, .card h2{ margin: 0 0 10px; letter-spacing: 0.01em; }
 
 .row{
   display:flex;
@@ -107,10 +106,7 @@ hr{
 }
 
 .textarea{ resize: vertical; }
-
-.input::placeholder, .textarea::placeholder{
-  color: rgba(233,238,252,0.45);
-}
+.input::placeholder, .textarea::placeholder{ color: rgba(233,238,252,0.45); }
 
 .btn{
   display:inline-flex;
@@ -126,14 +122,8 @@ hr{
   cursor: pointer;
   font-weight: 600;
 }
-
 .btn:hover{ opacity: 0.95; }
-
-.btn.ghost{
-  background: transparent;
-  color: #e9eefc;
-}
-
+.btn.ghost{ background: transparent; color: #e9eefc; }
 .muted{ color: rgba(233,238,252,0.72); }
 .small{ font-size: 12px; }
 
@@ -148,13 +138,16 @@ hr{
   --cv-accent: #b8a88a;
   --cv-border: #d6cdb8;
   --cv-rule: rgba(184,168,138,0.3);
-
-  /* one source of truth for dot size */
   --cv-bullet-size: 3.5px;
+
+  /* layout knobs (AI can suggest changes; we apply as CSS vars) */
+  --cv-pad-x: 40px;
+  --cv-gap: 30px;
+  --cv-left-width: 34%;
 }
 
 /* ──────────────────────────────────────────────
-   CV Template (scoped)
+   CV Template
 ────────────────────────────────────────────── */
 .cv{
   width: 210mm;
@@ -167,14 +160,12 @@ hr{
   flex-direction: column;
   overflow: hidden;
   color: var(--cv-body);
-
-  /* if Google Fonts loaded */
   font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .cv .cv-header{
   text-align:center;
-  padding: 38px 40px 20px;
+  padding: 38px var(--cv-pad-x) 20px;
   border-bottom: 1px solid var(--cv-rule);
 }
 
@@ -206,10 +197,9 @@ hr{
   font-size: 8.5px;
   color: var(--cv-body);
 }
-
 .cv .cv-contact .sep{ color: var(--cv-light); }
 
-.cv .cv-summary{ padding: 18px 40px 14px; }
+.cv .cv-summary{ padding: 18px var(--cv-pad-x) 14px; }
 
 .cv .body-text{
   font-size: 9px;
@@ -220,12 +210,12 @@ hr{
 .cv .cv-body{
   display:flex;
   flex: 1;
-  padding: 0 40px 24px;
-  gap: 30px;
+  padding: 0 var(--cv-pad-x) 24px;
+  gap: var(--cv-gap);
 }
 
 .cv .cv-left{
-  width: 34%;
+  width: var(--cv-left-width);
   display:flex;
   flex-direction:column;
   gap: 14px;
@@ -279,7 +269,6 @@ hr{
   margin-bottom:2px;
 }
 
-/* Original dot (same as preview) */
 .cv .skill-list li::before,
 .cv .exp-bullets li::before,
 .cv .achievement-list li::before{
@@ -328,7 +317,7 @@ hr{
 }
 
 /* ──────────────────────────────────────────────
-   Mini controls next to labels
+   Mini controls
 ────────────────────────────────────────────── */
 .field { margin-top: 14px; }
 .field-head {
@@ -346,7 +335,6 @@ hr{
   max-width: 260px;
   padding: 8px 10px;
 }
-
 .toggle{
   display:inline-flex;
   align-items:center;
@@ -375,7 +363,6 @@ hr{
   line-height: 1;
 }
 .tbtn:hover{ background: rgba(255,255,255,0.10); }
-
 .tbtn.active{
   background: rgba(255,255,255,0.14);
   border-color: rgba(255,255,255,0.22);
@@ -390,7 +377,6 @@ hr{
   justify-content: center;
   padding: 0;
 }
-
 .tbtn.tdot::before{
   content:"";
   width: var(--cv-bullet-size);
@@ -401,7 +387,68 @@ hr{
 }
 
 /* ──────────────────────────────────────────────
-   Print: ONLY the CV (one A4 page, no "Preview")
+   AI Chat UI
+────────────────────────────────────────────── */
+.ai-card{ display:flex; flex-direction:column; }
+.ai-log{
+  flex: 1;
+  min-height: 320px;
+  max-height: 520px;
+  overflow:auto;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 10px;
+}
+.ai-msg{
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  margin-bottom: 10px;
+  white-space: pre-wrap;
+}
+.ai-msg.user{
+  border-color: rgba(47,107,255,0.35);
+  background: rgba(47,107,255,0.10);
+}
+.ai-msg.assistant{
+  border-color: rgba(255,255,255,0.12);
+}
+.ai-input-row{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  margin-top: 10px;
+}
+.ai-input-row .textarea{ flex: 1; }
+.ai-suggestions{ margin-top: 6px; }
+.sugg-card{
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 10px;
+}
+.sugg-card .diff{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+@media (max-width: 1180px){
+  .sugg-card .diff{ grid-template-columns: 1fr; }
+}
+.diffbox{
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 10px;
+  white-space: pre-wrap;
+}
+
+/* ──────────────────────────────────────────────
+   Print: ONLY the CV (hide editor + AI + titles)
 ────────────────────────────────────────────── */
 @page { size: A4; margin: 0; }
 
@@ -413,67 +460,51 @@ hr{
     color:#111 !important;
   }
 
-  /* Hide all app UI */
   .topbar,
   #locked,
   #logoutBtn,
   #buyLink,
   #printBtn,
   #downloadHtmlBtn,
+  #aiReviewBtn,
   .actions,
   .muted,
   .small{
     display:none !important;
   }
 
-  /* Remove layout chrome that causes extra pages */
   .container{
     max-width:none !important;
     margin:0 !important;
     padding:0 !important;
   }
 
-  .grid{
-    display:block !important;
-    margin:0 !important;
-    padding:0 !important;
-  }
+  .grid{ display:block !important; margin:0 !important; padding:0 !important; }
 
-  /* Hide left editor card */
-  .grid > .card:first-child{
-    display:none !important;
-  }
+  /* hide left editor + right AI chat entirely */
+  .grid > .card:first-child{ display:none !important; }
+  .grid > .card:last-child{ display:none !important; }
 
-  /* Make right card transparent and remove its title */
-  .grid > .card:last-child{
+  /* middle preview card becomes transparent */
+  .grid > .card:nth-child(2){
     background:transparent !important;
     border:none !important;
     box-shadow:none !important;
     padding:0 !important;
     margin:0 !important;
   }
-  .grid > .card:last-child h2{
-    display:none !important; /* hides "Preview" */
-  }
+  .grid > .card:nth-child(2) h2{ display:none !important; }
 
-  /* Print only the CV */
-  #preview{
-    display:block !important;
-    margin:0 !important;
-    padding:0 !important;
-  }
+  #preview{ margin:0 !important; padding:0 !important; display:block !important; }
 
-  /* If renderer returns <div class="cv"> inside #preview */
   #preview .cv, .cv{
     width:210mm !important;
     height:297mm !important;
     margin:0 !important;
-    overflow:hidden !important; /* prevents spill to page 2 */
+    overflow:hidden !important;
     border:2px solid var(--cv-border) !important;
-
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
