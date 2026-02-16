@@ -34,10 +34,16 @@
     </section>
 
     <section id="app" style="display:none;">
-      <div class="grid grid-3">
+      <div class="grid3" id="grid3">
         <!-- LEFT: editor -->
-        <div class="card">
-          <h2>Edit content</h2>
+        <div class="card panel" id="panel-editor" data-panel="editor">
+          <div class="panel-head">
+            <h2>Edit content</h2>
+            <div class="panel-actions">
+              <button class="pbtn" type="button" data-action="hide" data-target="editor" title="Hide">Hide</button>
+              <button class="pbtn" type="button" data-action="fullscreen" data-target="editor" title="Fullscreen">Fullscreen</button>
+            </div>
+          </div>
 
           <label class="label">Full name</label>
           <input id="name" class="input" placeholder="Sarah Johnson" />
@@ -98,7 +104,7 @@
             <textarea id="education" class="textarea" rows="6" style="display:none;"></textarea>
           </div>
 
-          <!-- LICENSES (structured: title+detail pairs) -->
+          <!-- LICENSES -->
           <div class="field">
             <div class="field-head">
               <label class="label">Licenses & Certifications</label>
@@ -177,7 +183,7 @@
             <textarea id="languages" class="textarea" rows="3" placeholder="One per line..."></textarea>
           </div>
 
-          <!-- EXPERIENCE (structured jobs) -->
+          <!-- EXPERIENCE -->
           <div class="field">
             <div class="field-head">
               <label class="label">Experience (jobs)</label>
@@ -218,7 +224,7 @@
             <textarea id="achievements" class="textarea" rows="4" placeholder="One per line..."></textarea>
           </div>
 
-          <!-- VOLUNTEER (structured blocks) -->
+          <!-- VOLUNTEER -->
           <div class="field">
             <div class="field-head">
               <label class="label">Volunteer</label>
@@ -282,42 +288,57 @@
 
           <div class="row">
             <button id="printBtn" class="btn">Print / Save as PDF</button>
-            <button id="downloadHtmlBtn" class="btn ghost" type="button">Download HTML</button>
-            <button id="aiReviewBtn" class="btn ghost" type="button">AI Review</button>
+            <button id="downloadHtmlBtn" class="btn ghost">Download HTML</button>
           </div>
 
           <p class="muted small">
-            Formatting: select text and press <b>B</b> to apply <code>**bold**</code>. Press <b>•</b> to toggle bullet typing.
+            Tip: Select text and press <b>B</b> for <code>**bold**</code>. Use <b>•</b> to toggle bullet typing.
           </p>
         </div>
 
+        <!-- RESIZER 1 -->
+        <div class="v-resizer" id="resizer-1" title="Drag to resize"></div>
+
         <!-- MIDDLE: preview -->
-        <div class="card">
-          <h2>Preview</h2>
-          <div id="preview"></div>
+        <div class="card panel" id="panel-preview" data-panel="preview">
+          <div class="panel-head">
+            <h2>Preview</h2>
+            <div class="panel-actions">
+              <button class="pbtn" type="button" data-action="hide" data-target="preview">Hide</button>
+              <button class="pbtn" type="button" data-action="fullscreen" data-target="preview">Fullscreen</button>
+            </div>
+          </div>
+          <div id="preview" class="cv"></div>
         </div>
 
-        <!-- RIGHT: AI chat -->
-        <div class="card ai-card">
-          <div class="row" style="justify-content:space-between; margin-top:0;">
-            <h2 style="margin:0;">AI Coach</h2>
-            <button id="aiClearBtn" class="btn ghost" type="button" style="padding:6px 10px;">Clear</button>
+        <!-- RESIZER 2 -->
+        <div class="v-resizer" id="resizer-2" title="Drag to resize"></div>
+
+        <!-- RIGHT: AI coach -->
+        <div class="card panel" id="panel-ai" data-panel="ai">
+          <div class="panel-head">
+            <h2>AI Coach</h2>
+            <div class="panel-actions">
+              <button class="pbtn" id="aiClear" type="button">Clear</button>
+              <button class="pbtn" type="button" data-action="hide" data-target="ai">Hide</button>
+              <button class="pbtn" type="button" data-action="fullscreen" data-target="ai">Fullscreen</button>
+            </div>
           </div>
 
-          <div class="muted small" style="margin-bottom:10px;">
-            Ask for review, improvements, new bullet points, or layout changes. You must always approve suggestions before they are applied.
+          <p class="muted small" style="margin-top:-2px;">
+            Ask for review, improvements, new bullet points, or layout changes. You must approve suggestions before they are applied.
+          </p>
+
+          <div id="aiChat" class="ai-chat"></div>
+
+          <div class="ai-compose">
+            <textarea id="aiInput" class="textarea ai-input" rows="3" placeholder="e.g. “Improve my summary and make it more results-driven”"></textarea>
+            <button id="aiSend" class="btn ai-send" type="button">Send</button>
           </div>
 
-          <div id="aiChatLog" class="ai-log"></div>
-
-          <div class="ai-input-row">
-            <textarea id="aiChatInput" class="textarea" rows="3" placeholder="Skriv her… f.eks: 'Improve my summary and make it more results-driven?'" ></textarea>
-            <button id="aiSendBtn" class="btn" type="button">Send</button>
-          </div>
-
-          <hr />
-
-          <div id="aiSuggestions" class="ai-suggestions"></div>
+          <p class="muted small" style="margin-top:10px;">
+            Tip: Ctrl/Cmd + Enter to send.
+          </p>
         </div>
       </div>
     </section>
