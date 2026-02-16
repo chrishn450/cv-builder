@@ -538,7 +538,14 @@ hr{
   gap: 10px;
 }
 .cv .vol-header h3{ font-size: 9.5px; font-weight: 600; margin:0; color: var(--cv-heading); }
-.cv .vol-header .date{ font-size: 8px; color: var(--cv-light); white-space: nowrap; }
+/* FIX (Nr 8): force date to the far right */
+.cv .vol-header .date{
+  margin-left: auto;
+  font-size: 8px;
+  color: var(--cv-light);
+  white-space: nowrap;
+  text-align: right;
+}
 
 .cv .vol-sub{
   font-size: 8.5px;
@@ -565,10 +572,14 @@ hr{
     color:#111 !important;
   }
 
-  .topbar, .container, #locked, #logoutBtn, .btn, button, a,
-  .panel-actions, .v-resizer, .ai-chat, .ai-compose { display:none !important; }
+  /* FIX (Nr 2): do NOT hide .container – it contains #preview */
+  .topbar, #locked, #logoutBtn,
+  #panel-editor, #panel-ai, .v-resizer,
+  .panel-actions, .ai-chat, .ai-compose,
+  .btn, button, a { display:none !important; }
 
-  #preview, .cv { display:block !important; }
+  /* ensure preview is visible */
+  #panel-preview, #preview, .cv { display:block !important; }
 
   .cv{
     width: 210mm !important;
@@ -579,6 +590,6 @@ hr{
     print-color-adjust: exact;
   }
 
-  /* FIX: avoid splitting entries awkwardly (bonus) */
+  /* avoid splitting entries awkwardly */
   .cv section, .cv .exp-entry, .cv li { break-inside: avoid; }
 }
