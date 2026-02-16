@@ -211,13 +211,26 @@ hr{
   justify-content: center;
   padding: 0;
 }
+/* Bullet toggle button = SAME dot as CV */
+.tbtn.tdot{
+  width: 34px;
+  min-width: 34px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
 .tbtn.tdot::before{
   content:"";
   width: 3.5px;
   height: 3.5px;
   border-radius: 50%;
   background: var(--cv-accent);
-  display:block;
+
+  /* makes it look identical on dark UI */
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
 }
 .tbtn.active{
   outline: 2px solid rgba(47,107,255,0.6);
@@ -495,12 +508,15 @@ hr{
 .cv .achievement-list li::before{
   content:"";
   margin-top: 5px;
+  flex-shrink:0;
+
+  /* identical to .cv-dot */
   width: 3.5px;
   height: 3.5px;
   border-radius: 50%;
   background: var(--cv-accent);
-  flex-shrink:0;
 }
+
 
 .cv .exp-entry{ margin-bottom: 12px; }
 .cv .exp-entry h3{
