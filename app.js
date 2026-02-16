@@ -5,6 +5,8 @@
   const preview = qs("preview");
   const printBtn = qs("printBtn");
   const downloadHtmlBtn = qs("downloadHtmlBtn");
+  const downloadPdfBtn = qs("downloadPdfBtn");
+  const uiLanguage = qs("uiLanguage");
 
   const FIELD_IDS = [
     "name","title","email","phone","location","linkedin",
@@ -19,15 +21,124 @@
 
   const state = { data: {}, sections: {} };
 
-  function render() {
-    if (!preview || typeof window.renderCV !== "function") return;
-    preview.innerHTML = window.renderCV({
-      ...state.data,
-      sections: state.sections,
+  const STORAGE_KEY = "cv_builder_user_overrides_structured_v2";
+
+  // ---------------------------
+  // i18n (Nr 6 + Nr 9)
+  // ---------------------------
+  const I18N = {
+    en: {
+      ui: { edit: "Edit content", preview: "Preview", ai: "AI Coach" },
+      sectionTitles: {
+        summary: "Professional Summary",
+        education: "Education",
+        licenses: "Licenses & Certifications",
+        clinicalSkills: "Clinical Skills",
+        coreCompetencies: "Core Competencies",
+        languages: "Languages",
+        experience: "Professional Experience",
+        achievements: "Clinical Achievements",
+        volunteer: "Volunteer Experience",
+        custom1: "Custom Section 1",
+        custom2: "Custom Section 2",
+      }
+    },
+    no: {
+      ui: { edit: "Rediger innhold", preview: "Forhåndsvisning", ai: "AI Coach" },
+      sectionTitles: {
+        summary: "Profesjonell profil",
+        education: "Utdanning",
+        licenses: "Lisenser og sertifiseringer",
+        clinicalSkills: "Kliniske ferdigheter",
+        coreCompetencies: "Kjernekompetanse",
+        languages: "Språk",
+        experience: "Erfaring",
+        achievements: "Resultater",
+        volunteer: "Frivillig erfaring",
+        custom1: "Egendefinert seksjon 1",
+        custom2: "Egendefinert seksjon 2",
+      }
+    },
+    de: {
+      ui: { edit: "Inhalt bearbeiten", preview: "Vorschau", ai: "AI Coach" },
+      sectionTitles: {
+        summary: "Profil",
+        education: "Ausbildung",
+        licenses: "Lizenzen & Zertifikate",
+        clinicalSkills: "Klinische Fähigkeiten",
+        coreCompetencies: "Kernkompetenzen",
+        languages: "Sprachen",
+        experience: "Berufserfahrung",
+        achievements: "Erfolge",
+        volunteer: "Ehrenamt",
+        custom1: "Benutzerdefiniert 1",
+        custom2: "Benutzerdefiniert 2",
+      }
+    }
+  };
+
+  function getLang() {
+    return state.data.uiLang || "en";
+  }
+
+  function applyUiI18n(lang) {
+    const map = I18N[lang] || I18N.en;
+
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      const key = el.getAttribute("data-i18n");
+      const [ns, k] = String(key || "").split(".");
+      if (!ns || !k) return;
+      const v = map?.[ns]?.[k];
+      if (typeof v === "string") el.textContent = v;
     });
   }
 
-  const STORAGE_KEY = "cv_builder_user_overrides_structured_v2";
+  function setLang(lang) {
+    const prevLang = state.data._prevLang || "en";
+    state.data.uiLang = lang;
+    state.data._prevLang = lang;
+
+    // Update section title inputs if they were not customized:
+    SECTION_KEYS.forEach((k) => {
+      const ti = qs(`sec_${k}_title`);
+      if (!ti) return;
+
+      const current = (state.sections?.[k]?.title) || ti.value;
+      const prevDefault = I18N[prevLang]?.sectionTitles?.[k];
+      const nextDefault = I18N[lang]?.sectionTitles?.[k];
+      if (!nextDefault) return;
+
+      if (!current || current === prevDefault) {
+        ti.value = nextDefault;
+        if (!state.sections[k]) state.sections[k] = {};
+        state.sections[k].title = nextDefault;
+      }
+    });
+
+    applyUiI18n(lang);
+    saveState();
+    render();
+  }
+
+  // ---------------------------
+  // Contact visibility (Nr 4)
+  // ---------------------------
+  function ensureContactVisibility() {
+    if (!state.data.contactVisibility || typeof state.data.contactVisibility !== "object") {
+      state.data.contactVisibility = { phone: true, email: true, location: true, linkedin: true };
+    }
+  }
+
+  function render() {
+    if (!preview || typeof window.renderCV !== "function") return;
+    ensureContactVisibility();
+    preview.innerHTML = window.renderCV({
+      ...state.data,
+      uiLang: getLang(),
+      sections: state.sections,
+      contactVisibility: state.data.contactVisibility,
+    });
+  }
 
   function loadState() {
     try {
@@ -72,11 +183,29 @@
       });
     });
 
+    // contact show/hide toggles (Nr 4)
+    ["phone","email","location","linkedin"].forEach((k) => {
+      const cb = qs(`show_${k}`);
+      if (!cb) return;
+      ensureContactVisibility();
+      cb.checked = state.data.contactVisibility[k] !== false;
+
+      cb.addEventListener("change", () => {
+        ensureContactVisibility();
+        state.data.contactVisibility[k] = !!cb.checked;
+        saveState();
+        render();
+      });
+    });
+
     SECTION_KEYS.forEach((k) => {
       const en = qs(`sec_${k}_enabled`);
       const ti = qs(`sec_${k}_title`);
 
       if (en) {
+        // restore
+        if (state.sections?.[k]?.enabled != null) en.checked = !!state.sections[k].enabled;
+
         en.addEventListener("change", () => {
           if (!state.sections[k]) state.sections[k] = {};
           state.sections[k].enabled = !!en.checked;
@@ -349,17 +478,17 @@
   }
 
   function licToText(items) {
-    const lines = [];
+    const out = [];
     (items || []).forEach((it) => {
       const t = (it.title || "").trim();
       const d = (it.detail || "").trim();
       if (!t && !d) return;
-      if (t) lines.push(t);
-      if (d) lines.push(d);
-      else lines.push("");
+      if (t) out.push(t);
+      if (d) out.push(d);
+      else out.push("");
     });
-    while (lines.length && String(lines[lines.length - 1]).trim() === "") lines.pop();
-    return lines.join("\n");
+    while (out.length && String(out[out.length - 1]).trim() === "") out.pop();
+    return out.join("\n");
   }
 
   function syncLicenses() {
@@ -534,10 +663,13 @@
     });
   }
 
+  // VOLUNTEER (Nr 8): Title + Dates separate => always right-aligned date in template
   function volToText(vols) {
     return (vols || [])
       .map((v) => {
-        const header = (v.header || "").trim();
+        const title = (v.title || "").trim();
+        const date = (v.date || "").trim();
+        const header = [title, date].filter(Boolean).join(" | ");
         const sub = (v.sub || "").trim();
         const bullets = (v.bullets || []).map((x) => String(x || "").trim()).filter(Boolean);
         return [header, sub, ...bullets].filter(Boolean).join("\n");
@@ -547,7 +679,7 @@
   }
 
   function syncVolunteer() {
-    ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
+    ensureArray("volunteerBlocks", 3, () => ({ title: "", date: "", sub: "", bullets: [] }));
     const txt = volToText(state.data.volunteerBlocks);
     if (volHidden) volHidden.value = txt;
     setOverrideField("volunteer", txt);
@@ -555,7 +687,7 @@
 
   function renderVolunteer() {
     if (!volRoot) return;
-    ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
+    ensureArray("volunteerBlocks", 3, () => ({ title: "", date: "", sub: "", bullets: [] }));
     volRoot.innerHTML = "";
 
     state.data.volunteerBlocks.forEach((v, idx) => {
@@ -567,8 +699,11 @@
           <button class="btn ghost" type="button" data-vol-remove="${idx}" style="padding:6px 10px;">Remove</button>
         </div>
 
-        <label class="label">Header (Title + Date)</label>
-        <input class="input" data-vol-header="${idx}" placeholder="Volunteer Nurse 2019 – Present" />
+        <label class="label">Title</label>
+        <input class="input" data-vol-title="${idx}" placeholder="Volunteer Nurse" />
+
+        <label class="label">Dates</label>
+        <input class="input" data-vol-date="${idx}" placeholder="2019 – Present" />
 
         <label class="label">Sub line</label>
         <input class="input" data-vol-sub="${idx}" placeholder="Austin Free Clinic · Community Health Outreach" />
@@ -583,11 +718,13 @@
       `;
       volRoot.appendChild(wrap);
 
-      const headerEl = wrap.querySelector(`[data-vol-header="${idx}"]`);
+      const titleEl = wrap.querySelector(`[data-vol-title="${idx}"]`);
+      const dateEl = wrap.querySelector(`[data-vol-date="${idx}"]`);
       const subEl = wrap.querySelector(`[data-vol-sub="${idx}"]`);
       const bulletsEl = wrap.querySelector(`[data-vol-bullets="${idx}"]`);
 
-      headerEl.value = v.header || "";
+      titleEl.value = v.title || "";
+      dateEl.value = v.date || "";
       subEl.value = v.sub || "";
       bulletsEl.value = (v.bullets || []).join("\n");
 
@@ -599,7 +736,8 @@
 
       const update = () => {
         state.data.volunteerBlocks[idx] = {
-          header: headerEl.value,
+          title: titleEl.value,
+          date: dateEl.value,
           sub: subEl.value,
           bullets: parseBullets(),
         };
@@ -608,7 +746,8 @@
         render();
       };
 
-      headerEl.addEventListener("input", update);
+      titleEl.addEventListener("input", update);
+      dateEl.addEventListener("input", update);
       subEl.addEventListener("input", update);
       bulletsEl.addEventListener("input", update);
 
@@ -629,8 +768,8 @@
 
   if (addVolBtn) {
     addVolBtn.addEventListener("click", () => {
-      ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
-      state.data.volunteerBlocks.push({ header: "", sub: "", bullets: [] });
+      ensureArray("volunteerBlocks", 3, () => ({ title: "", date: "", sub: "", bullets: [] }));
+      state.data.volunteerBlocks.push({ title: "", date: "", sub: "", bullets: [] });
       syncVolunteer();
       saveState();
       renderVolunteer();
@@ -677,6 +816,47 @@
     });
   }
 
+  // ---- Download PDF (Nr 2)
+  if (downloadPdfBtn) {
+    downloadPdfBtn.addEventListener("click", async () => {
+      try {
+        if (!preview) return;
+        const node = preview.querySelector(".cv");
+        if (!node) return;
+
+        // clone only the CV, keep existing CSS classes
+        const wrapper = document.createElement("div");
+        wrapper.style.background = "#ffffff";
+        wrapper.style.margin = "0";
+        wrapper.style.padding = "0";
+        wrapper.style.position = "fixed";
+        wrapper.style.left = "-99999px"; // offscreen
+        wrapper.style.top = "0";
+        wrapper.appendChild(node.cloneNode(true));
+        document.body.appendChild(wrapper);
+
+        await new Promise(r => setTimeout(r, 80));
+
+        const opt = {
+          margin: 0,
+          filename: "cv.pdf",
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["css", "legacy"] }
+        };
+
+        if (!window.html2pdf) throw new Error("html2pdf not loaded");
+        await window.html2pdf().set(opt).from(wrapper).save();
+
+        wrapper.remove();
+      } catch (err) {
+        console.error(err);
+        alert("PDF export failed. Check console.");
+      }
+    });
+  }
+
   // ---------------------------
   // Layout controls: hide + fullscreen + resizers
   // ---------------------------
@@ -709,123 +889,74 @@
 
   function normalizeGridForVisibility() {
     const v = computeVisiblePanels();
-    // default ratios when all visible:
-    // 1.25fr | 10px | 1fr | 10px | 0.85fr
-    if (v.editor && v.preview && v.ai) {
-      setGridColumns("1.25fr 10px 1fr 10px 0.85fr");
-      return;
-    }
-    if (v.editor && v.preview && !v.ai) {
-      setGridColumns("1.25fr 10px 1fr");
-      return;
-    }
-    if (v.editor && !v.preview && v.ai) {
-      setGridColumns("1.25fr 10px 1fr");
-      return;
-    }
-    if (!v.editor && v.preview && v.ai) {
-      setGridColumns("1fr 10px 0.85fr");
-      return;
-    }
-    if (v.editor && !v.preview && !v.ai) {
-      setGridColumns("1fr");
-      return;
-    }
-    if (!v.editor && v.preview && !v.ai) {
-      setGridColumns("1fr");
-      return;
-    }
-    if (!v.editor && !v.preview && v.ai) {
-      setGridColumns("1fr");
-      return;
-    }
-    // fallback
+    if (v.editor && v.preview && v.ai) { setGridColumns("1.25fr 10px 1fr 10px 0.85fr"); return; }
+    if (v.editor && v.preview && !v.ai) { setGridColumns("1.25fr 10px 1fr"); return; }
+    if (v.editor && !v.preview && v.ai) { setGridColumns("1.25fr 10px 1fr"); return; }
+    if (!v.editor && v.preview && v.ai) { setGridColumns("1fr 10px 0.85fr"); return; }
     setGridColumns("1fr");
   }
 
   function setupPanelButtons() {
-  const showPanelsBtn = qs("showPanelsBtn");
+    const showPanelsBtn = qs("showPanelsBtn");
 
-  function setBodyLocked(on){
-    document.body.style.overflow = on ? "hidden" : "";
-  }
+    function setBodyLocked(on){ document.body.style.overflow = on ? "hidden" : ""; }
 
-  function closeAnyFullscreen(){
-    document.querySelectorAll(".panel.is-fullscreen").forEach(p => p.classList.remove("is-fullscreen"));
-    document.querySelectorAll(".fullscreen-backdrop").forEach(b => b.remove());
-    setBodyLocked(false);
-  }
+    function closeAnyFullscreen(){
+      document.querySelectorAll(".panel.is-fullscreen").forEach(p => p.classList.remove("is-fullscreen"));
+      document.querySelectorAll(".fullscreen-backdrop").forEach(b => b.remove());
+      setBodyLocked(false);
+    }
 
-  function openFullscreen(panel){
-    closeAnyFullscreen();
+    function openFullscreen(panel){
+      closeAnyFullscreen();
+      const bd = document.createElement("div");
+      bd.className = "fullscreen-backdrop";
+      bd.addEventListener("click", closeAnyFullscreen);
+      document.body.appendChild(bd);
+      panel.classList.add("is-fullscreen");
+      setBodyLocked(true);
+    }
 
-    // create backdrop
-    const bd = document.createElement("div");
-    bd.className = "fullscreen-backdrop";
-    bd.addEventListener("click", closeAnyFullscreen);
-    document.body.appendChild(bd);
+    document.querySelectorAll('[data-action="hide"]').forEach(btn => {
+      btn.addEventListener("click", () => {
+        const target = btn.getAttribute("data-target");
+        const panel = qs(`panel-${target}`);
+        if (!panel) return;
 
-    panel.classList.add("is-fullscreen");
-    setBodyLocked(true);
-  }
-
-  document.querySelectorAll('[data-action="hide"]').forEach(btn => {
-    btn.addEventListener("click", () => {
-      const target = btn.getAttribute("data-target");
-      const panel = qs(`panel-${target}`);
-      if (!panel) return;
-
-      // if hiding a fullscreen panel, close fullscreen first
-      if (panel.classList.contains("is-fullscreen")) {
-        closeAnyFullscreen();
-      }
-
-      panel.classList.toggle("is-hidden");
-      normalizeGridForVisibility();
+        if (panel.classList.contains("is-fullscreen")) closeAnyFullscreen();
+        panel.classList.toggle("is-hidden");
+        normalizeGridForVisibility();
+      });
     });
-  });
 
-  document.querySelectorAll('[data-action="fullscreen"]').forEach(btn => {
-    btn.addEventListener("click", () => {
-      const target = btn.getAttribute("data-target");
-      const panel = qs(`panel-${target}`);
-      if (!panel) return;
+    document.querySelectorAll('[data-action="fullscreen"]').forEach(btn => {
+      btn.addEventListener("click", () => {
+        const target = btn.getAttribute("data-target");
+        const panel = qs(`panel-${target}`);
+        if (!panel) return;
 
-      // if hidden, unhide first
-      panel.classList.remove("is-hidden");
-
-      if (panel.classList.contains("is-fullscreen")) {
-        closeAnyFullscreen();
-      } else {
-        openFullscreen(panel);
-      }
-      normalizeGridForVisibility();
+        panel.classList.remove("is-hidden");
+        if (panel.classList.contains("is-fullscreen")) closeAnyFullscreen();
+        else openFullscreen(panel);
+        normalizeGridForVisibility();
+      });
     });
-  });
 
-  // ESC closes fullscreen
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeAnyFullscreen();
-  });
-
-  // Panels button toggles hidden panels back on
-  if (showPanelsBtn) {
-    showPanelsBtn.addEventListener("click", () => {
-      const editor = qs("panel-editor");
-      const previewP = qs("panel-preview");
-      const ai = qs("panel-ai");
-
-      // Simple behavior: show all panels again
-      editor?.classList.remove("is-hidden");
-      previewP?.classList.remove("is-hidden");
-      ai?.classList.remove("is-hidden");
-
-      normalizeGridForVisibility();
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeAnyFullscreen();
     });
+
+    if (showPanelsBtn) {
+      showPanelsBtn.addEventListener("click", () => {
+        qs("panel-editor")?.classList.remove("is-hidden");
+        qs("panel-preview")?.classList.remove("is-hidden");
+        qs("panel-ai")?.classList.remove("is-hidden");
+        normalizeGridForVisibility();
+      });
+    }
   }
-}
 
-  function setupResizer(resizerId, leftPanelId, rightPanelId, isSecond) {
+  function setupResizer(resizerId, isSecond) {
     const resizer = qs(resizerId);
     if (!resizer || !grid) return;
 
@@ -849,34 +980,22 @@
       const x = e.clientX - rect.left;
       const total = rect.width;
 
-      // Build column widths depending on which panels are visible
       const v = computeVisiblePanels();
-
-      // We only support drag when all 3 visible (best UX).
       if (!(v.editor && v.preview && v.ai)) return;
 
-      // Convert to percentages:
-      // columns: editor | r1 | preview | r2 | ai
-      const rW = 10; // resizer width
-      const usable = total - rW - rW - 28; // gaps approx; safe-ish
-      const minPct = 18; // minimum per panel
+      const minPct = 18;
 
-      // target split points
       let editorPct = Math.max(minPct, Math.min(60, (x / total) * 100));
       let remaining = 100 - editorPct;
+
       let previewPct, aiPct;
 
-      // second resizer affects preview/ai balance
       if (isSecond) {
-        // keep editor as-is, split remaining by mouse position relative to preview+ai zone
-        // approximate: mouse position mapped into remaining
         const afterEditorPx = x - (total * (editorPct / 100));
         const afterEditorPct = (afterEditorPx / total) * 100;
         previewPct = Math.max(minPct, Math.min(remaining - minPct, afterEditorPct));
         aiPct = remaining - previewPct;
       } else {
-        // first resizer affects editor/preview+ai. Keep preview/ai ratio approx by current columns
-        // default preview:ai = 1 : 0.85
         const ratioPreview = 1;
         const ratioAi = 0.85;
         const sum = ratioPreview + ratioAi;
@@ -884,11 +1003,9 @@
         aiPct = remaining * (ratioAi / sum);
       }
 
-      // clamp again
       if (previewPct < minPct) { previewPct = minPct; aiPct = remaining - previewPct; }
       if (aiPct < minPct) { aiPct = minPct; previewPct = remaining - aiPct; }
 
-      // apply as explicit fr-like percentages
       setGridColumns(`${editorPct}fr 10px ${previewPct}fr 10px ${aiPct}fr`);
     };
 
@@ -898,7 +1015,7 @@
   }
 
   // ---------------------------
-  // AI Coach (robust binding + memory + accept/reject)
+  // AI Coach (Nr 5): not "coded", accept per suggestion
   // ---------------------------
   const AI_HISTORY_KEY = "cv_builder_ai_history_v1";
 
@@ -922,6 +1039,7 @@
   function detectLanguageFromText(t) {
     const s = String(t || "");
     if (/[æøåÆØÅ]/.test(s) || /\b(hvordan|kan du|jeg|ikke|dette|endre|hvor)\b/i.test(s)) return "no";
+    if (/\b(und|bitte|ich|nicht|dies|ändern|wie)\b/i.test(s)) return "de";
     return "en";
   }
 
@@ -999,7 +1117,14 @@
       if (c.path.startsWith("data.")) {
         const p = c.path.replace(/^data\./, "");
         state.data[p] = c.value;
+
+        // cleanup empties
         if (String(c.value ?? "").trim() === "") delete state.data[p];
+
+        // if AI updates volunteer raw text, also clear structured blocks to avoid confusion
+        if (p === "volunteer") {
+          // keep both, but structured UI will overwrite on next edit; ok
+        }
       } else if (c.path.startsWith("sections.")) {
         const p = c.path.replace(/^sections\./, "");
         setByPath(state.sections, p, c.value);
@@ -1010,6 +1135,18 @@
     render();
   }
 
+  function labelFromPath(path){
+    const p = String(path || "");
+    if (p.startsWith("data.")) return p.replace("data.","");
+    if (p.startsWith("sections.")) {
+      const s = p.replace("sections.","");
+      if (s.endsWith(".title")) return s.replace(".title","") + " (section title)";
+      if (s.endsWith(".enabled")) return s.replace(".enabled","") + " (show/hide)";
+      return s;
+    }
+    return p;
+  }
+
   function renderSuggestionCard(message, changes) {
     const chat = qs("aiChat");
     if (!chat) return;
@@ -1017,47 +1154,60 @@
     const div = document.createElement("div");
     div.className = "msg assistant";
 
-    const hasChanges = Array.isArray(changes) && changes.length > 0;
+    const list = Array.isArray(changes)
+      ? changes.filter(c => c && c.op === "set" && typeof c.path === "string")
+      : [];
 
-    div.innerHTML = `
-      <div class="msg-title">Suggestion</div>
-      <div>${escapeHtml(message).replace(/\n/g,"<br>")}</div>
-
-      ${hasChanges ? `
-        <div class="sugg">
-          <div class="muted small">Proposed changes (you must accept to apply):</div>
-          <pre>${escapeHtml(JSON.stringify(changes, null, 2))}</pre>
-          <div class="sugg-buttons">
-            <button class="btn" type="button" data-accept>Accept</button>
-            <button class="btn ghost" type="button" data-reject>Reject</button>
+    const itemsHTML = list.map((c, idx) => {
+      const topic = escapeHtml(labelFromPath(c.path));
+      const val = (c.value == null) ? "" : String(c.value);
+      const pretty = escapeHtml(val).replace(/\n/g,"<br>");
+      return `
+        <div class="sugg" data-sugg-idx="${idx}">
+          <div class="muted small"><b>Topic:</b> ${topic}</div>
+          <div style="margin-top:6px;">${pretty}</div>
+          <div class="sugg-buttons" style="margin-top:10px;">
+            <button class="btn" type="button" data-accept-one>Accept</button>
+            <button class="btn ghost" type="button" data-reject-one>Reject</button>
           </div>
         </div>
-      ` : ``}
+      `;
+    }).join("");
+
+    div.innerHTML = `
+      <div class="msg-title">AI Suggestions</div>
+      <div>${escapeHtml(message).replace(/\n/g,"<br>")}</div>
+      ${itemsHTML || `<div class="muted small" style="margin-top:10px;">No direct changes proposed.</div>`}
     `;
+
     chat.prepend(div);
 
-    if (!hasChanges) return;
+    div.querySelectorAll("[data-sugg-idx]").forEach((box) => {
+      const idx = Number(box.getAttribute("data-sugg-idx"));
+      const c = list[idx];
+      const accept = box.querySelector("[data-accept-one]");
+      const reject = box.querySelector("[data-reject-one]");
 
-    const accept = div.querySelector("[data-accept]");
-    const reject = div.querySelector("[data-reject]");
+      accept?.addEventListener("click", () => {
+        applyChanges([c]);
+        accept.disabled = true;
+        if (reject) reject.disabled = true;
+        accept.textContent = "Applied ✓";
+      });
 
-    accept?.addEventListener("click", () => {
-      applyChanges(changes || []);
-      accept.disabled = true;
-      if (reject) reject.disabled = true;
-      accept.textContent = "Applied ✓";
-    });
-
-    reject?.addEventListener("click", () => {
-      if (accept) accept.disabled = true;
-      reject.disabled = true;
-      reject.textContent = "Rejected";
+      reject?.addEventListener("click", () => {
+        if (accept) accept.disabled = true;
+        reject.disabled = true;
+        reject.textContent = "Rejected";
+      });
     });
   }
 
   async function sendToAI(userText) {
     const thinking = addThinking();
-    const language = detectLanguageFromText(userText);
+
+    // Prefer explicit UI language for AI response, fallback to detection
+    const language = state.data.uiLang || detectLanguageFromText(userText);
 
     try {
       const res = await fetch("/api/ai", {
@@ -1077,7 +1227,7 @@
       thinking?.remove();
 
       const msg = payload?.message || "Here are my suggestions.";
-      const changes = payload?.changes || payload?.patches || payload?.actions || [];
+      const changes = payload?.changes || [];
 
       aiHistory.push({ role: "assistant", content: msg });
       saveAIHistory(aiHistory);
@@ -1088,8 +1238,9 @@
       thinking?.remove();
       console.error(err);
 
-      const fallback = language === "no"
-        ? "Beklager — noe gikk galt. Prøv igjen."
+      const fallback =
+        language === "no" ? "Beklager — noe gikk galt. Prøv igjen."
+        : language === "de" ? "Entschuldigung — etwas ist schiefgelaufen. Bitte erneut versuchen."
         : "Sorry — something went wrong. Please try again.";
 
       aiHistory.push({ role: "assistant", content: fallback });
@@ -1100,7 +1251,6 @@
   }
 
   function setupAIUI() {
-    // MUST exist now because index.html defines them.
     const aiSend = qs("aiSend");
     const aiClear = qs("aiClear");
     const aiInput = qs("aiInput");
@@ -1149,9 +1299,19 @@
 
   // Boot
   loadState();
+  ensureContactVisibility();
   initSectionsFromUI();
   bindSimpleInputs();
   bindSimpleToolbars();
+
+  // init language select
+  if (uiLanguage) {
+    uiLanguage.value = getLang();
+    applyUiI18n(getLang());
+    uiLanguage.addEventListener("change", () => setLang(uiLanguage.value));
+  } else {
+    applyUiI18n(getLang());
+  }
 
   renderEducation();
   renderLicenses();
@@ -1162,8 +1322,8 @@
   setupPanelButtons();
   restoreGridColumns();
   normalizeGridForVisibility();
-  setupResizer("resizer-1", "panel-editor", "panel-preview", false);
-  setupResizer("resizer-2", "panel-preview", "panel-ai", true);
+  setupResizer("resizer-1", false);
+  setupResizer("resizer-2", true);
 
   // AI
   setupAIUI();
