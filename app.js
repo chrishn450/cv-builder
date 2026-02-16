@@ -1,18 +1,10 @@
-// app.js (FULL) — with AI Coach panel (right), suggestions + accept/reject
+// app.js (FULL)
 (function () {
   const qs = (id) => document.getElementById(id);
 
   const preview = qs("preview");
   const printBtn = qs("printBtn");
   const downloadHtmlBtn = qs("downloadHtmlBtn");
-  const aiReviewBtn = qs("aiReviewBtn");
-
-  // AI chat UI
-  const aiChatLog = qs("aiChatLog");
-  const aiChatInput = qs("aiChatInput");
-  const aiSendBtn = qs("aiSendBtn");
-  const aiClearBtn = qs("aiClearBtn");
-  const aiSuggestions = qs("aiSuggestions");
 
   // Only these are "simple" fields. Structured sections are handled separately.
   const FIELD_IDS = [
@@ -26,26 +18,7 @@
     "languages","experience","achievements","volunteer","custom1","custom2",
   ];
 
-  const state = {
-    data: {},
-    sections: {},
-    layout: {
-      padX: 40,     // px
-      gap: 30,      // px
-      leftWidth: 34 // percent
-    }
-  };
-
-  function applyLayoutToPreview() {
-    // apply CSS vars on the preview container so exported HTML/print stays consistent
-    const root = preview?.querySelector(".cv");
-    const target = root || preview; // fallback
-    if (!target) return;
-
-    target.style.setProperty("--cv-pad-x", `${state.layout.padX}px`);
-    target.style.setProperty("--cv-gap", `${state.layout.gap}px`);
-    target.style.setProperty("--cv-left-width", `${state.layout.leftWidth}%`);
-  }
+  const state = { data: {}, sections: {} };
 
   function render() {
     if (!preview || typeof window.renderCV !== "function") return;
@@ -53,11 +26,11 @@
       ...state.data,
       sections: state.sections,
     });
-    applyLayoutToPreview();
   }
 
   // Store only user overrides (so preview can stay "original" until user types)
   const STORAGE_KEY = "cv_builder_user_overrides_structured_v3";
+  const UI_KEY = "cv_builder_ui_layout_v1";
 
   function loadState() {
     try {
@@ -67,13 +40,12 @@
       if (!parsed || typeof parsed !== "object") return;
       state.data = parsed.data || {};
       state.sections = parsed.sections || {};
-      state.layout = parsed.layout || state.layout;
     } catch (_) {}
   }
 
   function saveState() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: state.data, sections: state.sections, layout: state.layout }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: state.data, sections: state.sections }));
     } catch (_) {}
   }
 
@@ -92,6 +64,7 @@
       const el = qs(id);
       if (!el) return;
 
+      // Keep empty unless user override exists
       if (state.data[id] != null && String(state.data[id]).length > 0) el.value = String(state.data[id]);
       else el.value = "";
 
@@ -190,6 +163,8 @@
   }
 
   function bindToolbar(tb, target, onChange) {
+    if (!tb || !target) return;
+
     target.dataset.bulletOn = target.dataset.bulletOn || "";
     setBulletButtonState(tb, target.dataset.bulletOn === "1");
 
@@ -235,6 +210,7 @@
     });
   }
 
+  // ---- Simple toolbars for textareas (summary/skills/etc)
   function bindSimpleToolbars() {
     document.querySelectorAll(".toolbar[data-for]").forEach((tb) => {
       const fieldId = tb.getAttribute("data-for");
@@ -280,6 +256,7 @@
     else state.data[fieldKey] = value;
   }
 
+  // ----- Education blocks -> education text (blocks separated by blank line)
   function eduToText(blocks) {
     return (blocks || [])
       .map((b) => {
@@ -379,6 +356,7 @@
     });
   }
 
+  // ----- Licenses blocks -> lines in pairs (title + detail)
   function licToText(items) {
     const lines = [];
     (items || []).forEach((it) => {
@@ -387,7 +365,7 @@
       if (!t && !d) return;
       if (t) lines.push(t);
       if (d) lines.push(d);
-      else lines.push("");
+      else lines.push(""); // keep pairing
     });
     while (lines.length && String(lines[lines.length - 1]).trim() === "") lines.pop();
     return lines.join("\n");
@@ -462,6 +440,7 @@
     });
   }
 
+  // ----- Experience jobs -> blocks with title/meta + bullets
   function expToText(jobs) {
     return (jobs || [])
       .map((j) => {
@@ -567,10 +546,11 @@
     });
   }
 
+  // ----- Volunteer blocks (multiple blocks)
   function volToText(vols) {
     return (vols || [])
       .map((v) => {
-        const header = (v.header || "").trim();
+        const header = (v.header || "").trim(); // "Volunteer Nurse 2019 – Present" OR "Title | Date"
         const sub = (v.sub || "").trim();
         const bullets = (v.bullets || []).map((x) => String(x || "").trim()).filter(Boolean);
         return [header, sub, ...bullets].filter(Boolean).join("\n");
@@ -689,9 +669,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CV</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
   <style>${cssText}</style>
 </head>
 <body style="margin:0; padding:0; background:white;">
@@ -718,93 +695,251 @@
   }
 
   // ──────────────────────────────────────────────
-  // AI helpers
+  // 3-pane layout builder + resizers
+  // (Editor card + Preview card already exist in your HTML)
+  // We'll wrap them into .workspace and add AI pane.
+  // ──────────────────────────────────────────────
+  function buildWorkspace() {
+    const grid = document.querySelector("#app .grid");
+    if (!grid) return;
+
+    const cards = grid.querySelectorAll(":scope > .card");
+    if (cards.length < 2) return;
+
+    const editorCard = cards[0];
+    const previewCard = cards[1];
+
+    // Create workspace wrapper
+    const workspace = document.createElement("div");
+    workspace.className = "workspace";
+
+    // Make panes
+    const paneEditor = document.createElement("div");
+    paneEditor.className = "pane";
+    paneEditor.id = "paneEditor";
+
+    const panePreview = document.createElement("div");
+    panePreview.className = "pane pane-grow";
+    panePreview.id = "panePreview";
+
+    const paneAI = document.createElement("div");
+    paneAI.className = "pane";
+    paneAI.id = "paneAI";
+
+    // Resizers
+    const r1 = document.createElement("div");
+    r1.className = "vresizer";
+    r1.id = "resizer1";
+
+    const r2 = document.createElement("div");
+    r2.className = "vresizer";
+    r2.id = "resizer2";
+
+    // Move existing cards into panes
+    paneEditor.appendChild(editorCard);
+    panePreview.appendChild(previewCard);
+
+    // Build AI card (if not already exists)
+    const aiCard = document.createElement("div");
+    aiCard.className = "card";
+    aiCard.id = "aiCoachCard";
+    aiCard.innerHTML = `
+      <div class="ai-head">
+        <h2 style="margin:0;">AI Coach</h2>
+        <button id="aiClear" class="btn ghost" type="button">Clear</button>
+      </div>
+      <div class="muted small" style="margin-top:6px;">
+        Ask for review, improvements, new bullet points, or layout changes.
+        You must always approve suggestions before they are applied.
+      </div>
+
+      <div id="aiChat" class="ai-chat" aria-live="polite"></div>
+
+      <div class="ai-actions">
+        <textarea id="aiInput" class="textarea" rows="3"
+          placeholder="e.g. 'Improve my summary and make it more results-driven'"></textarea>
+        <button id="aiSend" class="btn" type="button">Send</button>
+      </div>
+      <div class="muted small" style="margin-top:6px;">
+        Tip: You can ask in any language — the coach should reply in the same language.
+      </div>
+    `;
+    paneAI.appendChild(aiCard);
+
+    // Replace grid with workspace
+    grid.innerHTML = "";
+    workspace.appendChild(paneEditor);
+    workspace.appendChild(r1);
+    workspace.appendChild(panePreview);
+    workspace.appendChild(r2);
+    workspace.appendChild(paneAI);
+    grid.appendChild(workspace);
+
+    // Restore widths
+    try {
+      const s = JSON.parse(localStorage.getItem(UI_KEY) || "{}");
+      if (s.editorW) paneEditor.style.width = s.editorW;
+      if (s.aiW) paneAI.style.width = s.aiW;
+    } catch(_) {}
+  }
+
+  function setupResizers() {
+    const paneEditor = qs("paneEditor");
+    const paneAI = qs("paneAI");
+    const resizer1 = qs("resizer1");
+    const resizer2 = qs("resizer2");
+    const workspace = document.querySelector(".workspace");
+    if (!paneEditor || !paneAI || !workspace || !resizer1 || !resizer2) return;
+
+    const isColumnMode = () => window.matchMedia("(max-width: 1180px)").matches;
+
+    function saveUI() {
+      try {
+        localStorage.setItem(UI_KEY, JSON.stringify({
+          editorW: paneEditor.style.width || "",
+          aiW: paneAI.style.width || "",
+        }));
+      } catch(_) {}
+    }
+
+    function dragResizer(resizer, which) {
+      let startX = 0, startY = 0;
+      let startEditorW = 0, startAIW = 0;
+      let startPreviewW = 0;
+
+      const onMove = (e) => {
+        const dx = (e.clientX || 0) - startX;
+        const dy = (e.clientY || 0) - startY;
+
+        if (!isColumnMode()) {
+          // horizontal drag
+          if (which === 1) {
+            const newW = Math.max(280, startEditorW + dx);
+            paneEditor.style.width = `${newW}px`;
+          } else if (which === 2) {
+            const newW = Math.max(280, startAIW - dx);
+            paneAI.style.width = `${newW}px`;
+          }
+        } else {
+          // stacked mode: resize heights (optional)
+          // simple: ignore or you can add later
+        }
+      };
+
+      const onUp = () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        saveUI();
+      };
+
+      resizer.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        startX = e.clientX || 0;
+        startY = e.clientY || 0;
+        startEditorW = paneEditor.getBoundingClientRect().width;
+        startAIW = paneAI.getBoundingClientRect().width;
+        startPreviewW = (qs("panePreview") || {}).getBoundingClientRect?.().width || 0;
+
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerup", onUp);
+      });
+    }
+
+    dragResizer(resizer1, 1);
+    dragResizer(resizer2, 2);
+  }
+
+  // ──────────────────────────────────────────────
+  // AI Coach logic (English UI + thinking bubble)
+  // Endpoint expected: POST /api/ai
+  // Returns JSON: { message: "...", changes?: [...] }
+  // changes are applied only after user clicks "Accept".
   // ──────────────────────────────────────────────
   function detectLanguageFromText(t) {
-    // very light: if contains norwegian letters or common words, treat as NO
     const s = String(t || "");
-    if (/[æøå]/i.test(s)) return "no";
-    if (/\b(ikke|og|jeg|du|kan|vil|må|skal)\b/i.test(s)) return "no";
+    // very simple heuristic
+    if (/[æøåÆØÅ]/.test(s) || /\b(hvordan|kan du|jeg|ikke|dette|endre)\b/i.test(s)) return "no";
     return "en";
   }
 
-  function getCVSnapshotForAI() {
-    // send structured + rendered text
+  function snapshotForAI() {
     return {
-      text: (preview?.innerText || "").trim(),
       data: state.data,
-      sections: state.sections,
-      layout: state.layout
+      sections: state.sections
     };
   }
 
-  function addChatMsg(role, text) {
-    if (!aiChatLog) return;
+  function addMsg(role, title, text) {
+    const chat = qs("aiChat");
+    if (!chat) return;
     const div = document.createElement("div");
-    div.className = `ai-msg ${role}`;
-    div.textContent = text;
-    aiChatLog.appendChild(div);
-    aiChatLog.scrollTop = aiChatLog.scrollHeight;
+    div.className = `msg ${role}`;
+    div.innerHTML = `
+      <div class="msg-title">${title}</div>
+      <div>${String(text || "").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")}</div>
+    `;
+    chat.prepend(div);
   }
 
-  function escapeHtml(s) {
-    return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  function addThinking() {
+    const chat = qs("aiChat");
+    if (!chat) return null;
+    const div = document.createElement("div");
+    div.className = "msg assistant";
+    div.innerHTML = `
+      <div class="thinking-row">
+        <span class="spinner"></span>
+        <span>AI is analyzing your CV and preparing suggestions...</span>
+      </div>
+    `;
+    chat.prepend(div);
+    return div;
   }
 
-  // Apply AI patch ops safely
-  // Supports:
-  // - set on: data.<field>, sections.<key>.<prop>, layout.<padX|gap|leftWidth>
+  // very safe apply (only known top-level text fields + section titles/enabled)
+  const ALLOWED_SET_PATHS = new Set([
+    "data.name","data.title","data.email","data.phone","data.location","data.linkedin",
+    "data.summary","data.education","data.licenses","data.clinicalSkills","data.coreCompetencies",
+    "data.languages","data.experience","data.achievements","data.volunteer","data.custom1","data.custom2",
+    // sections
+    "sections.summary.enabled","sections.summary.title",
+    "sections.education.enabled","sections.education.title",
+    "sections.licenses.enabled","sections.licenses.title",
+    "sections.clinicalSkills.enabled","sections.clinicalSkills.title",
+    "sections.coreCompetencies.enabled","sections.coreCompetencies.title",
+    "sections.languages.enabled","sections.languages.title",
+    "sections.experience.enabled","sections.experience.title",
+    "sections.achievements.enabled","sections.achievements.title",
+    "sections.volunteer.enabled","sections.volunteer.title",
+    "sections.custom1.enabled","sections.custom1.title",
+    "sections.custom2.enabled","sections.custom2.title"
+  ]);
+
+  function setByPath(obj, path, value) {
+    const parts = path.split(".");
+    let cur = obj;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const k = parts[i];
+      if (cur[k] == null || typeof cur[k] !== "object") cur[k] = {};
+      cur = cur[k];
+    }
+    cur[parts[parts.length - 1]] = value;
+  }
+
   function applyChanges(changes) {
-    (changes || []).forEach((c) => {
-      if (!c || c.op !== "set") return;
+    if (!Array.isArray(changes)) return;
+    changes.forEach((c) => {
+      if (!c || c.op !== "set" || typeof c.path !== "string") return;
+      if (!ALLOWED_SET_PATHS.has(c.path)) return;
 
-      const path = String(c.path || "");
-      const value = c.value;
-
-      // data.field
-      if (path.startsWith("data.")) {
-        const key = path.slice("data.".length);
-        state.data[key] = value;
-        const el = qs(key);
-        if (el) el.value = value;
-        return;
-      }
-
-      // direct field alias (summary, clinicalSkills, etc.)
-      if (FIELD_IDS.includes(path) || ["education","licenses","experience","volunteer"].includes(path)) {
-        state.data[path] = value;
-        const el = qs(path);
-        if (el) el.value = value;
-        return;
-      }
-
-      // sections.key.prop
-      if (path.startsWith("sections.")) {
-        const parts = path.split(".");
-        const key = parts[1];
-        const prop = parts[2];
-        if (!key || !prop) return;
-        if (!state.sections[key]) state.sections[key] = {};
-        state.sections[key][prop] = value;
-
-        if (prop === "title") {
-          const ti = qs(`sec_${key}_title`);
-          if (ti) ti.value = value;
-        }
-        if (prop === "enabled") {
-          const en = qs(`sec_${key}_enabled`);
-          if (en) en.checked = !!value;
-        }
-        return;
-      }
-
-      // layout.padX / layout.gap / layout.leftWidth
-      if (path.startsWith("layout.")) {
-        const k = path.slice("layout.".length);
-        if (k === "padX" || k === "gap" || k === "leftWidth") {
-          state.layout[k] = Number(value);
-          return;
-        }
+      // route path
+      if (c.path.startsWith("data.")) {
+        const p = c.path.replace(/^data\./, "");
+        state.data[p] = c.value;
+        if (String(c.value ?? "").trim() === "") delete state.data[p];
+      } else if (c.path.startsWith("sections.")) {
+        const p = c.path.replace(/^sections\./, "");
+        setByPath(state.sections, p, c.value);
       }
     });
 
@@ -812,149 +947,118 @@
     render();
   }
 
-  function renderSuggestions(list) {
-    if (!aiSuggestions) return;
-    aiSuggestions.innerHTML = "";
+  function renderSuggestionCard(message, changes) {
+    const chat = qs("aiChat");
+    if (!chat) return;
 
-    if (!list || !list.length) return;
+    const div = document.createElement("div");
+    div.className = "msg assistant";
+    div.innerHTML = `
+      <div class="msg-title">Suggestion</div>
+      <div>${String(message || "").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")}</div>
 
-    list.forEach((s) => {
-      const card = document.createElement("div");
-      card.className = "sugg-card";
-
-      const before = s.preview?.before ?? "";
-      const after = s.preview?.after ?? "";
-
-      card.innerHTML = `
-        <div class="row" style="justify-content:space-between; margin-top:0;">
-          <div>
-            <b>${escapeHtml(s.title || "Forslag")}</b>
-            <div class="muted small">${escapeHtml(s.why || "")}</div>
-          </div>
-          <div class="row" style="margin-top:0;">
-            <button class="btn ghost" type="button" data-acc="${escapeHtml(s.id)}">Accept</button>
-            <button class="btn ghost" type="button" data-rej="${escapeHtml(s.id)}">Reject</button>
+      ${Array.isArray(changes) && changes.length ? `
+        <div class="sugg">
+          <div class="muted small">Proposed changes (you must accept to apply):</div>
+          <pre>${String(JSON.stringify(changes, null, 2)).replace(/</g,"&lt;").replace(/>/g,"&gt;")}</pre>
+          <div class="sugg-buttons">
+            <button class="btn" type="button" data-accept>Accept</button>
+            <button class="btn ghost" type="button" data-reject>Reject</button>
           </div>
         </div>
+      ` : ``}
+    `;
 
-        ${(before || after) ? `
-          <div class="diff">
-            <div>
-              <div class="muted small">Before</div>
-              <div class="diffbox">${escapeHtml(before)}</div>
-            </div>
-            <div>
-              <div class="muted small">After</div>
-              <div class="diffbox">${escapeHtml(after)}</div>
-            </div>
-          </div>
-        ` : ""}
-      `;
+    chat.prepend(div);
 
-      aiSuggestions.appendChild(card);
-
-      const acc = card.querySelector(`[data-acc="${CSS.escape(s.id)}"]`);
-      const rej = card.querySelector(`[data-rej="${CSS.escape(s.id)}"]`);
-
-      if (acc) {
-        acc.addEventListener("click", () => {
-          applyChanges(s.changes || []);
-          card.remove();
-        });
-      }
-      if (rej) {
-        rej.addEventListener("click", () => card.remove());
-      }
-    });
+    const accept = div.querySelector("[data-accept]");
+    const reject = div.querySelector("[data-reject]");
+    if (accept) {
+      accept.addEventListener("click", () => {
+        applyChanges(changes || []);
+        accept.disabled = true;
+        if (reject) reject.disabled = true;
+        accept.textContent = "Applied ✓";
+      });
+    }
+    if (reject) {
+      reject.addEventListener("click", () => {
+        accept && (accept.disabled = true);
+        reject.disabled = true;
+        reject.textContent = "Rejected";
+      });
+    }
   }
 
-  async function callAI(userMessage, mode) {
-    const snap = getCVSnapshotForAI();
-    const language = detectLanguageFromText(userMessage || snap.text);
+  async function sendToAI(userText) {
+    const thinking = addThinking();
 
-    const res = await fetch("/api/ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mode: mode || "chat",
-        language,
-        message: userMessage || "",
-        cv: snap
-      })
-    });
-
-    const payload = await res.json();
-    if (!res.ok) throw new Error(payload?.error || "AI request failed");
-    return payload;
-  }
-
-  // AI Review button → asks AI for review + suggestions
-  async function runReview() {
-    if (!aiReviewBtn) return;
-    aiReviewBtn.disabled = true;
-    aiReviewBtn.textContent = "AI…";
+    const language = detectLanguageFromText(userText);
 
     try {
-      addChatMsg("user", "Gi meg en review av CV-en og forslag til forbedringer.");
-      const payload = await callAI("Gi meg en review av CV-en og forslag til forbedringer.", "review");
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userText,
+          language,
+          snapshot: snapshotForAI()
+        })
+      });
 
-      addChatMsg("assistant", payload.reply || "");
-      renderSuggestions(payload.suggestions || []);
-    } catch (e) {
-      console.error(e);
-      alert("AI review failed. Check Vercel logs.");
-    } finally {
-      aiReviewBtn.disabled = false;
-      aiReviewBtn.textContent = "AI Review";
-    }
-  }
-
-  // Chat send
-  async function sendChat() {
-    const msg = String(aiChatInput?.value || "").trim();
-    if (!msg) return;
-
-    if (aiSendBtn) {
-      aiSendBtn.disabled = true;
-      aiSendBtn.textContent = "…";
-    }
-
-    try {
-      addChatMsg("user", msg);
-      aiChatInput.value = "";
-
-      const payload = await callAI(msg, "chat");
-      addChatMsg("assistant", payload.reply || "");
-      renderSuggestions(payload.suggestions || []);
-    } catch (e) {
-      console.error(e);
-      alert("AI chat failed. Check Vercel logs.");
-    } finally {
-      if (aiSendBtn) {
-        aiSendBtn.disabled = false;
-        aiSendBtn.textContent = "Send";
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(payload?.error || "AI request failed");
       }
+
+      thinking && thinking.remove();
+
+      // expected payload: { message: "...", changes: [...] }
+      const msg = payload?.message || "Here are my suggestions.";
+      const changes = payload?.changes || [];
+
+      renderSuggestionCard(msg, changes);
+
+    } catch (err) {
+      thinking && thinking.remove();
+      console.error(err);
+      renderSuggestionCard("Sorry — something went wrong while contacting AI. Please try again.", []);
     }
   }
 
-  if (aiSendBtn) aiSendBtn.addEventListener("click", sendChat);
-  if (aiChatInput) {
-    aiChatInput.addEventListener("keydown", (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-        e.preventDefault();
-        sendChat();
-      }
-    });
-  }
-  if (aiClearBtn) {
-    aiClearBtn.addEventListener("click", () => {
-      if (aiChatLog) aiChatLog.innerHTML = "";
-      if (aiSuggestions) aiSuggestions.innerHTML = "";
-    });
-  }
-  if (aiReviewBtn) aiReviewBtn.addEventListener("click", runReview);
+  function setupAIUI() {
+    const aiSend = qs("aiSend");
+    const aiClear = qs("aiClear");
+    const aiInput = qs("aiInput");
+    const chat = qs("aiChat");
 
-  // INIT show app
+    if (aiClear && chat) {
+      aiClear.addEventListener("click", () => {
+        chat.innerHTML = "";
+      });
+    }
+
+    if (aiSend && aiInput) {
+      const go = () => {
+        const text = String(aiInput.value || "").trim();
+        if (!text) return;
+        addMsg("user", "You", text);
+        aiInput.value = "";
+        sendToAI(text);
+      };
+
+      aiSend.addEventListener("click", go);
+
+      aiInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          go();
+        }
+      });
+    }
+  }
+
+  // INIT show app (auth kan kobles tilbake hos deg)
   const app = qs("app");
   const locked = qs("locked");
   if (app) app.style.display = "block";
@@ -963,6 +1067,13 @@
   // Boot
   loadState();
   initSectionsFromUI();
+
+  // Build 3-pane layout + resizers + AI UI
+  buildWorkspace();
+  setupResizers();
+  setupAIUI();
+
+  // Bind UI after workspace created
   bindSimpleInputs();
   bindSimpleToolbars();
 
