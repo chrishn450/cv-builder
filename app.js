@@ -4,9 +4,8 @@
 
   const preview = qs("preview");
   const printBtn = qs("printBtn");
-  const downloadHtmlBtn = qs("downloadHtmlBtn");
   const downloadPdfBtn = qs("downloadPdfBtn");
-  const uiLanguage = qs("uiLanguage");
+  const downloadHtmlBtn = qs("downloadHtmlBtn");
 
   const FIELD_IDS = [
     "name","title","email","phone","location","linkedin",
@@ -19,126 +18,19 @@
     "languages","experience","achievements","volunteer","custom1","custom2",
   ];
 
-  const state = { data: {}, sections: {} };
+  const CONTACT_SHOW_IDS = ["show_title","show_email","show_phone","show_location","show_linkedin"];
 
-  const STORAGE_KEY = "cv_builder_user_overrides_structured_v2";
-
-  // ---------------------------
-  // i18n (Nr 6 + Nr 9)
-  // ---------------------------
-  const I18N = {
-    en: {
-      ui: { edit: "Edit content", preview: "Preview", ai: "AI Coach" },
-      sectionTitles: {
-        summary: "Professional Summary",
-        education: "Education",
-        licenses: "Licenses & Certifications",
-        clinicalSkills: "Clinical Skills",
-        coreCompetencies: "Core Competencies",
-        languages: "Languages",
-        experience: "Professional Experience",
-        achievements: "Clinical Achievements",
-        volunteer: "Volunteer Experience",
-        custom1: "Custom Section 1",
-        custom2: "Custom Section 2",
-      }
-    },
-    no: {
-      ui: { edit: "Rediger innhold", preview: "Forhåndsvisning", ai: "AI Coach" },
-      sectionTitles: {
-        summary: "Profesjonell profil",
-        education: "Utdanning",
-        licenses: "Lisenser og sertifiseringer",
-        clinicalSkills: "Kliniske ferdigheter",
-        coreCompetencies: "Kjernekompetanse",
-        languages: "Språk",
-        experience: "Erfaring",
-        achievements: "Resultater",
-        volunteer: "Frivillig erfaring",
-        custom1: "Egendefinert seksjon 1",
-        custom2: "Egendefinert seksjon 2",
-      }
-    },
-    de: {
-      ui: { edit: "Inhalt bearbeiten", preview: "Vorschau", ai: "AI Coach" },
-      sectionTitles: {
-        summary: "Profil",
-        education: "Ausbildung",
-        licenses: "Lizenzen & Zertifikate",
-        clinicalSkills: "Klinische Fähigkeiten",
-        coreCompetencies: "Kernkompetenzen",
-        languages: "Sprachen",
-        experience: "Berufserfahrung",
-        achievements: "Erfolge",
-        volunteer: "Ehrenamt",
-        custom1: "Benutzerdefiniert 1",
-        custom2: "Benutzerdefiniert 2",
-      }
-    }
-  };
-
-  function getLang() {
-    return state.data.uiLang || "en";
-  }
-
-  function applyUiI18n(lang) {
-    const map = I18N[lang] || I18N.en;
-
-    document.querySelectorAll("[data-i18n]").forEach((el) => {
-      const key = el.getAttribute("data-i18n");
-      const [ns, k] = String(key || "").split(".");
-      if (!ns || !k) return;
-      const v = map?.[ns]?.[k];
-      if (typeof v === "string") el.textContent = v;
-    });
-  }
-
-  function setLang(lang) {
-    const prevLang = state.data._prevLang || "en";
-    state.data.uiLang = lang;
-    state.data._prevLang = lang;
-
-    // Update section title inputs if they were not customized:
-    SECTION_KEYS.forEach((k) => {
-      const ti = qs(`sec_${k}_title`);
-      if (!ti) return;
-
-      const current = (state.sections?.[k]?.title) || ti.value;
-      const prevDefault = I18N[prevLang]?.sectionTitles?.[k];
-      const nextDefault = I18N[lang]?.sectionTitles?.[k];
-      if (!nextDefault) return;
-
-      if (!current || current === prevDefault) {
-        ti.value = nextDefault;
-        if (!state.sections[k]) state.sections[k] = {};
-        state.sections[k].title = nextDefault;
-      }
-    });
-
-    applyUiI18n(lang);
-    saveState();
-    render();
-  }
-
-  // ---------------------------
-  // Contact visibility (Nr 4)
-  // ---------------------------
-  function ensureContactVisibility() {
-    if (!state.data.contactVisibility || typeof state.data.contactVisibility !== "object") {
-      state.data.contactVisibility = { phone: true, email: true, location: true, linkedin: true };
-    }
-  }
+  const state = { data: {}, sections: {}, ui: { lang: "en" } };
 
   function render() {
     if (!preview || typeof window.renderCV !== "function") return;
-    ensureContactVisibility();
     preview.innerHTML = window.renderCV({
       ...state.data,
-      uiLang: getLang(),
       sections: state.sections,
-      contactVisibility: state.data.contactVisibility,
     });
   }
+
+  const STORAGE_KEY = "cv_builder_user_overrides_structured_v3";
 
   function loadState() {
     try {
@@ -148,13 +40,22 @@
       if (!parsed || typeof parsed !== "object") return;
       state.data = parsed.data || {};
       state.sections = parsed.sections || {};
+      state.ui = parsed.ui || state.ui;
     } catch (_) {}
   }
 
   function saveState() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: state.data, sections: state.sections }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: state.data, sections: state.sections, ui: state.ui }));
     } catch (_) {}
+  }
+
+  function ensureContactSection() {
+    if (!state.sections.contact) state.sections.contact = {};
+    // defaults true
+    CONTACT_SHOW_IDS.forEach((k) => {
+      if (state.sections.contact[k] == null) state.sections.contact[k] = true;
+    });
   }
 
   function initSectionsFromUI() {
@@ -165,6 +66,38 @@
       if (en) state.sections[k].enabled = !!en.checked;
       if (ti) state.sections[k].title = ti.value;
     });
+
+    ensureContactSection();
+    CONTACT_SHOW_IDS.forEach((id) => {
+      const el = qs(id);
+      if (!el) return;
+      state.sections.contact[id] = !!el.checked;
+    });
+  }
+
+  function syncUIFromState() {
+    // simple fields
+    FIELD_IDS.forEach((id) => {
+      const el = qs(id);
+      if (!el) return;
+      const val = state.data[id];
+      el.value = val != null ? String(val) : "";
+    });
+
+    // section toggles + titles
+    SECTION_KEYS.forEach((k) => {
+      const en = qs(`sec_${k}_enabled`);
+      const ti = qs(`sec_${k}_title`);
+      if (en && state.sections?.[k]?.enabled != null) en.checked = !!state.sections[k].enabled;
+      if (ti && state.sections?.[k]?.title) ti.value = state.sections[k].title;
+    });
+
+    ensureContactSection();
+    CONTACT_SHOW_IDS.forEach((id) => {
+      const el = qs(id);
+      if (!el) return;
+      el.checked = state.sections.contact[id] !== false;
+    });
   }
 
   function bindSimpleInputs() {
@@ -172,6 +105,7 @@
       const el = qs(id);
       if (!el) return;
 
+      // initial
       if (state.data[id] != null && String(state.data[id]).length > 0) el.value = String(state.data[id]);
       else el.value = "";
 
@@ -183,29 +117,12 @@
       });
     });
 
-    // contact show/hide toggles (Nr 4)
-    ["phone","email","location","linkedin"].forEach((k) => {
-      const cb = qs(`show_${k}`);
-      if (!cb) return;
-      ensureContactVisibility();
-      cb.checked = state.data.contactVisibility[k] !== false;
-
-      cb.addEventListener("change", () => {
-        ensureContactVisibility();
-        state.data.contactVisibility[k] = !!cb.checked;
-        saveState();
-        render();
-      });
-    });
-
+    // section toggles
     SECTION_KEYS.forEach((k) => {
       const en = qs(`sec_${k}_enabled`);
       const ti = qs(`sec_${k}_title`);
 
       if (en) {
-        // restore
-        if (state.sections?.[k]?.enabled != null) en.checked = !!state.sections[k].enabled;
-
         en.addEventListener("change", () => {
           if (!state.sections[k]) state.sections[k] = {};
           state.sections[k].enabled = !!en.checked;
@@ -223,6 +140,22 @@
           render();
         });
       }
+    });
+
+    // contact show/hide
+    ensureContactSection();
+    CONTACT_SHOW_IDS.forEach((id) => {
+      const el = qs(id);
+      if (!el) return;
+      // initial from state
+      el.checked = state.sections.contact[id] !== false;
+
+      el.addEventListener("change", () => {
+        ensureContactSection();
+        state.sections.contact[id] = !!el.checked;
+        saveState();
+        render();
+      });
     });
   }
 
@@ -293,6 +226,7 @@
     setBulletButtonState(tb, target.dataset.bulletOn === "1");
 
     target.addEventListener("keydown", (e) => {
+      // Only intercept Enter when bullet mode is on
       if (target.dataset.bulletOn !== "1") return;
 
       if (e.key === "Enter") {
@@ -478,17 +412,17 @@
   }
 
   function licToText(items) {
-    const out = [];
+    const lines = [];
     (items || []).forEach((it) => {
       const t = (it.title || "").trim();
       const d = (it.detail || "").trim();
       if (!t && !d) return;
-      if (t) out.push(t);
-      if (d) out.push(d);
-      else out.push("");
+      if (t) lines.push(t);
+      if (d) lines.push(d);
+      else lines.push("");
     });
-    while (out.length && String(out[out.length - 1]).trim() === "") out.pop();
-    return out.join("\n");
+    while (lines.length && String(lines[lines.length - 1]).trim() === "") lines.pop();
+    return lines.join("\n");
   }
 
   function syncLicenses() {
@@ -663,13 +597,10 @@
     });
   }
 
-  // VOLUNTEER (Nr 8): Title + Dates separate => always right-aligned date in template
   function volToText(vols) {
     return (vols || [])
       .map((v) => {
-        const title = (v.title || "").trim();
-        const date = (v.date || "").trim();
-        const header = [title, date].filter(Boolean).join(" | ");
+        const header = (v.header || "").trim();
         const sub = (v.sub || "").trim();
         const bullets = (v.bullets || []).map((x) => String(x || "").trim()).filter(Boolean);
         return [header, sub, ...bullets].filter(Boolean).join("\n");
@@ -679,7 +610,7 @@
   }
 
   function syncVolunteer() {
-    ensureArray("volunteerBlocks", 3, () => ({ title: "", date: "", sub: "", bullets: [] }));
+    ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
     const txt = volToText(state.data.volunteerBlocks);
     if (volHidden) volHidden.value = txt;
     setOverrideField("volunteer", txt);
@@ -687,7 +618,7 @@
 
   function renderVolunteer() {
     if (!volRoot) return;
-    ensureArray("volunteerBlocks", 3, () => ({ title: "", date: "", sub: "", bullets: [] }));
+    ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
     volRoot.innerHTML = "";
 
     state.data.volunteerBlocks.forEach((v, idx) => {
@@ -699,11 +630,8 @@
           <button class="btn ghost" type="button" data-vol-remove="${idx}" style="padding:6px 10px;">Remove</button>
         </div>
 
-        <label class="label">Title</label>
-        <input class="input" data-vol-title="${idx}" placeholder="Volunteer Nurse" />
-
-        <label class="label">Dates</label>
-        <input class="input" data-vol-date="${idx}" placeholder="2019 – Present" />
+        <label class="label">Header (Title + Date)</label>
+        <input class="input" data-vol-header="${idx}" placeholder="Volunteer Nurse 2019 – Present" />
 
         <label class="label">Sub line</label>
         <input class="input" data-vol-sub="${idx}" placeholder="Austin Free Clinic · Community Health Outreach" />
@@ -718,13 +646,11 @@
       `;
       volRoot.appendChild(wrap);
 
-      const titleEl = wrap.querySelector(`[data-vol-title="${idx}"]`);
-      const dateEl = wrap.querySelector(`[data-vol-date="${idx}"]`);
+      const headerEl = wrap.querySelector(`[data-vol-header="${idx}"]`);
       const subEl = wrap.querySelector(`[data-vol-sub="${idx}"]`);
       const bulletsEl = wrap.querySelector(`[data-vol-bullets="${idx}"]`);
 
-      titleEl.value = v.title || "";
-      dateEl.value = v.date || "";
+      headerEl.value = v.header || "";
       subEl.value = v.sub || "";
       bulletsEl.value = (v.bullets || []).join("\n");
 
@@ -736,8 +662,7 @@
 
       const update = () => {
         state.data.volunteerBlocks[idx] = {
-          title: titleEl.value,
-          date: dateEl.value,
+          header: headerEl.value,
           sub: subEl.value,
           bullets: parseBullets(),
         };
@@ -746,8 +671,7 @@
         render();
       };
 
-      titleEl.addEventListener("input", update);
-      dateEl.addEventListener("input", update);
+      headerEl.addEventListener("input", update);
       subEl.addEventListener("input", update);
       bulletsEl.addEventListener("input", update);
 
@@ -768,8 +692,8 @@
 
   if (addVolBtn) {
     addVolBtn.addEventListener("click", () => {
-      ensureArray("volunteerBlocks", 3, () => ({ title: "", date: "", sub: "", bullets: [] }));
-      state.data.volunteerBlocks.push({ title: "", date: "", sub: "", bullets: [] });
+      ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
+      state.data.volunteerBlocks.push({ header: "", sub: "", bullets: [] });
       syncVolunteer();
       saveState();
       renderVolunteer();
@@ -777,8 +701,44 @@
     });
   }
 
-  // ---- Print
-  if (printBtn) printBtn.addEventListener("click", () => window.print());
+  // ---- Export helpers (FIX: reliable PDF/print)
+  async function exportToPrintWindow({ autoPrint = true } = {}) {
+    const cssText = await fetch("/styles.css", { cache: "no-store" }).then(r => r.text());
+    const cvHtml = preview ? preview.innerHTML : "";
+
+    const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CV</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>${cssText}</style>
+</head>
+<body style="margin:0; padding:0; background:white;">
+  <div id="preview">${cvHtml}</div>
+  <script>
+    window.onload = () => {
+      ${autoPrint ? "setTimeout(() => window.print(), 50);" : ""}
+    };
+  </script>
+</body>
+</html>`;
+
+    const w = window.open("", "_blank", "noopener,noreferrer");
+    if (!w) {
+      alert("Pop-up blocked. Please allow pop-ups for export.");
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
+
+  if (printBtn) printBtn.addEventListener("click", () => exportToPrintWindow({ autoPrint: true }));
+  if (downloadPdfBtn) downloadPdfBtn.addEventListener("click", () => exportToPrintWindow({ autoPrint: true }));
 
   // ---- Download HTML
   if (downloadHtmlBtn) {
@@ -816,47 +776,6 @@
     });
   }
 
-  // ---- Download PDF (Nr 2)
-  if (downloadPdfBtn) {
-    downloadPdfBtn.addEventListener("click", async () => {
-      try {
-        if (!preview) return;
-        const node = preview.querySelector(".cv");
-        if (!node) return;
-
-        // clone only the CV, keep existing CSS classes
-        const wrapper = document.createElement("div");
-        wrapper.style.background = "#ffffff";
-        wrapper.style.margin = "0";
-        wrapper.style.padding = "0";
-        wrapper.style.position = "fixed";
-        wrapper.style.left = "-99999px"; // offscreen
-        wrapper.style.top = "0";
-        wrapper.appendChild(node.cloneNode(true));
-        document.body.appendChild(wrapper);
-
-        await new Promise(r => setTimeout(r, 80));
-
-        const opt = {
-          margin: 0,
-          filename: "cv.pdf",
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          pagebreak: { mode: ["css", "legacy"] }
-        };
-
-        if (!window.html2pdf) throw new Error("html2pdf not loaded");
-        await window.html2pdf().set(opt).from(wrapper).save();
-
-        wrapper.remove();
-      } catch (err) {
-        console.error(err);
-        alert("PDF export failed. Check console.");
-      }
-    });
-  }
-
   // ---------------------------
   // Layout controls: hide + fullscreen + resizers
   // ---------------------------
@@ -889,7 +808,10 @@
 
   function normalizeGridForVisibility() {
     const v = computeVisiblePanels();
-    if (v.editor && v.preview && v.ai) { setGridColumns("1.25fr 10px 1fr 10px 0.85fr"); return; }
+    if (v.editor && v.preview && v.ai) {
+      setGridColumns("1.25fr 10px 1fr 10px 0.85fr");
+      return;
+    }
     if (v.editor && v.preview && !v.ai) { setGridColumns("1.25fr 10px 1fr"); return; }
     if (v.editor && !v.preview && v.ai) { setGridColumns("1.25fr 10px 1fr"); return; }
     if (!v.editor && v.preview && v.ai) { setGridColumns("1fr 10px 0.85fr"); return; }
@@ -899,7 +821,9 @@
   function setupPanelButtons() {
     const showPanelsBtn = qs("showPanelsBtn");
 
-    function setBodyLocked(on){ document.body.style.overflow = on ? "hidden" : ""; }
+    function setBodyLocked(on){
+      document.body.style.overflow = on ? "hidden" : "";
+    }
 
     function closeAnyFullscreen(){
       document.querySelectorAll(".panel.is-fullscreen").forEach(p => p.classList.remove("is-fullscreen"));
@@ -913,6 +837,7 @@
       bd.className = "fullscreen-backdrop";
       bd.addEventListener("click", closeAnyFullscreen);
       document.body.appendChild(bd);
+
       panel.classList.add("is-fullscreen");
       setBodyLocked(true);
     }
@@ -924,6 +849,7 @@
         if (!panel) return;
 
         if (panel.classList.contains("is-fullscreen")) closeAnyFullscreen();
+
         panel.classList.toggle("is-hidden");
         normalizeGridForVisibility();
       });
@@ -936,14 +862,20 @@
         if (!panel) return;
 
         panel.classList.remove("is-hidden");
+
         if (panel.classList.contains("is-fullscreen")) closeAnyFullscreen();
         else openFullscreen(panel);
+
         normalizeGridForVisibility();
       });
     });
 
     window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeAnyFullscreen();
+      if (e.key === "Escape") {
+        document.querySelectorAll(".panel.is-fullscreen").forEach(p => p.classList.remove("is-fullscreen"));
+        document.querySelectorAll(".fullscreen-backdrop").forEach(b => b.remove());
+        document.body.style.overflow = "";
+      }
     });
 
     if (showPanelsBtn) {
@@ -1015,9 +947,280 @@
   }
 
   // ---------------------------
-  // AI Coach (Nr 5): not "coded", accept per suggestion
+  // i18n (UI language)
   // ---------------------------
-  const AI_HISTORY_KEY = "cv_builder_ai_history_v1";
+  const I18N = {
+    en: {
+      "app.title":"CV Builder",
+      "topbar.panels":"Panels",
+      "topbar.logout":"Log out",
+      "editor.title":"Edit content",
+      "preview.title":"Preview",
+      "ai.title":"AI Coach",
+      "ai.helptext":"Ask for review, improvements, new bullet points, or layout changes. You must approve suggestions before they are applied.",
+      "hint.send":"Tip: Ctrl/Cmd + Enter to send.",
+      "hint.toolbar":"Tip: Select text and press B for **bold**. Use • to toggle bullet typing.",
+      "common.show":"Show",
+      "common.hide":"Hide",
+      "common.fullscreen":"Fullscreen",
+      "common.clear":"Clear",
+      "common.send":"Send",
+      "common.cancel":"Cancel",
+      "btn.print":"Print",
+      "btn.downloadPdf":"Download PDF",
+      "btn.downloadHtml":"Download HTML",
+      "btn.addEducation":"+ Add education",
+      "btn.addLicense":"+ Add license",
+      "btn.addJob":"+ Add job",
+      "btn.addVolunteer":"+ Add volunteer",
+      "contact.fullName":"Full name",
+      "contact.title":"Title / Credentials",
+      "contact.email":"Email",
+      "contact.phone":"Phone",
+      "contact.location":"Location",
+      "contact.linkedin":"LinkedIn",
+      "lang.title":"Choose language",
+      "locked.title":"Access required",
+      "locked.body1":"You need access to use the CV Builder.",
+      "locked.body2":"If you just purchased: you will receive an email shortly with your secure login link.",
+      "locked.buy":"Buy access",
+      "locked.body3":"After purchase, you’ll receive an email shortly with your secure login link. Your access is valid for 30 days."
+    },
+    no: {
+      "app.title":"CV-bygger",
+      "topbar.panels":"Paneler",
+      "topbar.logout":"Logg ut",
+      "editor.title":"Rediger innhold",
+      "preview.title":"Forhåndsvisning",
+      "ai.title":"AI Coach",
+      "ai.helptext":"Be om gjennomgang, forbedringer, nye punkter eller layout. Du må godkjenne forslag før de brukes.",
+      "hint.send":"Tips: Ctrl/Cmd + Enter for å sende.",
+      "hint.toolbar":"Tips: Marker tekst og trykk B for **fet**. Bruk • for bullet-modus.",
+      "common.show":"Vis",
+      "common.hide":"Skjul",
+      "common.fullscreen":"Fullskjerm",
+      "common.clear":"Tøm",
+      "common.send":"Send",
+      "common.cancel":"Avbryt",
+      "btn.print":"Skriv ut",
+      "btn.downloadPdf":"Last ned PDF",
+      "btn.downloadHtml":"Last ned HTML",
+      "btn.addEducation":"+ Legg til utdanning",
+      "btn.addLicense":"+ Legg til lisens",
+      "btn.addJob":"+ Legg til jobb",
+      "btn.addVolunteer":"+ Legg til frivillig",
+      "contact.fullName":"Fullt navn",
+      "contact.title":"Tittel / Kompetanse",
+      "contact.email":"E-post",
+      "contact.phone":"Telefon",
+      "contact.location":"Sted",
+      "contact.linkedin":"LinkedIn",
+      "lang.title":"Velg språk",
+      "locked.title":"Tilgang kreves",
+      "locked.body1":"Du trenger tilgang for å bruke CV-byggeren.",
+      "locked.body2":"Hvis du nettopp kjøpte: du får en e-post snart med sikker innloggingslenke.",
+      "locked.buy":"Kjøp tilgang",
+      "locked.body3":"Etter kjøp får du en e-post snart med sikker innloggingslenke. Tilgangen varer i 30 dager."
+    },
+    de: {
+      "app.title":"CV Builder",
+      "topbar.panels":"Panels",
+      "topbar.logout":"Abmelden",
+      "editor.title":"Inhalte bearbeiten",
+      "preview.title":"Vorschau",
+      "ai.title":"KI-Coach",
+      "ai.helptext":"Bitte um Review, Verbesserungen, neue Bulletpoints oder Layout. Vorschläge müssen bestätigt werden.",
+      "hint.send":"Tipp: Strg/Cmd + Enter zum Senden.",
+      "hint.toolbar":"Tipp: Text markieren und B für **fett**. • für Bullet-Modus.",
+      "common.show":"Anzeigen",
+      "common.hide":"Ausblenden",
+      "common.fullscreen":"Vollbild",
+      "common.clear":"Leeren",
+      "common.send":"Senden",
+      "common.cancel":"Abbrechen",
+      "btn.print":"Drucken",
+      "btn.downloadPdf":"PDF herunterladen",
+      "btn.downloadHtml":"HTML herunterladen",
+      "btn.addEducation":"+ Ausbildung hinzufügen",
+      "btn.addLicense":"+ Lizenz hinzufügen",
+      "btn.addJob":"+ Job hinzufügen",
+      "btn.addVolunteer":"+ Ehrenamt hinzufügen",
+      "contact.fullName":"Vollständiger Name",
+      "contact.title":"Titel / Qualifikation",
+      "contact.email":"E-Mail",
+      "contact.phone":"Telefon",
+      "contact.location":"Ort",
+      "contact.linkedin":"LinkedIn",
+      "lang.title":"Sprache wählen"
+    }
+  };
+
+  const LANGS = [
+    { code: "en", name: "English" },
+    { code: "no", name: "Norsk" },
+    { code: "de", name: "Deutsch" },
+    { code: "sv", name: "Svenska" },
+    { code: "da", name: "Dansk" },
+    { code: "fr", name: "Français" },
+    { code: "es", name: "Español" },
+    { code: "it", name: "Italiano" },
+    { code: "nl", name: "Nederlands" },
+    { code: "pl", name: "Polski" },
+    { code: "pt", name: "Português" }
+  ];
+
+  function t(key) {
+    const lang = state.ui.lang || "en";
+    return (I18N[lang] && I18N[lang][key]) || (I18N.en[key]) || key;
+  }
+
+  function applyI18n() {
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      const key = el.getAttribute("data-i18n");
+      if (!key) return;
+      const txt = t(key);
+      el.textContent = txt;
+    });
+
+    // update language pill
+    const pill = qs("langPill");
+    const current = LANGS.find(x => x.code === (state.ui.lang || "en"));
+    if (pill) pill.textContent = current ? current.name : "English";
+  }
+
+  // language modal
+  function setupLanguageModal() {
+    const btn = qs("langBtn");
+    const modal = qs("langModal");
+    const close = qs("langClose");
+    const cancel = qs("langCancel");
+    const search = qs("langSearch");
+    const list = qs("langList");
+
+    function open() {
+      if (!modal) return;
+      modal.style.display = "flex";
+      document.body.style.overflow = "hidden";
+      if (search) {
+        search.value = "";
+        search.focus();
+      }
+      renderList("");
+    }
+
+    function hide() {
+      if (!modal) return;
+      modal.style.display = "none";
+      document.body.style.overflow = "";
+    }
+
+    function renderList(filter) {
+      if (!list) return;
+      const q = String(filter || "").toLowerCase().trim();
+      const items = LANGS.filter(l =>
+        !q || l.name.toLowerCase().includes(q) || l.code.toLowerCase().includes(q)
+      );
+
+      list.innerHTML = items.map(l => {
+        const active = l.code === state.ui.lang ? "active" : "";
+        return `<div class="lang-item ${active}" data-lang="${l.code}">
+          <div>${l.name}</div>
+          <div class="code">${l.code}</div>
+        </div>`;
+      }).join("");
+
+      list.querySelectorAll("[data-lang]").forEach((row) => {
+        row.addEventListener("click", () => {
+          const code = row.getAttribute("data-lang");
+          if (!code) return;
+          state.ui.lang = code;
+          saveState();
+          applyI18n();
+          // also set default section titles if user hasn't customized them:
+          applyDefaultSectionTitlesForLanguage();
+          render();
+          hide();
+        });
+      });
+    }
+
+    if (btn) btn.addEventListener("click", open);
+    if (close) close.addEventListener("click", hide);
+    if (cancel) cancel.addEventListener("click", hide);
+    if (modal) modal.addEventListener("click", (e) => {
+      if (e.target === modal) hide();
+    });
+    if (search) search.addEventListener("input", () => renderList(search.value));
+  }
+
+  function applyDefaultSectionTitlesForLanguage() {
+    // Only overwrite if user hasn't changed it (we store a marker)
+    // If you want always-translate, remove these checks.
+    const lang = state.ui.lang || "en";
+
+    const defaults = {
+      en: {
+        summary: "Professional Summary",
+        education: "Education",
+        licenses: "Licenses & Certifications",
+        clinicalSkills: "Clinical Skills",
+        coreCompetencies: "Core Competencies",
+        languages: "Languages",
+        experience: "Professional Experience",
+        achievements: "Clinical Achievements",
+        volunteer: "Volunteer Experience",
+        custom1: "Custom Section 1",
+        custom2: "Custom Section 2",
+      },
+      no: {
+        summary: "Profesjonell oppsummering",
+        education: "Utdanning",
+        licenses: "Lisenser og sertifiseringer",
+        clinicalSkills: "Kliniske ferdigheter",
+        coreCompetencies: "Kjernekompetanse",
+        languages: "Språk",
+        experience: "Arbeidserfaring",
+        achievements: "Resultater / Utmerkelser",
+        volunteer: "Frivillig erfaring",
+        custom1: "Egendefinert seksjon 1",
+        custom2: "Egendefinert seksjon 2",
+      },
+      de: {
+        summary: "Profil",
+        education: "Ausbildung",
+        licenses: "Lizenzen & Zertifikate",
+        clinicalSkills: "Fachliche Fähigkeiten",
+        coreCompetencies: "Kernkompetenzen",
+        languages: "Sprachen",
+        experience: "Berufserfahrung",
+        achievements: "Erfolge",
+        volunteer: "Ehrenamt",
+        custom1: "Benutzerdefiniert 1",
+        custom2: "Benutzerdefiniert 2",
+      }
+    };
+
+    const map = defaults[lang] || defaults.en;
+
+    SECTION_KEYS.forEach((k) => {
+      if (!state.sections[k]) state.sections[k] = {};
+      // only set if empty
+      if (!state.sections[k].title || String(state.sections[k].title).trim() === "") {
+        state.sections[k].title = map[k] || state.sections[k].title || k;
+      }
+      // also update UI input fields
+      const ti = qs(`sec_${k}_title`);
+      if (ti && map[k]) ti.value = state.sections[k].title;
+    });
+
+    saveState();
+    render();
+  }
+
+  // ---------------------------
+  // AI Coach (per-suggestion accept + sync to UI)
+  // ---------------------------
+  const AI_HISTORY_KEY = "cv_builder_ai_history_v2";
 
   function loadAIHistory() {
     try {
@@ -1035,17 +1238,6 @@
   }
 
   let aiHistory = loadAIHistory();
-
-  function detectLanguageFromText(t) {
-    const s = String(t || "");
-    if (/[æøåÆØÅ]/.test(s) || /\b(hvordan|kan du|jeg|ikke|dette|endre|hvor)\b/i.test(s)) return "no";
-    if (/\b(und|bitte|ich|nicht|dies|ändern|wie)\b/i.test(s)) return "de";
-    return "en";
-  }
-
-  function snapshotForAI() {
-    return { data: state.data, sections: state.sections };
-  }
 
   function escapeHtml(s) {
     return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -1078,123 +1270,107 @@
     return div;
   }
 
-  function applyChanges(changes) {
-    if (!Array.isArray(changes)) return;
+  const ALLOWED_SET_PATHS = new Set([
+    "data.name","data.title","data.email","data.phone","data.location","data.linkedin",
+    "data.summary","data.education","data.licenses","data.clinicalSkills","data.coreCompetencies",
+    "data.languages","data.experience","data.achievements","data.volunteer","data.custom1","data.custom2",
 
-    const ALLOWED_SET_PATHS = new Set([
-      "data.name","data.title","data.email","data.phone","data.location","data.linkedin",
-      "data.summary","data.education","data.licenses","data.clinicalSkills","data.coreCompetencies",
-      "data.languages","data.experience","data.achievements","data.volunteer","data.custom1","data.custom2",
+    "sections.summary.enabled","sections.summary.title",
+    "sections.education.enabled","sections.education.title",
+    "sections.licenses.enabled","sections.licenses.title",
+    "sections.clinicalSkills.enabled","sections.clinicalSkills.title",
+    "sections.coreCompetencies.enabled","sections.coreCompetencies.title",
+    "sections.languages.enabled","sections.languages.title",
+    "sections.experience.enabled","sections.experience.title",
+    "sections.achievements.enabled","sections.achievements.title",
+    "sections.volunteer.enabled","sections.volunteer.title",
+    "sections.custom1.enabled","sections.custom1.title",
+    "sections.custom2.enabled","sections.custom2.title",
 
-      "sections.summary.enabled","sections.summary.title",
-      "sections.education.enabled","sections.education.title",
-      "sections.licenses.enabled","sections.licenses.title",
-      "sections.clinicalSkills.enabled","sections.clinicalSkills.title",
-      "sections.coreCompetencies.enabled","sections.coreCompetencies.title",
-      "sections.languages.enabled","sections.languages.title",
-      "sections.experience.enabled","sections.experience.title",
-      "sections.achievements.enabled","sections.achievements.title",
-      "sections.volunteer.enabled","sections.volunteer.title",
-      "sections.custom1.enabled","sections.custom1.title",
-      "sections.custom2.enabled","sections.custom2.title"
-    ]);
+    // contact show/hide
+    "sections.contact.show_title",
+    "sections.contact.show_email",
+    "sections.contact.show_phone",
+    "sections.contact.show_location",
+    "sections.contact.show_linkedin"
+  ]);
 
-    function setByPath(obj, path, value) {
-      const parts = path.split(".");
-      let cur = obj;
-      for (let i = 0; i < parts.length - 1; i++) {
-        const k = parts[i];
-        if (cur[k] == null || typeof cur[k] !== "object") cur[k] = {};
-        cur = cur[k];
-      }
-      cur[parts[parts.length - 1]] = value;
+  function setByPath(obj, path, value) {
+    const parts = path.split(".");
+    let cur = obj;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const k = parts[i];
+      if (cur[k] == null || typeof cur[k] !== "object") cur[k] = {};
+      cur = cur[k];
+    }
+    cur[parts[parts.length - 1]] = value;
+  }
+
+  function applyChangePatch(patch) {
+    if (!patch || patch.op !== "set" || typeof patch.path !== "string") return;
+    if (!ALLOWED_SET_PATHS.has(patch.path)) return;
+
+    if (patch.path.startsWith("data.")) {
+      const p = patch.path.replace(/^data\./, "");
+      state.data[p] = patch.value;
+      if (String(patch.value ?? "").trim() === "") delete state.data[p];
+    } else if (patch.path.startsWith("sections.")) {
+      const p = patch.path.replace(/^sections\./, "");
+      setByPath(state.sections, p, patch.value);
     }
 
-    changes.forEach((c) => {
-      if (!c || c.op !== "set" || typeof c.path !== "string") return;
-      if (!ALLOWED_SET_PATHS.has(c.path)) return;
-
-      if (c.path.startsWith("data.")) {
-        const p = c.path.replace(/^data\./, "");
-        state.data[p] = c.value;
-
-        // cleanup empties
-        if (String(c.value ?? "").trim() === "") delete state.data[p];
-
-        // if AI updates volunteer raw text, also clear structured blocks to avoid confusion
-        if (p === "volunteer") {
-          // keep both, but structured UI will overwrite on next edit; ok
-        }
-      } else if (c.path.startsWith("sections.")) {
-        const p = c.path.replace(/^sections\./, "");
-        setByPath(state.sections, p, c.value);
-      }
-    });
-
+    // After applying patches: sync UI inputs + structured blocks + preview
     saveState();
+    syncUIFromState();
+
+    // Re-render structured blocks from current state (so left panel matches)
+    renderEducation();
+    renderLicenses();
+    renderExperience();
+    renderVolunteer();
+
     render();
   }
 
-  function labelFromPath(path){
-    const p = String(path || "");
-    if (p.startsWith("data.")) return p.replace("data.","");
-    if (p.startsWith("sections.")) {
-      const s = p.replace("sections.","");
-      if (s.endsWith(".title")) return s.replace(".title","") + " (section title)";
-      if (s.endsWith(".enabled")) return s.replace(".enabled","") + " (show/hide)";
-      return s;
-    }
-    return p;
-  }
-
-  function renderSuggestionCard(message, changes) {
+  function renderSuggestionCard(payload) {
     const chat = qs("aiChat");
     if (!chat) return;
 
+    const message = payload?.message || "";
+    const suggestions = Array.isArray(payload?.suggestions) ? payload.suggestions : [];
+
     const div = document.createElement("div");
     div.className = "msg assistant";
-
-    const list = Array.isArray(changes)
-      ? changes.filter(c => c && c.op === "set" && typeof c.path === "string")
-      : [];
-
-    const itemsHTML = list.map((c, idx) => {
-      const topic = escapeHtml(labelFromPath(c.path));
-      const val = (c.value == null) ? "" : String(c.value);
-      const pretty = escapeHtml(val).replace(/\n/g,"<br>");
-      return `
-        <div class="sugg" data-sugg-idx="${idx}">
-          <div class="muted small"><b>Topic:</b> ${topic}</div>
-          <div style="margin-top:6px;">${pretty}</div>
-          <div class="sugg-buttons" style="margin-top:10px;">
-            <button class="btn" type="button" data-accept-one>Accept</button>
-            <button class="btn ghost" type="button" data-reject-one>Reject</button>
-          </div>
-        </div>
-      `;
-    }).join("");
-
     div.innerHTML = `
-      <div class="msg-title">AI Suggestions</div>
+      <div class="msg-title">Suggestion</div>
       <div>${escapeHtml(message).replace(/\n/g,"<br>")}</div>
-      ${itemsHTML || `<div class="muted small" style="margin-top:10px;">No direct changes proposed.</div>`}
+      ${suggestions.length ? `<div class="sugg">
+        <div class="muted small">Choose which suggestions to apply:</div>
+        ${suggestions.map((s, idx) => `
+          <div class="sugg-item" data-sugg="${idx}">
+            <div class="topic">${escapeHtml(s.topic || "Suggestion")}</div>
+            <div>${escapeHtml(String(s.preview || "")).replace(/\n/g,"<br>")}</div>
+            <div class="sugg-buttons">
+              <button class="btn" type="button" data-accept="${idx}">Accept</button>
+              <button class="btn ghost" type="button" data-reject="${idx}">Reject</button>
+            </div>
+          </div>
+        `).join("")}
+      </div>` : ``}
     `;
-
     chat.prepend(div);
 
-    div.querySelectorAll("[data-sugg-idx]").forEach((box) => {
-      const idx = Number(box.getAttribute("data-sugg-idx"));
-      const c = list[idx];
-      const accept = box.querySelector("[data-accept-one]");
-      const reject = box.querySelector("[data-reject-one]");
-
+    suggestions.forEach((s, idx) => {
+      const accept = div.querySelector(`[data-accept="${idx}"]`);
+      const reject = div.querySelector(`[data-reject="${idx}"]`);
       accept?.addEventListener("click", () => {
-        applyChanges([c]);
+        // Apply all patches for this single suggestion
+        const patches = Array.isArray(s.patches) ? s.patches : [];
+        patches.forEach(applyChangePatch);
         accept.disabled = true;
         if (reject) reject.disabled = true;
         accept.textContent = "Applied ✓";
       });
-
       reject?.addEventListener("click", () => {
         if (accept) accept.disabled = true;
         reject.disabled = true;
@@ -1203,11 +1379,13 @@
     });
   }
 
+  function snapshotForAI() {
+    return { data: state.data, sections: state.sections, ui: state.ui };
+  }
+
   async function sendToAI(userText) {
     const thinking = addThinking();
-
-    // Prefer explicit UI language for AI response, fallback to detection
-    const language = state.data.uiLang || detectLanguageFromText(userText);
+    const uiLang = state.ui.lang || "en";
 
     try {
       const res = await fetch("/api/ai", {
@@ -1215,7 +1393,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userText,
-          language,
+          language: uiLang,
           snapshot: snapshotForAI(),
           history: aiHistory
         })
@@ -1226,27 +1404,23 @@
 
       thinking?.remove();
 
-      const msg = payload?.message || "Here are my suggestions.";
-      const changes = payload?.changes || [];
-
-      aiHistory.push({ role: "assistant", content: msg });
+      aiHistory.push({ role: "assistant", content: payload?.message || "" });
       saveAIHistory(aiHistory);
 
-      renderSuggestionCard(msg, changes);
+      renderSuggestionCard(payload);
 
     } catch (err) {
       thinking?.remove();
       console.error(err);
 
-      const fallback =
-        language === "no" ? "Beklager — noe gikk galt. Prøv igjen."
-        : language === "de" ? "Entschuldigung — etwas ist schiefgelaufen. Bitte erneut versuchen."
-        : "Sorry — something went wrong. Please try again.";
+      const fallback = uiLang === "no"
+        ? "Beklager — noe gikk galt. Prøv igjen."
+        : (uiLang === "de" ? "Entschuldigung — etwas ist schiefgelaufen. Bitte erneut versuchen." : "Sorry — something went wrong. Please try again.");
 
       aiHistory.push({ role: "assistant", content: fallback });
       saveAIHistory(aiHistory);
 
-      renderSuggestionCard(fallback, []);
+      renderSuggestionCard({ message: fallback, suggestions: [] });
     }
   }
 
@@ -1299,34 +1473,28 @@
 
   // Boot
   loadState();
-  ensureContactVisibility();
   initSectionsFromUI();
+  syncUIFromState();
   bindSimpleInputs();
   bindSimpleToolbars();
-
-  // init language select
-  if (uiLanguage) {
-    uiLanguage.value = getLang();
-    applyUiI18n(getLang());
-    uiLanguage.addEventListener("change", () => setLang(uiLanguage.value));
-  } else {
-    applyUiI18n(getLang());
-  }
 
   renderEducation();
   renderLicenses();
   renderExperience();
   renderVolunteer();
 
-  // Layout: buttons + resizers + restore saved
   setupPanelButtons();
   restoreGridColumns();
   normalizeGridForVisibility();
   setupResizer("resizer-1", false);
   setupResizer("resizer-2", true);
 
-  // AI
   setupAIUI();
+
+  // Language
+  if (!state.ui.lang) state.ui.lang = "en";
+  setupLanguageModal();
+  applyI18n();
 
   saveState();
   render();
