@@ -2,6 +2,9 @@
 (function () {
   const qs = (id) => document.getElementById(id);
 
+  // ---------------------------
+  // Core UI refs
+  // ---------------------------
   const preview = qs("preview");
   const printBtn = qs("printBtn");
   const downloadHtmlBtn = qs("downloadHtmlBtn");
@@ -29,8 +32,7 @@
   }
 
   // Store only user overrides (so preview can stay "original" until user types)
-  const STORAGE_KEY = "cv_builder_user_overrides_structured_v3";
-  const UI_KEY = "cv_builder_ui_layout_v1";
+  const STORAGE_KEY = "cv_builder_user_overrides_structured_v2";
 
   function loadState() {
     try {
@@ -101,7 +103,9 @@
     });
   }
 
-  // ---------- Toolbar helpers (Bold + Bullet) ----------
+  // ---------------------------
+  // Toolbar helpers (Bold + Bullet)
+  // ---------------------------
   function wrapSelectionWith(el, left, right) {
     const v = el.value || "";
     const start = el.selectionStart ?? 0;
@@ -164,7 +168,6 @@
 
   function bindToolbar(tb, target, onChange) {
     if (!tb || !target) return;
-
     target.dataset.bulletOn = target.dataset.bulletOn || "";
     setBulletButtonState(tb, target.dataset.bulletOn === "1");
 
@@ -210,7 +213,6 @@
     });
   }
 
-  // ---- Simple toolbars for textareas (summary/skills/etc)
   function bindSimpleToolbars() {
     document.querySelectorAll(".toolbar[data-for]").forEach((tb) => {
       const fieldId = tb.getAttribute("data-for");
@@ -226,7 +228,9 @@
     });
   }
 
-  // ---------- Structured sections ----------
+  // ---------------------------
+  // Structured sections refs
+  // ---------------------------
   const eduRoot = qs("educationBlocks");
   const addEduBtn = qs("addEducationBlock");
   const eduHidden = qs("education");
@@ -483,7 +487,7 @@
 
         <div class="toolbar" data-exp-toolbar="${idx}">
           <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-          <button class="tbtn tdot" data-action="bullets" type="button"></button>
+          <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullet typing"></button>
         </div>
 
         <label class="label">Bullets (one per line)</label>
@@ -550,7 +554,7 @@
   function volToText(vols) {
     return (vols || [])
       .map((v) => {
-        const header = (v.header || "").trim(); // "Volunteer Nurse 2019 – Present" OR "Title | Date"
+        const header = (v.header || "").trim();
         const sub = (v.sub || "").trim();
         const bullets = (v.bullets || []).map((x) => String(x || "").trim()).filter(Boolean);
         return [header, sub, ...bullets].filter(Boolean).join("\n");
@@ -589,7 +593,7 @@
 
         <div class="toolbar" data-vol-toolbar="${idx}">
           <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-          <button class="tbtn tdot" data-action="bullets" type="button"></button>
+          <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullet typing"></button>
         </div>
 
         <label class="label">Bullets (one per line)</label>
@@ -652,12 +656,16 @@
     });
   }
 
-  // ---- Print
+  // ---------------------------
+  // Print
+  // ---------------------------
   if (printBtn) {
     printBtn.addEventListener("click", () => window.print());
   }
 
-  // ---- Download HTML (standalone + identical)
+  // ---------------------------
+  // Download HTML (standalone + identical)
+  // ---------------------------
   if (downloadHtmlBtn) {
     downloadHtmlBtn.addEventListener("click", async () => {
       try {
@@ -669,6 +677,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CV</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
   <style>${cssText}</style>
 </head>
 <body style="margin:0; padding:0; background:white;">
@@ -694,179 +707,45 @@
     });
   }
 
-  // ──────────────────────────────────────────────
-  // 3-pane layout builder + resizers
-  // (Editor card + Preview card already exist in your HTML)
-  // We'll wrap them into .workspace and add AI pane.
-  // ──────────────────────────────────────────────
-  function buildWorkspace() {
-    const grid = document.querySelector("#app .grid");
-    if (!grid) return;
+  // ---------------------------
+  // AI Coach (memory + thinking + accept/reject)
+  // ---------------------------
+  const AI_HISTORY_KEY = "cv_builder_ai_history_v1";
 
-    const cards = grid.querySelectorAll(":scope > .card");
-    if (cards.length < 2) return;
-
-    const editorCard = cards[0];
-    const previewCard = cards[1];
-
-    // Create workspace wrapper
-    const workspace = document.createElement("div");
-    workspace.className = "workspace";
-
-    // Make panes
-    const paneEditor = document.createElement("div");
-    paneEditor.className = "pane";
-    paneEditor.id = "paneEditor";
-
-    const panePreview = document.createElement("div");
-    panePreview.className = "pane pane-grow";
-    panePreview.id = "panePreview";
-
-    const paneAI = document.createElement("div");
-    paneAI.className = "pane";
-    paneAI.id = "paneAI";
-
-    // Resizers
-    const r1 = document.createElement("div");
-    r1.className = "vresizer";
-    r1.id = "resizer1";
-
-    const r2 = document.createElement("div");
-    r2.className = "vresizer";
-    r2.id = "resizer2";
-
-    // Move existing cards into panes
-    paneEditor.appendChild(editorCard);
-    panePreview.appendChild(previewCard);
-
-    // Build AI card (if not already exists)
-    const aiCard = document.createElement("div");
-    aiCard.className = "card";
-    aiCard.id = "aiCoachCard";
-    aiCard.innerHTML = `
-      <div class="ai-head">
-        <h2 style="margin:0;">AI Coach</h2>
-        <button id="aiClear" class="btn ghost" type="button">Clear</button>
-      </div>
-      <div class="muted small" style="margin-top:6px;">
-        Ask for review, improvements, new bullet points, or layout changes.
-        You must always approve suggestions before they are applied.
-      </div>
-
-      <div id="aiChat" class="ai-chat" aria-live="polite"></div>
-
-      <div class="ai-actions">
-        <textarea id="aiInput" class="textarea" rows="3"
-          placeholder="e.g. 'Improve my summary and make it more results-driven'"></textarea>
-        <button id="aiSend" class="btn" type="button">Send</button>
-      </div>
-      <div class="muted small" style="margin-top:6px;">
-        Tip: You can ask in any language — the coach should reply in the same language.
-      </div>
-    `;
-    paneAI.appendChild(aiCard);
-
-    // Replace grid with workspace
-    grid.innerHTML = "";
-    workspace.appendChild(paneEditor);
-    workspace.appendChild(r1);
-    workspace.appendChild(panePreview);
-    workspace.appendChild(r2);
-    workspace.appendChild(paneAI);
-    grid.appendChild(workspace);
-
-    // Restore widths
+  function loadAIHistory() {
     try {
-      const s = JSON.parse(localStorage.getItem(UI_KEY) || "{}");
-      if (s.editorW) paneEditor.style.width = s.editorW;
-      if (s.aiW) paneAI.style.width = s.aiW;
-    } catch(_) {}
+      const raw = localStorage.getItem(AI_HISTORY_KEY);
+      const arr = JSON.parse(raw || "[]");
+      if (!Array.isArray(arr)) return [];
+      return arr
+        .filter(x => x && (x.role === "user" || x.role === "assistant") && typeof x.content === "string")
+        .slice(-20);
+    } catch {
+      return [];
+    }
   }
 
-  function setupResizers() {
-    const paneEditor = qs("paneEditor");
-    const paneAI = qs("paneAI");
-    const resizer1 = qs("resizer1");
-    const resizer2 = qs("resizer2");
-    const workspace = document.querySelector(".workspace");
-    if (!paneEditor || !paneAI || !workspace || !resizer1 || !resizer2) return;
-
-    const isColumnMode = () => window.matchMedia("(max-width: 1180px)").matches;
-
-    function saveUI() {
-      try {
-        localStorage.setItem(UI_KEY, JSON.stringify({
-          editorW: paneEditor.style.width || "",
-          aiW: paneAI.style.width || "",
-        }));
-      } catch(_) {}
-    }
-
-    function dragResizer(resizer, which) {
-      let startX = 0, startY = 0;
-      let startEditorW = 0, startAIW = 0;
-      let startPreviewW = 0;
-
-      const onMove = (e) => {
-        const dx = (e.clientX || 0) - startX;
-        const dy = (e.clientY || 0) - startY;
-
-        if (!isColumnMode()) {
-          // horizontal drag
-          if (which === 1) {
-            const newW = Math.max(280, startEditorW + dx);
-            paneEditor.style.width = `${newW}px`;
-          } else if (which === 2) {
-            const newW = Math.max(280, startAIW - dx);
-            paneAI.style.width = `${newW}px`;
-          }
-        } else {
-          // stacked mode: resize heights (optional)
-          // simple: ignore or you can add later
-        }
-      };
-
-      const onUp = () => {
-        window.removeEventListener("pointermove", onMove);
-        window.removeEventListener("pointerup", onUp);
-        saveUI();
-      };
-
-      resizer.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        startX = e.clientX || 0;
-        startY = e.clientY || 0;
-        startEditorW = paneEditor.getBoundingClientRect().width;
-        startAIW = paneAI.getBoundingClientRect().width;
-        startPreviewW = (qs("panePreview") || {}).getBoundingClientRect?.().width || 0;
-
-        window.addEventListener("pointermove", onMove);
-        window.addEventListener("pointerup", onUp);
-      });
-    }
-
-    dragResizer(resizer1, 1);
-    dragResizer(resizer2, 2);
+  function saveAIHistory(hist) {
+    try { localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(hist.slice(-20))); } catch {}
   }
 
-  // ──────────────────────────────────────────────
-  // AI Coach logic (English UI + thinking bubble)
-  // Endpoint expected: POST /api/ai
-  // Returns JSON: { message: "...", changes?: [...] }
-  // changes are applied only after user clicks "Accept".
-  // ──────────────────────────────────────────────
+  let aiHistory = loadAIHistory();
+
   function detectLanguageFromText(t) {
     const s = String(t || "");
-    // very simple heuristic
-    if (/[æøåÆØÅ]/.test(s) || /\b(hvordan|kan du|jeg|ikke|dette|endre)\b/i.test(s)) return "no";
+    if (/[æøåÆØÅ]/.test(s) || /\b(hvordan|kan du|jeg|ikke|dette|endre|hvor)\b/i.test(s)) return "no";
     return "en";
   }
 
   function snapshotForAI() {
-    return {
-      data: state.data,
-      sections: state.sections
-    };
+    return { data: state.data, sections: state.sections };
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
   }
 
   function addMsg(role, title, text) {
@@ -875,8 +754,8 @@
     const div = document.createElement("div");
     div.className = `msg ${role}`;
     div.innerHTML = `
-      <div class="msg-title">${title}</div>
-      <div>${String(text || "").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")}</div>
+      <div class="msg-title">${escapeHtml(title)}</div>
+      <div>${escapeHtml(text).replace(/\n/g,"<br>")}</div>
     `;
     chat.prepend(div);
   }
@@ -896,43 +775,42 @@
     return div;
   }
 
-  // very safe apply (only known top-level text fields + section titles/enabled)
-  const ALLOWED_SET_PATHS = new Set([
-    "data.name","data.title","data.email","data.phone","data.location","data.linkedin",
-    "data.summary","data.education","data.licenses","data.clinicalSkills","data.coreCompetencies",
-    "data.languages","data.experience","data.achievements","data.volunteer","data.custom1","data.custom2",
-    // sections
-    "sections.summary.enabled","sections.summary.title",
-    "sections.education.enabled","sections.education.title",
-    "sections.licenses.enabled","sections.licenses.title",
-    "sections.clinicalSkills.enabled","sections.clinicalSkills.title",
-    "sections.coreCompetencies.enabled","sections.coreCompetencies.title",
-    "sections.languages.enabled","sections.languages.title",
-    "sections.experience.enabled","sections.experience.title",
-    "sections.achievements.enabled","sections.achievements.title",
-    "sections.volunteer.enabled","sections.volunteer.title",
-    "sections.custom1.enabled","sections.custom1.title",
-    "sections.custom2.enabled","sections.custom2.title"
-  ]);
-
-  function setByPath(obj, path, value) {
-    const parts = path.split(".");
-    let cur = obj;
-    for (let i = 0; i < parts.length - 1; i++) {
-      const k = parts[i];
-      if (cur[k] == null || typeof cur[k] !== "object") cur[k] = {};
-      cur = cur[k];
-    }
-    cur[parts[parts.length - 1]] = value;
-  }
-
   function applyChanges(changes) {
     if (!Array.isArray(changes)) return;
+
+    const ALLOWED_SET_PATHS = new Set([
+      "data.name","data.title","data.email","data.phone","data.location","data.linkedin",
+      "data.summary","data.education","data.licenses","data.clinicalSkills","data.coreCompetencies",
+      "data.languages","data.experience","data.achievements","data.volunteer","data.custom1","data.custom2",
+
+      "sections.summary.enabled","sections.summary.title",
+      "sections.education.enabled","sections.education.title",
+      "sections.licenses.enabled","sections.licenses.title",
+      "sections.clinicalSkills.enabled","sections.clinicalSkills.title",
+      "sections.coreCompetencies.enabled","sections.coreCompetencies.title",
+      "sections.languages.enabled","sections.languages.title",
+      "sections.experience.enabled","sections.experience.title",
+      "sections.achievements.enabled","sections.achievements.title",
+      "sections.volunteer.enabled","sections.volunteer.title",
+      "sections.custom1.enabled","sections.custom1.title",
+      "sections.custom2.enabled","sections.custom2.title"
+    ]);
+
+    function setByPath(obj, path, value) {
+      const parts = path.split(".");
+      let cur = obj;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const k = parts[i];
+        if (cur[k] == null || typeof cur[k] !== "object") cur[k] = {};
+        cur = cur[k];
+      }
+      cur[parts[parts.length - 1]] = value;
+    }
+
     changes.forEach((c) => {
       if (!c || c.op !== "set" || typeof c.path !== "string") return;
       if (!ALLOWED_SET_PATHS.has(c.path)) return;
 
-      // route path
       if (c.path.startsWith("data.")) {
         const p = c.path.replace(/^data\./, "");
         state.data[p] = c.value;
@@ -953,14 +831,17 @@
 
     const div = document.createElement("div");
     div.className = "msg assistant";
+
+    const hasChanges = Array.isArray(changes) && changes.length > 0;
+
     div.innerHTML = `
       <div class="msg-title">Suggestion</div>
-      <div>${String(message || "").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")}</div>
+      <div>${escapeHtml(message).replace(/\n/g,"<br>")}</div>
 
-      ${Array.isArray(changes) && changes.length ? `
+      ${hasChanges ? `
         <div class="sugg">
           <div class="muted small">Proposed changes (you must accept to apply):</div>
-          <pre>${String(JSON.stringify(changes, null, 2)).replace(/</g,"&lt;").replace(/>/g,"&gt;")}</pre>
+          <pre>${escapeHtml(JSON.stringify(changes, null, 2))}</pre>
           <div class="sugg-buttons">
             <button class="btn" type="button" data-accept>Accept</button>
             <button class="btn ghost" type="button" data-reject>Reject</button>
@@ -968,11 +849,13 @@
         </div>
       ` : ``}
     `;
-
     chat.prepend(div);
+
+    if (!hasChanges) return;
 
     const accept = div.querySelector("[data-accept]");
     const reject = div.querySelector("[data-reject]");
+
     if (accept) {
       accept.addEventListener("click", () => {
         applyChanges(changes || []);
@@ -992,7 +875,6 @@
 
   async function sendToAI(userText) {
     const thinking = addThinking();
-
     const language = detectLanguageFromText(userText);
 
     try {
@@ -1002,27 +884,37 @@
         body: JSON.stringify({
           message: userText,
           language,
-          snapshot: snapshotForAI()
+          snapshot: snapshotForAI(),
+          history: aiHistory
         })
       });
 
       const payload = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(payload?.error || "AI request failed");
-      }
+      if (!res.ok) throw new Error(payload?.error || "AI request failed");
 
       thinking && thinking.remove();
 
-      // expected payload: { message: "...", changes: [...] }
       const msg = payload?.message || "Here are my suggestions.";
       const changes = payload?.changes || payload?.patches || payload?.actions || [];
+
+      // store assistant reply in history (lightweight)
+      aiHistory.push({ role: "assistant", content: msg });
+      saveAIHistory(aiHistory);
 
       renderSuggestionCard(msg, changes);
 
     } catch (err) {
       thinking && thinking.remove();
       console.error(err);
-      renderSuggestionCard("Sorry — something went wrong while contacting AI. Please try again.", []);
+
+      const fallback = language === "no"
+        ? "Beklager — noe gikk galt. Prøv igjen."
+        : "Sorry — something went wrong. Please try again.";
+
+      aiHistory.push({ role: "assistant", content: fallback });
+      saveAIHistory(aiHistory);
+
+      renderSuggestionCard(fallback, []);
     }
   }
 
@@ -1035,6 +927,8 @@
     if (aiClear && chat) {
       aiClear.addEventListener("click", () => {
         chat.innerHTML = "";
+        aiHistory = [];
+        saveAIHistory(aiHistory);
       });
     }
 
@@ -1042,13 +936,20 @@
       const go = () => {
         const text = String(aiInput.value || "").trim();
         if (!text) return;
+
         addMsg("user", "You", text);
+
+        // store user msg in history
+        aiHistory.push({ role: "user", content: text });
+        saveAIHistory(aiHistory);
+
         aiInput.value = "";
         sendToAI(text);
       };
 
       aiSend.addEventListener("click", go);
 
+      // Ctrl/Cmd+Enter to send
       aiInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
           e.preventDefault();
@@ -1058,7 +959,9 @@
     }
   }
 
-  // INIT show app (auth kan kobles tilbake hos deg)
+  // ---------------------------
+  // INIT show app
+  // ---------------------------
   const app = qs("app");
   const locked = qs("locked");
   if (app) app.style.display = "block";
@@ -1067,13 +970,6 @@
   // Boot
   loadState();
   initSectionsFromUI();
-
-  // Build 3-pane layout + resizers + AI UI
-  buildWorkspace();
-  setupResizers();
-  setupAIUI();
-
-  // Bind UI after workspace created
   bindSimpleInputs();
   bindSimpleToolbars();
 
@@ -1081,6 +977,8 @@
   renderLicenses();
   renderExperience();
   renderVolunteer();
+
+  setupAIUI();
 
   saveState();
   render();
