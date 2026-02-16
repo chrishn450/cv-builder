@@ -1,98 +1,112 @@
+// api/ai.js (FULL) - Vercel Serverless Function (ESM)
 import OpenAI from "openai";
 
-function safeJsonParse(s) {
-  try { return JSON.parse(s); } catch { return null; }
-}
-
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
   try {
-    const { mode, language, message, cv } = req.body || {};
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const { message, language, snapshot } = req.body || {};
+    const userMsg = String(message || "").trim();
+    if (!userMsg) return res.status(400).json({ error: "Missing message" });
 
-    const lang = language || "auto";
+    const lang = String(language || "en");
+    const snap = snapshot || {};
+    const data = snap.data || {};
+    const sections = snap.sections || {};
 
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    // Strict schema we expect back
     const system = `
-Du er en profesjonell CV-coach.
-VIKTIG:
-- Svar alltid på samme språk som brukeren (språk: ${lang}).
-- Du må ALDRI gjøre endringer direkte. Du skal alltid foreslå endringer som "suggestions".
-- Hver suggestion må være noe brukeren kan godkjenne (Accept) før det implementeres.
-- Returner KUN gyldig JSON (ingen markdown, ingen forklaring utenfor JSON).
+You are an AI coach for a CV builder.
+You MUST respond ONLY with valid JSON (no markdown).
+The JSON MUST have:
+- "message": string (human explanation in the user's language)
+- "changes": array of patch objects
 
-JSON-format:
-{
-  "reply": "tekstlig svar til bruker",
-  "suggestions": [
-    {
-      "id": "s1",
-      "title": "kort tittel",
-      "why": "hvorfor dette hjelper",
-      "changes": [
-        {"op":"set","path":"summary","value":"..."},
-        {"op":"set","path":"layout.padX","value":38}
-      ],
-      "preview": {"before":"...","after":"..."}
-    }
-  ]
-}
+Allowed patch objects:
+- { "op": "set", "path": "...", "value": any }
 
-Tillatte patch paths (op="set"):
-- summary, clinicalSkills, coreCompetencies, languages, achievements, custom1, custom2
-- name, title, email, phone, location, linkedin
-- sections.<key>.title  (key: summary|education|licenses|clinicalSkills|coreCompetencies|languages|experience|achievements|volunteer|custom1|custom2)
-- sections.<key>.enabled (true/false)
-- layout.padX (number), layout.gap (number), layout.leftWidth (number)
+Allowed paths (exactly):
+data.name, data.title, data.email, data.phone, data.location, data.linkedin,
+data.summary, data.education, data.licenses, data.clinicalSkills, data.coreCompetencies,
+data.languages, data.experience, data.achievements, data.volunteer, data.custom1, data.custom2,
 
-Regler:
-- Gi maks 6 suggestions per svar.
-- Hvis bruker ber om layout/fordeling: foreslå layout.* endringer.
-- Hvis bruker ber om rewrite: foreslå set på relevant felt.
-`;
+sections.summary.enabled, sections.summary.title,
+sections.education.enabled, sections.education.title,
+sections.licenses.enabled, sections.licenses.title,
+sections.clinicalSkills.enabled, sections.clinicalSkills.title,
+sections.coreCompetencies.enabled, sections.coreCompetencies.title,
+sections.languages.enabled, sections.languages.title,
+sections.experience.enabled, sections.experience.title,
+sections.achievements.enabled, sections.achievements.title,
+sections.volunteer.enabled, sections.volunteer.title,
+sections.custom1.enabled, sections.custom1.title,
+sections.custom2.enabled, sections.custom2.title
 
-    const userPayload = {
-      mode: mode || "chat",
-      message: message || "",
-      cvText: cv?.text || "",
-      // we also pass some structure, but model can ignore
-      hasDataKeys: Object.keys(cv?.data || {}),
-      hasSectionsKeys: Object.keys(cv?.sections || {}),
-      layout: cv?.layout || {}
+Rules:
+- If user asks to fill a field (e.g. name), propose a change with that path.
+- If user asks "where?" or vague, ask a short clarifying question in "message" and return changes: [].
+- Never include extra keys. Never include code. Never include HTML.
+`.trim();
+
+    const userContext = {
+      user_language: lang,
+      user_request: userMsg,
+      current_data: data,
+      current_sections: sections
     };
 
-    const completion = await openai.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.35,
+      temperature: 0.3,
       messages: [
         { role: "system", content: system },
-        {
-          role: "user",
-          content:
-            (mode === "review"
-              ? `Gi en kort review av CV-en og konkrete forslag.\n\nDATA:\n${JSON.stringify(userPayload)}`
-              : `Bruker-spørsmål: ${message}\n\nDATA:\n${JSON.stringify(userPayload)}`
-            )
-        }
+        { role: "user", content: JSON.stringify(userContext) }
       ]
     });
 
-    const text = completion.choices?.[0]?.message?.content || "{}";
-    const json = safeJsonParse(text);
+    const raw = completion.choices?.[0]?.message?.content || "";
 
-    if (!json || typeof json !== "object") {
-      // fallback: just return raw text as reply
-      return res.status(200).json({ reply: text, suggestions: [] });
+    // Parse JSON safely
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      // If model fails, return helpful error but no changes
+      return res.status(200).json({
+        message:
+          lang === "no"
+            ? "Jeg klarte ikke å returnere endringer i riktig format. Prøv igjen med en tydeligere forespørsel (f.eks. 'Sett navnet mitt til Katinka')."
+            : "I couldn't return changes in the correct format. Try again with a clearer request (e.g. 'Set my name to Katinka').",
+        changes: []
+      });
     }
 
-    // enforce shape
-    if (!Array.isArray(json.suggestions)) json.suggestions = [];
-    if (typeof json.reply !== "string") json.reply = "";
+    // Validate shape
+    if (
+      !parsed ||
+      typeof parsed.message !== "string" ||
+      !Array.isArray(parsed.changes)
+    ) {
+      return res.status(200).json({
+        message:
+          lang === "no"
+            ? "Responsen manglet 'message' og/eller 'changes'. Prøv igjen."
+            : "The response was missing 'message' and/or 'changes'. Please try again.",
+        changes: []
+      });
+    }
 
-    return res.status(200).json(json);
+    return res.status(200).json({
+      message: parsed.message,
+      changes: parsed.changes
+    });
 
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({ error: "AI request failed" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Server error" });
   }
 }
