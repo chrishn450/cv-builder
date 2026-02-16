@@ -1,3 +1,4 @@
+<!-- index.html (FULL) -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -15,6 +16,15 @@
   <header class="topbar">
     <div class="brand">CV Builder</div>
     <div class="actions">
+      <label class="label" style="margin:0; font-size:12px; opacity:.9;">
+        Language
+        <select id="uiLanguage" class="input" style="width:auto; padding:8px 10px; margin-left:8px;">
+          <option value="en">English</option>
+          <option value="no">Norsk</option>
+          <option value="de">Deutsch</option>
+        </select>
+      </label>
+
       <button id="showPanelsBtn" class="btn ghost" type="button">Panels</button>
       <button id="logoutBtn" class="btn ghost" style="display:none;">Log out</button>
     </div>
@@ -39,7 +49,7 @@
         <!-- LEFT: editor -->
         <div class="card panel" id="panel-editor" data-panel="editor">
           <div class="panel-head">
-            <h2>Edit content</h2>
+            <h2 data-i18n="ui.edit">Edit content</h2>
             <div class="panel-actions">
               <button class="pbtn" type="button" data-action="hide" data-target="editor" title="Hide">Hide</button>
               <button class="pbtn" type="button" data-action="fullscreen" data-target="editor" title="Fullscreen">Fullscreen</button>
@@ -52,16 +62,41 @@
           <label class="label">Title / Credentials</label>
           <input id="title" class="input" placeholder="Registered Nurse · BSN, RN" />
 
-          <label class="label">Email</label>
+          <!-- CONTACT -->
+          <div class="field-head" style="margin-top:12px;">
+            <label class="label" style="margin:0;">Email</label>
+            <label class="toggle">
+              <input type="checkbox" id="show_email" checked />
+              <span>Show</span>
+            </label>
+          </div>
           <input id="email" class="input" placeholder="sarah.johnson@email.com" />
 
-          <label class="label">Phone</label>
+          <div class="field-head" style="margin-top:12px;">
+            <label class="label" style="margin:0;">Phone</label>
+            <label class="toggle">
+              <input type="checkbox" id="show_phone" checked />
+              <span>Show</span>
+            </label>
+          </div>
           <input id="phone" class="input" placeholder="(555) 123-4567" />
 
-          <label class="label">Location</label>
+          <div class="field-head" style="margin-top:12px;">
+            <label class="label" style="margin:0;">Location</label>
+            <label class="toggle">
+              <input type="checkbox" id="show_location" checked />
+              <span>Show</span>
+            </label>
+          </div>
           <input id="location" class="input" placeholder="Austin, TX 78701" />
 
-          <label class="label">LinkedIn</label>
+          <div class="field-head" style="margin-top:12px;">
+            <label class="label" style="margin:0;">LinkedIn</label>
+            <label class="toggle">
+              <input type="checkbox" id="show_linkedin" checked />
+              <span>Show</span>
+            </label>
+          </div>
           <input id="linkedin" class="input" placeholder="linkedin.com/in/..." />
 
           <!-- SUMMARY -->
@@ -288,8 +323,9 @@
           </div>
 
           <div class="row">
-            <button id="printBtn" class="btn">Print / Save as PDF</button>
-            <button id="downloadHtmlBtn" class="btn ghost">Download HTML</button>
+            <button id="printBtn" class="btn" type="button">Print / Save as PDF</button>
+            <button id="downloadPdfBtn" class="btn ghost" type="button">Download PDF</button>
+            <button id="downloadHtmlBtn" class="btn ghost" type="button">Download HTML</button>
           </div>
 
           <p class="muted small">
@@ -303,7 +339,7 @@
         <!-- MIDDLE: preview -->
         <div class="card panel" id="panel-preview" data-panel="preview">
           <div class="panel-head">
-            <h2>Preview</h2>
+            <h2 data-i18n="ui.preview">Preview</h2>
             <div class="panel-actions">
               <button class="pbtn" type="button" data-action="hide" data-target="preview">Hide</button>
               <button class="pbtn" type="button" data-action="fullscreen" data-target="preview">Fullscreen</button>
@@ -318,7 +354,7 @@
         <!-- RIGHT: AI coach -->
         <div class="card panel" id="panel-ai" data-panel="ai">
           <div class="panel-head">
-            <h2>AI Coach</h2>
+            <h2 data-i18n="ui.ai">AI Coach</h2>
             <div class="panel-actions">
               <button class="pbtn" id="aiClear" type="button">Clear</button>
               <button class="pbtn" type="button" data-action="hide" data-target="ai">Hide</button>
@@ -346,6 +382,7 @@
   </main>
 
   <script src="/templates.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="/app.js"></script>
 </body>
 </html>
