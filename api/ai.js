@@ -24,7 +24,6 @@ function safeJsonParse(s) {
 }
 
 function clampHistory(history) {
-  // keep last ~20 turns to control tokens
   if (!Array.isArray(history)) return [];
   const cleaned = history
     .filter(x => x && (x.role === "user" || x.role === "assistant") && typeof x.content === "string")
@@ -38,9 +37,15 @@ function validateChanges(changes) {
     if (!c || c.op !== "set") return false;
     if (typeof c.path !== "string") return false;
     if (!ALLOWED_PATHS.includes(c.path)) return false;
-    // allow any JSON-serializable value
     return true;
   });
+}
+
+function normalizeLang(language) {
+  const l = String(language || "en").toLowerCase();
+  if (l.startsWith("no")) return "no";
+  if (l.startsWith("de")) return "de";
+  return "en";
 }
 
 export default async function handler(req, res) {
@@ -49,7 +54,7 @@ export default async function handler(req, res) {
   try {
     const body = req.body || {};
     const message = String(body.message || "").trim();
-    const language = String(body.language || "en");
+    const language = normalizeLang(body.language || "en");
     const snapshot = body.snapshot || {};
     const history = clampHistory(body.history);
 
@@ -57,7 +62,6 @@ export default async function handler(req, res) {
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // System rules: always JSON with message + changes
     const system = `
 You are an AI coach inside a CV builder.
 You MUST output ONLY valid JSON (no markdown, no backticks, no extra keys).
@@ -77,21 +81,20 @@ ${ALLOWED_PATHS.join(", ")}
 Behavior:
 - You have access to the current CV snapshot and the chat history.
 - Always respond in the user's language (language code provided).
-- If user requests a concrete edit (e.g., "fill in my name Katinka"), create a patch:
-  { op:"set", path:"data.name", value:"Katinka" }
-- If user asks for improvement (summary, bullets, ATS, tone), propose patches to relevant fields.
+- If user requests a concrete edit, create a patch.
+- If user asks for improvement, propose patches to relevant fields.
 - If the user is vague, ask ONE short clarifying question in "message" and return changes: [].
 - Never ask the user to repeat something that is already in chat history or in the snapshot.
+- IMPORTANT: Prefer returning multiple small patches instead of one huge patch when possible.
 `.trim();
 
     const context = {
       language,
       user_message: message,
-      snapshot,      // includes data + sections from frontend
+      snapshot,
       notes: "Use snapshot + history to avoid repeating questions."
     };
 
-    // We feed chat history to the model too (so it remembers)
     const messages = [
       { role: "system", content: system },
       { role: "user", content: JSON.stringify(context) },
@@ -112,6 +115,8 @@ Behavior:
       return res.status(200).json({
         message: language === "no"
           ? "Jeg fikk ikke laget forslag i riktig format. Prøv igjen med en tydelig forespørsel (f.eks. «Sett navnet mitt til Katinka»)."
+          : language === "de"
+          ? "Ich konnte die Vorschläge nicht im richtigen Format erzeugen. Bitte versuche es erneut mit einer klaren Anfrage (z.B. „Setze meinen Namen auf Katinka“)."
           : "I couldn't produce suggestions in the correct format. Please try again with a clearer request (e.g. 'Set my name to Katinka').",
         changes: []
       });
