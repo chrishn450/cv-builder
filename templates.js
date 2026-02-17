@@ -310,8 +310,8 @@
       linkedin: "linkedin.com/in/sarahjohnsonrn",
 
       summary:
-        "Compassionate and detail-oriented Registered Nurse with 7+ years of progressive experience in acute care, emergency, and critical care settings. Proven ability to manage\n" +
-        "4–6 critically ill patients per shift while maintaining 98% patient satisfaction scores. Skilled in patient assessment, evidence-based care planning, and interdisciplinary\n" +
+        "Compassionate and detail-oriented Registered Nurse with 7+ years of progressive experience in acute care, emergency, and critical care settings. Proven ability to manage" +
+        "4–6 critically ill patients per shift while maintaining 98% patient satisfaction scores. Skilled in patient assessment, evidence-based care planning, and interdisciplinary" +
         "collaboration. Committed to delivering measurable outcomes and continuous quality improvement in fast-paced hospital environments.",
 
       education:
