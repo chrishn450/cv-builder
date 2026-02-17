@@ -46,6 +46,11 @@
       .filter(Boolean);
   }
 
+  // NOTE:
+  // Vi STRIPPER IKKE bullet-prefix lenger.
+  // Brukeren skal kunne skrive "• " selv og se det i preview.
+  // Det som ga "auto dot" var <ul> med default list-style, ikke teksten.
+
   // Merge wrapped lines into previous bullet when template-like wrapping happens.
   function mergeWrappedLinesIntoBullets(rawLines) {
     const out = [];
@@ -56,7 +61,7 @@
       const isExplicitBullet = /^([•\-·]\s+)/.test(line);
 
       if (isExplicitBullet) {
-        out.push(line); // behold bullet-tegn hvis bruker skrev det
+        out.push(line); // behold bullet-tegnet hvis user skrev det
         return;
       }
 
@@ -147,12 +152,11 @@
       `;
     }
 
-    // IMPORTANT:
-    // - Vi lager fortsatt <ul><li> slik at preview/CSS ser lik ut
-    // - Men vi fjerner IKKE bullet-tegn i teksten. Bruker kan skrive "• ..." selv.
+    // IMPORTANT FIX:
+    // Vi bruker fortsatt <ul><li> for spacing, men fjerner auto-dots:
     const lis = items
       .map((t, idx) => {
-        const inner = fmtInline(t, { preserveNewlines: true });
+        const inner = fmtInline(t, { preserveNewlines: true }); // behold user-tegn som •
         if (boldFirstLine && idx === 0) return `<li><strong>${inner}</strong></li>`;
         return `<li>${inner}</li>`;
       })
@@ -161,7 +165,7 @@
     return `
       <section>
         <h2 class="section-title">${esc(title)}</h2>
-        <ul class="skill-list no-markers">${lis}</ul>
+        <ul class="skill-list" style="list-style:none; padding-left:0; margin:0;">${lis}</ul>
       </section>
     `;
   }
@@ -180,7 +184,11 @@
           <div class="exp-entry">
             <h3>${fmtInline(e.title)}</h3>
             ${e.meta ? `<p class="meta">${fmtInline(e.meta, { preserveNewlines: true })}</p>` : ""}
-            ${bullets ? `<ul class="exp-bullets no-markers">${bullets}</ul>` : ""}
+            ${
+              bullets
+                ? `<ul class="exp-bullets" style="list-style:none; padding-left:0; margin:0;">${bullets}</ul>`
+                : ""
+            }
           </div>
         `;
       })
@@ -247,7 +255,7 @@
       .map((v) => {
         const bulletsHTML =
           v.volBullets && v.volBullets.length
-            ? `<ul class="exp-bullets no-markers">${v.volBullets
+            ? `<ul class="exp-bullets" style="list-style:none; padding-left:0; margin:0;">${v.volBullets
                 .map((b) => `<li>${fmtInline(b, { preserveNewlines: true })}</li>`)
                 .join("")}</ul>`
             : "";
@@ -277,14 +285,22 @@
     const raw = data || {};
     const lang = raw.lang || raw?.ui?.lang || "en";
 
+    // i18n hooks from i18n.js (optional, fallback-safe)
     const CVI = window.CV_I18N || {};
     const getDefaultTitle = (key) =>
       (CVI.getSectionDefaultTitle ? CVI.getSectionDefaultTitle(lang, key) : key);
 
-    // bare disse språkene
-    const presentWordByLang = { en: "Present", no: "Nå", de: "Heute", fr: "Présent", es: "Actualidad" };
+    // Begrenset til EN/NO/DE/ES/FR (som du ønsket)
+    const presentWordByLang = {
+      en: "Present",
+      no: "Nå",
+      de: "Heute",
+      fr: "Présent",
+      es: "Actualidad"
+    };
     const presentWord = presentWordByLang[lang] || "Present";
 
+    // Sample defaults (only used if user fields are empty)
     const defaults = {
       name: "Sarah Johnson",
       title: "Registered Nurse · BSN, RN",
@@ -294,8 +310,8 @@
       linkedin: "linkedin.com/in/sarahjohnsonrn",
 
       summary:
-        "Compassionate and detail-oriented Registered Nurse with 7+ years of progressive experience in acute care, emergency, and critical care settings. Proven ability to manage\n" +
-        "4–6 critically ill patients per shift while maintaining 98% patient satisfaction scores. Skilled in patient assessment, evidence-based care planning, and interdisciplinary\n" +
+        "Compassionate and detail-oriented Registered Nurse with 7+ years of progressive experience in acute care, emergency, and critical care settings. Proven ability to manage" +
+        "4–6 critically ill patients per shift while maintaining 98% patient satisfaction scores. Skilled in patient assessment, evidence-based care planning, and interdisciplinary" +
         "collaboration. Committed to delivering measurable outcomes and continuous quality improvement in fast-paced hospital environments.",
 
       education:
@@ -382,32 +398,81 @@
       custom2: ""
     };
 
+    // Use user data if present, else fallback to defaults
     const d = {};
     for (const k in defaults) d[k] = hasText(raw[k]) ? raw[k] : defaults[k];
 
+    // Default section config, titles now come from i18n defaults (per language)
     const defaultSections = {
       summary: { enabled: true, title: getDefaultTitle("summary") },
       education: { enabled: true, title: getDefaultTitle("education") },
       licenses: { enabled: true, title: getDefaultTitle("licenses") },
-      clinicalSkills: { enabled: true, title: getDefaultTitle("clinicalSkills"), mode: "bullets", boldFirstLine: false },
-      coreCompetencies: { enabled: true, title: getDefaultTitle("coreCompetencies"), mode: "bullets", boldFirstLine: false },
-      languages: { enabled: true, title: getDefaultTitle("languages"), mode: "paragraph", boldFirstLine: false },
+
+      clinicalSkills: {
+        enabled: true,
+        title: getDefaultTitle("clinicalSkills"),
+        mode: "bullets",
+        boldFirstLine: false
+      },
+      coreCompetencies: {
+        enabled: true,
+        title: getDefaultTitle("coreCompetencies"),
+        mode: "bullets",
+        boldFirstLine: false
+      },
+      languages: {
+        enabled: true,
+        title: getDefaultTitle("languages"),
+        mode: "paragraph",
+        boldFirstLine: false
+      },
+
       experience: { enabled: true, title: getDefaultTitle("experience") },
-      achievements: { enabled: true, title: getDefaultTitle("achievements"), mode: "bullets", boldFirstLine: false },
+
+      achievements: {
+        enabled: true,
+        title: getDefaultTitle("achievements"),
+        mode: "bullets",
+        boldFirstLine: false
+      },
+
       volunteer: { enabled: true, title: getDefaultTitle("volunteer") },
-      custom1: { enabled: false, title: getDefaultTitle("custom1"), mode: "bullets", boldFirstLine: false, column: "right" },
-      custom2: { enabled: false, title: getDefaultTitle("custom2"), mode: "bullets", boldFirstLine: false, column: "right" },
-      contact: { show_title: true, show_email: true, show_phone: true, show_location: true, show_linkedin: true }
+
+      custom1: {
+        enabled: false,
+        title: getDefaultTitle("custom1"),
+        mode: "bullets",
+        boldFirstLine: false,
+        column: "right"
+      },
+      custom2: {
+        enabled: false,
+        title: getDefaultTitle("custom2"),
+        mode: "bullets",
+        boldFirstLine: false,
+        column: "right"
+      },
+
+      contact: {
+        show_title: true,
+        show_email: true,
+        show_phone: true,
+        show_location: true,
+        show_linkedin: true
+      }
     };
 
+    // Merge saved config over defaults
     const sections = { ...defaultSections, ...(raw.sections || {}) };
 
+    // Helper: get final section title with fallback to i18n defaults
     const sectionTitle = (key, fallbackKeyForCustom) => {
       const t0 = sections?.[key]?.title;
       if (t0 && String(t0).trim()) return String(t0).trim();
       return getDefaultTitle(fallbackKeyForCustom || key);
     };
 
+    // Contact show/hide
     const contactCfg = sections.contact || defaultSections.contact;
 
     const contactParts = [];
@@ -496,7 +561,9 @@
             boldFirstLine: !!sections.achievements.boldFirstLine
           })
         : "",
-      sections.volunteer?.enabled ? renderVolunteerSection(sectionTitle("volunteer"), d.volunteer, { presentWord }) : "",
+      sections.volunteer?.enabled
+        ? renderVolunteerSection(sectionTitle("volunteer"), d.volunteer, { presentWord })
+        : "",
       rightCustomHTML
     ].join("");
 
