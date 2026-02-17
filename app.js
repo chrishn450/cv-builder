@@ -344,6 +344,7 @@
     state.data.educationBlocks.forEach((b, idx) => {
       const wrap = document.createElement("div");
       wrap.className = "subcard";
+      // ✅ inputs -> textarea (rows=1). No other behavioral change.
       wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
           <div class="muted small">${t("edu.blockTitle")} ${idx + 1}</div>
@@ -351,16 +352,16 @@
         </div>
 
         <label class="label">${t("edu.degree")}</label>
-        <input class="input" data-edu-degree="${idx}" />
+        <textarea class="input" rows="1" data-edu-degree="${idx}"></textarea>
 
         <label class="label">${t("edu.school")}</label>
-        <input class="input" data-edu-school="${idx}" />
+        <textarea class="input" rows="1" data-edu-school="${idx}"></textarea>
 
         <label class="label">${t("edu.dates")}</label>
-        <input class="input" data-edu-date="${idx}" />
+        <textarea class="input" rows="1" data-edu-date="${idx}"></textarea>
 
         <label class="label">${t("edu.honors")}</label>
-        <input class="input" data-edu-honors="${idx}" />
+        <textarea class="input" rows="1" data-edu-honors="${idx}"></textarea>
       `;
       eduRoot.appendChild(wrap);
 
@@ -443,6 +444,7 @@
     state.data.licenseBlocks.forEach((b, idx) => {
       const wrap = document.createElement("div");
       wrap.className = "subcard";
+      // ✅ inputs -> textarea (rows=1)
       wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
           <div class="muted small">${t("lic.blockTitle")} ${idx + 1}</div>
@@ -450,10 +452,10 @@
         </div>
 
         <label class="label">${t("lic.title")}</label>
-        <input class="input" data-lic-title="${idx}" />
+        <textarea class="input" rows="1" data-lic-title="${idx}"></textarea>
 
         <label class="label">${t("lic.detail")}</label>
-        <input class="input" data-lic-detail="${idx}" />
+        <textarea class="input" rows="1" data-lic-detail="${idx}"></textarea>
       `;
       licRoot.appendChild(wrap);
 
@@ -523,6 +525,7 @@
     state.data.experienceJobs.forEach((job, idx) => {
       const wrap = document.createElement("div");
       wrap.className = "subcard";
+      // ✅ role/meta inputs -> textarea (rows=1). bullets already textarea.
       wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
           <div class="muted small">${t("exp.blockTitle")} ${idx + 1}</div>
@@ -530,10 +533,10 @@
         </div>
 
         <label class="label">${t("exp.role")}</label>
-        <input class="input" data-exp-title="${idx}" />
+        <textarea class="input" rows="1" data-exp-title="${idx}"></textarea>
 
         <label class="label">${t("exp.meta")}</label>
-        <input class="input" data-exp-meta="${idx}" />
+        <textarea class="input" rows="1" data-exp-meta="${idx}"></textarea>
 
         <div class="toolbar" data-exp-toolbar="${idx}">
           <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
@@ -627,6 +630,7 @@
     state.data.volunteerBlocks.forEach((v, idx) => {
       const wrap = document.createElement("div");
       wrap.className = "subcard";
+      // ✅ header/sub inputs -> textarea (rows=1). bullets already textarea.
       wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
           <div class="muted small">${t("vol.blockTitle")} ${idx + 1}</div>
@@ -634,10 +638,10 @@
         </div>
 
         <label class="label">${t("vol.header")}</label>
-        <input class="input" data-vol-header="${idx}" />
+        <textarea class="input" rows="1" data-vol-header="${idx}"></textarea>
 
         <label class="label">${t("vol.sub")}</label>
-        <input class="input" data-vol-sub="${idx}" />
+        <textarea class="input" rows="1" data-vol-sub="${idx}"></textarea>
 
         <div class="toolbar" data-vol-toolbar="${idx}">
           <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
