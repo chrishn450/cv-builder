@@ -667,3 +667,18 @@ hr{
 
   .cv section, .cv .exp-entry, .cv li { break-inside: avoid; }
 }
+/* Remove automatic bullets in the CV preview.
+   User can type "•" manually if they want. */
+.cv ul.skill-list,
+.cv ul.exp-bullets {
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+}
+
+.cv ul.skill-list li,
+.cv ul.exp-bullets li {
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+}
+
