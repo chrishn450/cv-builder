@@ -19,6 +19,7 @@
         return esc(p);
       })
       .join("");
+
     if (!preserveNewlines) return html;
     return html.replace(/\n/g, "<br>");
   }
@@ -43,19 +44,23 @@
       .filter(Boolean);
   }
 
-  // Merge wrapped lines into previous bullet when template-like wrapping happens.
+  // Merge wrapped lines into previous "bullet line" (only for DEFAULT text)
   function mergeWrappedLinesIntoBullets(rawLines) {
     const out = [];
     rawLines.forEach((ln) => {
       const line = String(ln || "").trim();
       if (!line) return;
+
       const isExplicitBullet = /^([•\-·]\s+)/.test(line);
       if (isExplicitBullet) {
         out.push(line);
         return;
       }
+
       if (out.length > 0) {
-        out[out.length - 1] = (out[out.length - 1] + " " + line).replace(/\s+/g, " ").trim();
+        out[out.length - 1] = (out[out.length - 1] + " " + line)
+          .replace(/\s+/g, " ")
+          .trim();
       } else {
         out.push(line);
       }
@@ -63,7 +68,6 @@
     return out;
   }
 
-  // ✅ CHANGED: add option mergeWrapped
   function parseExperience(s, { mergeWrapped = true } = {}) {
     return blocks(s).map((block) => {
       const ls = block.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -71,9 +75,7 @@
       const meta = ls[1] || "";
       const rawBullets = ls.slice(2);
 
-      const bullets = mergeWrapped
-        ? mergeWrappedLinesIntoBullets(rawBullets)
-        : rawBullets.map(x => String(x || "").trim()).filter(Boolean);
+      const bullets = mergeWrapped ? mergeWrappedLinesIntoBullets(rawBullets) : rawBullets;
 
       return { title, meta, bullets };
     });
@@ -91,9 +93,10 @@
     });
   }
 
-  function parseVolunteer(s, { presentWord = "Present" } = {}) {
+  function parseVolunteer(s, { presentWord = "Present", mergeWrapped = true } = {}) {
     return blocks(s).map((block) => {
       const ls = block.split("\n").map((l) => l.trim()).filter(Boolean);
+
       let volTitle = ls[0] || "";
       let volDate = "";
 
@@ -104,7 +107,7 @@
         volDate = m[2];
       }
 
-      // Or "Title 2019 – Present" (Present localized)
+      // Or "Title 2019 – Present"
       if (!volDate) {
         const pw = String(presentWord || "Present").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const re = new RegExp(`^(.*?)(\\b\\d{4}\\s*–\\s*(?:${pw}|\\d{4})\\b)$`);
@@ -117,14 +120,15 @@
 
       const volSub = ls[1] || "";
       const rawBullets = ls.slice(2);
-      const volBullets = mergeWrappedLinesIntoBullets(rawBullets);
+
+      const volBullets = mergeWrapped ? mergeWrappedLinesIntoBullets(rawBullets) : rawBullets;
 
       return { volTitle, volDate, volSub, volBullets };
     });
   }
 
   // mode: "bullets" | "paragraph"
-  function renderSimpleSection({ title, content, mode, boldFirstLine }) {
+  function renderSimpleSection({ title, content, mode, boldFirstLine, autoDots }) {
     const items = lines(content);
     if (!items.length) return "";
 
@@ -136,6 +140,7 @@
           return `<p>${inner}</p>`;
         })
         .join("");
+
       return `
         <section>
           <h2 class="section-title">${esc(title)}</h2>
@@ -143,6 +148,8 @@
         </section>
       `;
     }
+
+    const cls = autoDots ? "auto-dots" : "no-auto-dots";
 
     const lis = items
       .map((t, idx) => {
@@ -155,15 +162,16 @@
     return `
       <section>
         <h2 class="section-title">${esc(title)}</h2>
-        <ul class="skill-list" style="list-style:none; padding-left:0; margin:0;">${lis}</ul>
+        <ul class="skill-list ${cls}" style="list-style:none; padding-left:0; margin:0;">${lis}</ul>
       </section>
     `;
   }
 
-  // ✅ CHANGED: pass mergeWrapped option
-  function renderExperienceSection(title, experienceText, { mergeWrapped = true } = {}) {
+  function renderExperienceSection(title, experienceText, { mergeWrapped, autoDots } = {}) {
     const exps = parseExperience(experienceText, { mergeWrapped });
     if (!exps.length) return "";
+
+    const cls = autoDots ? "auto-dots" : "no-auto-dots";
 
     const expHTML = exps
       .map((e) => {
@@ -175,7 +183,7 @@
           <div class="exp-entry">
             <h3>${fmtInline(e.title)}</h3>
             ${e.meta ? `<p class="meta">${fmtInline(e.meta, { preserveNewlines: true })}</p>` : ""}
-            ${bullets ? `<ul class="exp-bullets" style="list-style:none; padding-left:0; margin:0;">${bullets}</ul>` : ""}
+            ${bullets ? `<ul class="exp-bullets ${cls}" style="list-style:none; padding-left:0; margin:0;">${bullets}</ul>` : ""}
           </div>
         `;
       })
@@ -236,17 +244,19 @@
     `;
   }
 
-  function renderVolunteerSection(title, volunteerText, { presentWord } = {}) {
-    const vols = parseVolunteer(volunteerText, { presentWord });
+  function renderVolunteerSection(title, volunteerText, { presentWord, mergeWrapped, autoDots } = {}) {
+    const vols = parseVolunteer(volunteerText, { presentWord, mergeWrapped });
     if (!vols.length) return "";
+
+    const cls = autoDots ? "auto-dots" : "no-auto-dots";
 
     const volHTML = vols
       .map((v) => {
         const bulletsHTML =
           v.volBullets && v.volBullets.length
-            ? `<ul class="exp-bullets" style="list-style:none; padding-left:0; margin:0;">${v.volBullets
-                .map((b) => `<li>${fmtInline(b, { preserveNewlines: true })}</li>`)
-                .join("")}</ul>`
+            ? `<ul class="exp-bullets ${cls}" style="list-style:none; padding-left:0; margin:0;">
+                ${v.volBullets.map((b) => `<li>${fmtInline(b, { preserveNewlines: true })}</li>`).join("")}
+              </ul>`
             : "";
 
         return `
@@ -274,9 +284,9 @@
     const raw = data || {};
     const lang = raw.lang || raw?.ui?.lang || "en";
 
+    // i18n hooks
     const CVI = window.CV_I18N || {};
-    const getDefaultTitle = (key) =>
-      CVI.getSectionDefaultTitle ? CVI.getSectionDefaultTitle(lang, key) : key;
+    const getDefaultTitle = (key) => (CVI.getSectionDefaultTitle ? CVI.getSectionDefaultTitle(lang, key) : key);
 
     const presentWordByLang = { en: "Present", no: "Nå", de: "Heute", fr: "Présent", es: "Actualidad" };
     const presentWord = presentWordByLang[lang] || "Present";
@@ -327,7 +337,7 @@
         "Patient & Family Education\n" +
         "Time Management\n" +
         "Interdisciplinary Collaboration",
-      languages: "English — Native\n" + "Spanish — Conversational",
+      languages: "English — Native\nSpanish — Conversational",
       experience:
         "SENIOR REGISTERED NURSE – ICU\n" +
         "St. David's Medical Center, Austin, TX | January 2021 – Present\n" +
@@ -363,11 +373,17 @@
         "Austin Free Clinic · Community Health Outreach\n" +
         "Provide free health screenings and vaccinations to 200+ underserved community members annually",
       custom1: "",
-      custom2: "",
+      custom2: ""
     };
 
+    // ✅ Track which fields are default vs user-provided
+    const isDefault = {};
     const d = {};
-    for (const k in defaults) d[k] = hasText(raw[k]) ? raw[k] : defaults[k];
+    for (const k in defaults) {
+      const userHas = hasText(raw[k]);
+      d[k] = userHas ? raw[k] : defaults[k];
+      isDefault[k] = !userHas;
+    }
 
     const defaultSections = {
       summary: { enabled: true, title: getDefaultTitle("summary") },
@@ -381,7 +397,7 @@
       volunteer: { enabled: true, title: getDefaultTitle("volunteer") },
       custom1: { enabled: false, title: getDefaultTitle("custom1"), mode: "bullets", boldFirstLine: false, column: "right" },
       custom2: { enabled: false, title: getDefaultTitle("custom2"), mode: "bullets", boldFirstLine: false, column: "right" },
-      contact: { show_title: true, show_email: true, show_phone: true, show_location: true, show_linkedin: true },
+      contact: { show_title: true, show_email: true, show_phone: true, show_location: true, show_linkedin: true }
     };
 
     const sections = { ...defaultSections, ...(raw.sections || {}) };
@@ -409,10 +425,12 @@
     const showTitle = contactCfg.show_title !== false;
 
     const summaryHTML = sections.summary?.enabled
-      ? `<section class="cv-summary">
+      ? `
+        <section class="cv-summary">
           <h2 class="section-title">${esc(sectionTitle("summary"))}</h2>
           <p class="body-text">${fmtInline(d.summary, { preserveNewlines: true })}</p>
-        </section>`
+        </section>
+      `
       : "";
 
     function renderCustom(key) {
@@ -423,6 +441,7 @@
         content: d[key] || "",
         mode: cfg.mode || "bullets",
         boldFirstLine: !!cfg.boldFirstLine,
+        autoDots: isDefault[key] // ✅ default gets dots, user doesn't
       });
     }
 
@@ -436,33 +455,67 @@
       .map((k) => renderCustom(k))
       .join("");
 
-    // ✅ KEY: keep merge only for DEFAULT experience (when raw.experience is empty)
-    const isDefaultExperience = !hasText(raw.experience);
-
     const leftHTML = [
       sections.education?.enabled ? renderEducationSection(sectionTitle("education"), d.education) : "",
       sections.licenses?.enabled ? renderLicensesSection(sectionTitle("licenses"), d.licenses) : "",
       sections.clinicalSkills?.enabled
-        ? renderSimpleSection({ title: sectionTitle("clinicalSkills"), content: d.clinicalSkills, mode: sections.clinicalSkills.mode || "bullets", boldFirstLine: !!sections.clinicalSkills.boldFirstLine })
+        ? renderSimpleSection({
+            title: sectionTitle("clinicalSkills"),
+            content: d.clinicalSkills,
+            mode: sections.clinicalSkills.mode || "bullets",
+            boldFirstLine: !!sections.clinicalSkills.boldFirstLine,
+            autoDots: isDefault.clinicalSkills
+          })
         : "",
       sections.coreCompetencies?.enabled
-        ? renderSimpleSection({ title: sectionTitle("coreCompetencies"), content: d.coreCompetencies, mode: sections.coreCompetencies.mode || "bullets", boldFirstLine: !!sections.coreCompetencies.boldFirstLine })
+        ? renderSimpleSection({
+            title: sectionTitle("coreCompetencies"),
+            content: d.coreCompetencies,
+            mode: sections.coreCompetencies.mode || "bullets",
+            boldFirstLine: !!sections.coreCompetencies.boldFirstLine,
+            autoDots: isDefault.coreCompetencies
+          })
         : "",
       sections.languages?.enabled
-        ? renderSimpleSection({ title: sectionTitle("languages"), content: d.languages, mode: sections.languages.mode || "paragraph", boldFirstLine: !!sections.languages.boldFirstLine })
+        ? renderSimpleSection({
+            title: sectionTitle("languages"),
+            content: d.languages,
+            mode: sections.languages.mode || "paragraph",
+            boldFirstLine: !!sections.languages.boldFirstLine,
+            autoDots: false
+          })
         : "",
-      leftCustomHTML,
+      leftCustomHTML
     ].join("");
 
     const rightHTML = [
       sections.experience?.enabled
-        ? renderExperienceSection(sectionTitle("experience"), d.experience, { mergeWrapped: isDefaultExperience })
+        ? renderExperienceSection(sectionTitle("experience"), d.experience, {
+            // ✅ merge only for default (so default preview stays pretty)
+            mergeWrapped: isDefault.experience,
+            // ✅ dots only for default preview
+            autoDots: isDefault.experience
+          })
         : "",
       sections.achievements?.enabled
-        ? renderSimpleSection({ title: sectionTitle("achievements"), content: d.achievements, mode: sections.achievements.mode || "bullets", boldFirstLine: !!sections.achievements.boldFirstLine })
+        ? renderSimpleSection({
+            title: sectionTitle("achievements"),
+            content: d.achievements,
+            mode: sections.achievements.mode || "bullets",
+            boldFirstLine: !!sections.achievements.boldFirstLine,
+            autoDots: isDefault.achievements
+          })
         : "",
-      sections.volunteer?.enabled ? renderVolunteerSection(sectionTitle("volunteer"), d.volunteer, { presentWord }) : "",
-      rightCustomHTML,
+      sections.volunteer?.enabled
+        ? renderVolunteerSection(sectionTitle("volunteer"), d.volunteer, {
+            presentWord,
+            // ✅ merge only for default
+            mergeWrapped: isDefault.volunteer,
+            // ✅ dots only for default
+            autoDots: isDefault.volunteer
+          })
+        : "",
+      rightCustomHTML
     ].join("");
 
     return `
