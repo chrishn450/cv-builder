@@ -781,78 +781,71 @@
   }
 
   // ---- Export helpers (PDF/print)
-  async function exportToPrintWindow({ autoPrint = true } = {}) {
-    const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
+  // ---- Export helpers (PDF/print)  ✅ popup-safe via hidden iframe
+  async function exportToPrintIframe({ autoPrint = true } = {}) {
+    const cssText = await fetch("/styles.css", { cache: "no-store" }).then(r => r.text());
     const cvHtml = preview ? preview.innerHTML : "";
-
+  
     const html = `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CV</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-  <style>${cssText}</style>
-</head>
-<body style="margin:0; padding:0; background:white;">
-  <div id="preview">${cvHtml}</div>
-  <script>
-    window.onload = () => {
-      ${autoPrint ? "setTimeout(() => window.print(), 50);" : ""}
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>${cssText}</style>
+  </head>
+  <body style="margin:0; padding:0; background:white;">
+    <div id="preview">${cvHtml}</div>
+  </body>
+  </html>`;
+  
+    // remove previous iframe if any
+    const old = document.getElementById("printFrame");
+    if (old) old.remove();
+  
+    const iframe = document.createElement("iframe");
+    iframe.id = "printFrame";
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.opacity = "0";
+    iframe.setAttribute("aria-hidden", "true");
+    document.body.appendChild(iframe);
+  
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
+  
+    doc.open();
+    doc.write(html);
+    doc.close();
+  
+    iframe.onload = () => {
+      if (!autoPrint) return;
+      // Give fonts/layout a moment to settle
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch (e) {
+          console.error("Print failed:", e);
+        }
+      }, 150);
     };
-  </script>
-</body>
-</html>`;
-
-    const w = window.open("", "_blank", "noopener,noreferrer");
-    if (!w) {
-      alert("Pop-up blocked. Please allow pop-ups for export.");
-      return;
-    }
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
   }
 
-  if (printBtn) printBtn.addEventListener("click", () => exportToPrintWindow({ autoPrint: true }));
-  if (downloadPdfBtn) downloadPdfBtn.addEventListener("click", () => exportToPrintWindow({ autoPrint: true }));
+// ✅ Only keep Download PDF + Download HTML
+if (downloadPdfBtn) downloadPdfBtn.addEventListener("click", () => exportToPrintIframe({ autoPrint: true }));
 
-  if (downloadHtmlBtn) {
-    downloadHtmlBtn.addEventListener("click", async () => {
-      try {
-        const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
-        const html = `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CV</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-  <style>${cssText}</style>
-</head>
-<body style="margin:0; padding:0; background:white;">
-  ${preview ? preview.innerHTML : ""}
-</body>
-</html>`;
-        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "cv.html";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      } catch (err) {
-        console.error("Export failed:", err);
-        alert("Export failed. Check console.");
-      }
-    });
-  }
+// (Print button not needed - remove its handler if it exists)
+if (printBtn) {
+  printBtn.replaceWith(printBtn.cloneNode(true)); // strips old listeners safely (optional)
+}
 
   // ---------------------------
   // Layout controls: hide + fullscreen + resizers
