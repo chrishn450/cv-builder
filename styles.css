@@ -681,4 +681,15 @@ hr{
   padding-left: 0 !important;
   margin-left: 0 !important;
 }
+/* Remove default list markers everywhere in CV preview.
+   If user types "• " manually, it will still show as text. */
+.cv ul.no-markers,
+.cv ul.no-markers li {
+  list-style: none !important;
+}
+
+.cv ul.no-markers {
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+}
 
