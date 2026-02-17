@@ -161,113 +161,140 @@
     });
   }
 
-  // ---------- Toolbar helpers (Bold + Bullet) ----------
-  function wrapSelectionWith(el, left, right) {
-    const v = el.value || "";
-    const start = el.selectionStart ?? 0;
-    const end = el.selectionEnd ?? start;
-    el.value = v.slice(0, start) + left + v.slice(start, end) + right + v.slice(end);
-    el.setSelectionRange(start + left.length, end + left.length);
-  }
+  // ---------- Toolbar helpers (Bold + Bullet toggle) ----------
+function wrapSelectionWith(el, left, right) {
+  const v = el.value || "";
+  const start = el.selectionStart ?? 0;
+  const end = el.selectionEnd ?? start;
+  el.value = v.slice(0, start) + left + v.slice(start, end) + right + v.slice(end);
+  el.setSelectionRange(start + left.length, end + left.length);
+}
 
-  const BULLET = "• ";
+const BULLET = "• ";
 
-  function setBulletButtonState(tb, on) {
-    const btn = tb.querySelector('[data-action="bullets"]');
-    if (!btn) return;
-    btn.classList.toggle("active", !!on);
-    btn.setAttribute("aria-pressed", String(!!on));
-  }
+function setBulletButtonState(tb, on) {
+  const btn = tb.querySelector('[data-action="bullets"]');
+  if (!btn) return;
+  btn.classList.toggle("active", !!on);
+  btn.setAttribute("aria-pressed", String(!!on));
+}
 
-  function getLineStart(v, pos) {
-    return v.lastIndexOf("\n", pos - 1) + 1;
-  }
+function getLineStart(v, pos) {
+  return v.lastIndexOf("\n", pos - 1) + 1;
+}
 
-  function lineHasBulletPrefix(v, lineStart) {
-    const head2 = v.slice(lineStart, lineStart + 2);
-    return head2 === "• " || head2 === "- ";
-  }
+function lineHasBulletPrefix(v, lineStart) {
+  const head2 = v.slice(lineStart, lineStart + 2);
+  return head2 === "• " || head2 === "- ";
+}
 
-  function ensureBulletPrefixAtCurrentLine(el) {
-    const v = el.value || "";
-    const pos = el.selectionStart ?? v.length;
-    const lineStart = getLineStart(v, pos);
-    if (lineHasBulletPrefix(v, lineStart)) return;
+function ensureBulletPrefixAtCurrentLine(el) {
+  const v = el.value || "";
+  const pos = el.selectionStart ?? v.length;
+  const lineStart = getLineStart(v, pos);
 
-    el.value = v.slice(0, lineStart) + BULLET + v.slice(lineStart);
-    const newPos = pos + BULLET.length;
+  // Hvis linja allerede starter med bullet, gjør ingenting
+  if (lineHasBulletPrefix(v, lineStart)) return;
+
+  // Sett inn bullet i starten av linja
+  el.value = v.slice(0, lineStart) + BULLET + v.slice(lineStart);
+  const newPos = pos + BULLET.length;
+  el.setSelectionRange(newPos, newPos);
+}
+
+function insertBulletNewline(el) {
+  const v = el.value || "";
+  const pos = el.selectionStart ?? v.length;
+  const insert = "\n" + BULLET;
+  el.value = v.slice(0, pos) + insert + v.slice(pos);
+  el.setSelectionRange(pos + insert.length, pos + insert.length);
+}
+
+function removeEmptyBulletLine(el) {
+  const v = el.value || "";
+  const pos = el.selectionStart ?? v.length;
+  const lineStart = getLineStart(v, pos);
+  const lineEndIdx = v.indexOf("\n", lineStart);
+  const lineEnd = lineEndIdx === -1 ? v.length : lineEndIdx;
+  const line = v.slice(lineStart, lineEnd);
+
+  // Hvis linja bare er "•" eller "-" så fjern prefixet
+  if ((line.startsWith("• ") && line.trim() === "•") || (line.startsWith("- ") && line.trim() === "-")) {
+    el.value = v.slice(0, lineStart) + v.slice(lineStart + 2);
+    const newPos = Math.max(lineStart, pos - 2);
     el.setSelectionRange(newPos, newPos);
   }
+}
 
-  function insertBulletNewline(el) {
-    const v = el.value || "";
-    const pos = el.selectionStart ?? v.length;
-    const insert = "\n" + BULLET;
-    el.value = v.slice(0, pos) + insert + v.slice(pos);
-    el.setSelectionRange(pos + insert.length, pos + insert.length);
-  }
+function bindToolbar(tb, target, onChange) {
+  if (!tb || !target) return;
 
-  function removeEmptyBulletLine(el) {
-    const v = el.value || "";
-    const pos = el.selectionStart ?? v.length;
-    const lineStart = getLineStart(v, pos);
-    const lineEndIdx = v.indexOf("\n", lineStart);
-    const lineEnd = lineEndIdx === -1 ? v.length : lineEndIdx;
-    const line = v.slice(lineStart, lineEnd);
+  // Bullet-mode state per textarea (ikke lagret i localStorage)
+  target.dataset.bulletOn = target.dataset.bulletOn || "";
+  setBulletButtonState(tb, target.dataset.bulletOn === "1");
 
-    if ((line.startsWith("• ") && line.trim() === "•") || (line.startsWith("- ") && line.trim() === "-")) {
-      el.value = v.slice(0, lineStart) + v.slice(lineStart + 2);
-      const newPos = Math.max(lineStart, pos - 2);
-      el.setSelectionRange(newPos, newPos);
+  // Når bullet-mode er på: Enter lager ny linje + bullet
+  target.addEventListener("keydown", (e) => {
+    if (target.dataset.bulletOn !== "1") return;
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      insertBulletNewline(target);
+      onChange();
+      return;
     }
-  }
 
-  function bindToolbar(tb, target, onChange) {
-    if (!tb || !target) return;
-    target.dataset.bulletOn = target.dataset.bulletOn || "";
-    setBulletButtonState(tb, target.dataset.bulletOn === "1");
+    if (e.key === "Backspace") {
+      // liten delay så cursor/tekst oppdateres først
+      setTimeout(() => {
+        removeEmptyBulletLine(target);
+        onChange();
+      }, 0);
+    }
+  });
 
-    target.addEventListener("keydown", (e) => {
-      if (target.dataset.bulletOn !== "1") return;
+  tb.querySelectorAll(".tbtn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const action = btn.getAttribute("data-action");
+      target.focus();
 
-      if (e.key === "Enter") {
-        e.preventDefault();
-        insertBulletNewline(target);
+      if (action === "bold") {
+        wrapSelectionWith(target, "**", "**");
         onChange();
         return;
       }
-      if (e.key === "Backspace") {
-        setTimeout(() => {
-          removeEmptyBulletLine(target);
+
+      if (action === "bullets") {
+        // Toggle bullet mode
+        const on = target.dataset.bulletOn === "1" ? "" : "1";
+        target.dataset.bulletOn = on;
+        setBulletButtonState(tb, on === "1");
+
+        // Hvis vi slår på: sørg for bullet på nåværende linje (så man kan starte direkte)
+        if (on === "1") {
+          ensureBulletPrefixAtCurrentLine(target);
           onChange();
-        }, 0);
+        }
+        return;
       }
     });
+  });
+}
 
-    tb.querySelectorAll(".tbtn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const action = btn.getAttribute("data-action");
-        target.focus();
+function bindSimpleToolbars() {
+  document.querySelectorAll(".toolbar[data-for]").forEach((tb) => {
+    const fieldId = tb.getAttribute("data-for");
+    const target = document.getElementById(fieldId);
+    if (!target) return;
 
-        if (action === "bold") {
-          wrapSelectionWith(target, "**", "**");
-          onChange();
-          return;
-        }
-
-        if (action === "bullets") {
-          const on = target.dataset.bulletOn === "1" ? "" : "1";
-          target.dataset.bulletOn = on;
-          setBulletButtonState(tb, on === "1");
-
-          if (on === "1") {
-            ensureBulletPrefixAtCurrentLine(target);
-            onChange();
-          }
-        }
-      });
+    bindToolbar(tb, target, () => {
+      state.data[fieldId] = target.value;
+      if (String(target.value).trim() === "") delete state.data[fieldId];
+      saveState();
+      render();
     });
-  }
+  });
+}
 
   function bindSimpleToolbars() {
     document.querySelectorAll(".toolbar[data-for]").forEach((tb) => {
