@@ -1,4 +1,5 @@
 /* styles.css (FULL) */
+
 /* ────────────────────────────────────────────── Base ────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -47,6 +48,7 @@ body{
   min-height: 200px;
 }
 .card h1, .card h2{ margin: 0; letter-spacing: 0.01em; }
+
 .panel-head{
   display:flex;
   align-items:center;
@@ -55,6 +57,7 @@ body{
   margin-bottom: 10px;
 }
 .panel-actions{ display:flex; gap:8px; align-items:center; }
+
 .pbtn{
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.06);
@@ -66,9 +69,27 @@ body{
   font-size: 12px;
 }
 .pbtn:hover{ background: rgba(255,255,255,0.10); }
-.row{ display:flex; gap:10px; align-items:center; flex-wrap: wrap; margin-top: 10px; }
-hr{ border: none; border-top: 1px solid rgba(255,255,255,0.10); margin: 14px 0; }
-.label{ display:block; margin: 12px 0 6px; font-size: 12px; color: rgba(233,238,252,0.8); }
+
+.row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+hr{
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.10);
+  margin: 14px 0;
+}
+
+.label{
+  display:block;
+  margin: 12px 0 6px;
+  font-size: 12px;
+  color: rgba(233,238,252,0.8);
+}
 
 .input, .textarea{
   width: 100%;
@@ -82,26 +103,7 @@ hr{ border: none; border-top: 1px solid rgba(255,255,255,0.10); margin: 14px 0; 
   font-weight: 400;
   font-size: 14px;
 }
-
 .textarea{ resize: vertical; }
-
-/* ✅ ny: textarea brukt som “input” (rows=1) skal føles som input */
-textarea.input{
-  resize: vertical;        /* du kan gjøre den større hvis du vil */
-  line-height: 1.25;
-  min-height: 40px;        /* matcher ca input-høyde */
-}
-
-/* små title-felt (tidligere input.small) */
-.input.small{
-  max-width: 260px;
-  padding: 8px 10px;
-}
-textarea.input.small{
-  resize: none;
-  min-height: 34px;
-}
-
 .input::placeholder, .textarea::placeholder{ color: rgba(233,238,252,0.45); }
 
 .btn{
@@ -120,6 +122,7 @@ textarea.input.small{
 }
 .btn:hover{ opacity: 0.95; }
 .btn.ghost{ background: transparent; color: #e9eefc; }
+
 .muted{ color: rgba(233,238,252,0.72); }
 .small{ font-size: 12px; }
 
@@ -134,8 +137,14 @@ textarea.input.small{
 
 /* Mini controls next to labels */
 .field { margin-top: 14px; }
-.field-head { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
+.field-head {
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+}
 .field-controls{ display:flex; align-items:center; gap:10px; }
+.input.small{ max-width: 260px; padding: 8px 10px; }
 .toggle{ display:inline-flex; align-items:center; gap:8px; font-size: 12px; color: rgba(255,255,255,0.75); }
 .toggle input { transform: translateY(1px); }
 
@@ -183,7 +192,13 @@ textarea.input.small{
   box-shadow: 0 20px 70px rgba(0,0,0,0.55);
   padding: 14px;
 }
-.modal-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 10px; }
+.modal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom: 10px;
+}
 .modal-title{ font-weight: 900; letter-spacing: 0.01em; }
 .lang-list-ui{
   margin-top: 10px;
@@ -204,7 +219,10 @@ textarea.input.small{
 }
 .lang-item:hover{ background: rgba(255,255,255,0.06); }
 .lang-item .code{ opacity: 0.65; font-size: 12px; }
-.lang-item.active{ background: rgba(47,107,255,0.18); border-bottom-color: rgba(47,107,255,0.18); }
+.lang-item.active{
+  background: rgba(47,107,255,0.18);
+  border-bottom-color: rgba(47,107,255,0.18);
+}
 
 /* ────────────────────────────────────────────── 3-panel grid + resizers ────────────────────────────────────────────── */
 .grid3{
@@ -263,6 +281,7 @@ textarea.input.small{
 .ai-compose{ display:flex; gap:10px; margin-top: 10px; align-items: flex-end; }
 .ai-input{ flex: 1; min-height: 68px; }
 .ai-send{ height: 42px; padding: 0 16px; }
+
 .msg{
   border: 1px solid rgba(255,255,255,0.10);
   background: rgba(255,255,255,0.05);
@@ -271,6 +290,7 @@ textarea.input.small{
 }
 .msg.user{ background: rgba(47,107,255,0.12); border-color: rgba(47,107,255,0.25); }
 .msg-title{ font-weight: 800; font-size: 12px; margin-bottom: 6px; opacity: 0.9; }
+
 .sugg{ margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.10); padding-top: 10px; }
 .sugg-item{
   border: 1px solid rgba(255,255,255,0.10);
@@ -285,8 +305,7 @@ textarea.input.small{
 /* thinking bubble */
 .thinking-row{ display:flex; gap:10px; align-items:center; font-size: 13px; color: rgba(233,238,252,0.85); }
 .spinner{
-  width: 14px;
-  height: 14px;
+  width: 14px; height: 14px;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.25);
   border-top-color: rgba(255,255,255,0.90);
@@ -329,11 +348,13 @@ textarea.input.small{
   color: var(--cv-body);
   font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
+
 .cv .cv-header{
   text-align:center;
   padding: 38px 40px 20px;
   border-bottom: 1px solid var(--cv-rule);
 }
+
 .cv .cv-name{
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-size: 28px;
@@ -342,6 +363,7 @@ textarea.input.small{
   text-transform: uppercase;
   color: var(--cv-heading);
 }
+
 .cv .cv-title{
   font-size: 9.5px;
   font-weight: 300;
@@ -350,6 +372,7 @@ textarea.input.small{
   color: var(--cv-light);
   margin-top: 6px;
 }
+
 .cv .cv-contact{
   display:flex;
   align-items:center;
@@ -361,11 +384,19 @@ textarea.input.small{
   color: var(--cv-body);
 }
 .cv .cv-contact .sep{ color: var(--cv-light); }
+
 .cv .cv-summary{ padding: 18px 40px 14px; }
 .cv .body-text{ font-size: 9px; line-height: 1.7; color: var(--cv-body); }
-.cv .cv-body{ display:flex; flex: 1; padding: 0 40px 24px; gap: 30px; }
+
+.cv .cv-body{
+  display:flex;
+  flex: 1;
+  padding: 0 40px 24px;
+  gap: 30px;
+}
 .cv .cv-left{ width: 34%; display:flex; flex-direction:column; gap: 14px; }
 .cv .cv-right{ flex: 1; display:flex; flex-direction:column; gap: 14px; }
+
 .cv .section-title{
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-size: 10px;
@@ -376,15 +407,23 @@ textarea.input.small{
   padding-bottom: 4px;
   margin-bottom: 8px;
 }
+
 .cv .edu-block{ margin-bottom: 8px; }
 .cv .edu-block h3{ font-size: 9.5px; font-weight: 600; margin:0; color: var(--cv-heading); }
 .cv .edu-block p{ font-size: 8.5px; margin:0; color: var(--cv-body); }
 .cv .edu-block .date{ font-size: 8px; color: var(--cv-light); }
 .cv .edu-block .honors{ font-size: 8px; color: var(--cv-light); font-style: italic; }
+
 .cv .cert-item{ margin-bottom: 6px; }
 .cv .cert-item h3{ font-size: 9px; font-weight: 600; margin:0; color: var(--cv-heading); }
 .cv .cert-item p{ font-size: 8px; margin:0; color: var(--cv-light); }
-.cv .skill-list, .cv .exp-bullets{ list-style:none; padding:0; margin:0; }
+
+/* Lists */
+.cv .skill-list, .cv .exp-bullets{
+  list-style:none;
+  padding:0;
+  margin:0;
+}
 .cv .skill-list li, .cv .exp-bullets li{
   font-size: 8.5px;
   line-height: 1.6;
@@ -395,9 +434,8 @@ textarea.input.small{
   margin-bottom: 4px;
 }
 
-/* dot vises KUN når li har class="dot" */
-.cv .skill-list li.dot::before,
-.cv .exp-bullets li.dot::before{
+/* ✅ Auto-dots ONLY when the UL has class "auto-dots" */
+.cv ul.auto-dots li::before{
   content:"";
   margin-top: 5px;
   flex-shrink:0;
@@ -405,6 +443,15 @@ textarea.input.small{
   height: var(--cv-dot-size);
   border-radius: 50%;
   background: var(--cv-accent);
+}
+
+/* ✅ No-auto-dots: remove the pseudo dot and the flex gap "dot column" feel */
+.cv ul.no-auto-dots li::before{
+  content: none !important;
+  display: none !important;
+}
+.cv ul.no-auto-dots li{
+  gap: 0;
 }
 
 .cv .exp-entry{ margin-bottom: 12px; }
@@ -416,11 +463,28 @@ textarea.input.small{
   margin:0;
   color: var(--cv-heading);
 }
-.cv .exp-entry .meta{ font-size: 8.5px; color: var(--cv-light); margin: 2px 0 4px; }
-.cv .vol-header{ display:flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.cv .exp-entry .meta{
+  font-size: 8.5px;
+  color: var(--cv-light);
+  margin: 2px 0 4px;
+}
+
+.cv .vol-header{
+  display:flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
 .cv .vol-header h3{ font-size: 9.5px; font-weight: 600; margin:0; color: var(--cv-heading); }
-.cv .vol-header .date{ margin-left: auto; font-size: 8px; color: var(--cv-light); white-space: nowrap; text-align: right; }
+.cv .vol-header .date{
+  margin-left: auto;
+  font-size: 8px;
+  color: var(--cv-light);
+  white-space: nowrap;
+  text-align: right;
+}
 .cv .vol-sub{ font-size: 8.5px; color: var(--cv-light); margin: 0 0 4px; }
+
 .cv .lang-list p{ font-size: 8.5px; color: var(--cv-body); margin: 2px 0; }
 
 /* ────────────────────────────────────────────── Print: only CV, full A4 ────────────────────────────────────────────── */
@@ -439,8 +503,3 @@ textarea.input.small{
   }
   .cv section, .cv .exp-entry, .cv li { break-inside: avoid; }
 }
-
-.cv ul.skill-list, .cv ul.exp-bullets { list-style: none !important; padding-left: 0 !important; margin-left: 0 !important; }
-.cv ul.skill-list li, .cv ul.exp-bullets li { padding-left: 0 !important; margin-left: 0 !important; }
-.cv ul.no-markers, .cv ul.no-markers li { list-style: none !important; }
-.cv ul.no-markers { padding-left: 0 !important; margin-left: 0 !important; }
