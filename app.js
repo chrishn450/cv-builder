@@ -10,7 +10,6 @@
   const t = (key) => (CVI.t ? CVI.t(state.ui.lang || "en", key) : key);
 
   const preview = qs("preview");
-  const printBtn = qs("printBtn");
   const downloadPdfBtn = qs("downloadPdfBtn");
   const downloadHtmlBtn = qs("downloadHtmlBtn");
 
