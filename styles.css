@@ -1,13 +1,7 @@
 /* styles.css (FULL) */
-/* ──────────────────────────────────────────────
-   Base
-────────────────────────────────────────────── */
-*,
-*::before,
-*::after { box-sizing: border-box; }
-
+/* ────────────────────────────────────────────── Base ────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
-
 body{
   font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: #0b1020;
@@ -15,9 +9,7 @@ body{
   -webkit-font-smoothing: antialiased;
 }
 
-/* ──────────────────────────────────────────────
-   Topbar
-────────────────────────────────────────────── */
+/* ────────────────────────────────────────────── Topbar ────────────────────────────────────────────── */
 .topbar{
   position: sticky;
   top: 0;
@@ -30,14 +22,8 @@ body{
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
-
-.brand{
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
+.brand{ font-weight: 700; letter-spacing: 0.02em; }
 .actions{ display:flex; gap:10px; align-items:center; }
-
 .lang-pill{
   display:inline-flex;
   align-items:center;
@@ -49,16 +35,9 @@ body{
   font-weight: 800;
   font-size: 12px;
 }
+.container{ max-width: 1500px; margin: 0 auto; padding: 18px 18px 30px; }
 
-.container{
-  max-width: 1500px;
-  margin: 0 auto;
-  padding: 18px 18px 30px;
-}
-
-/* ──────────────────────────────────────────────
-   Cards + common UI
-────────────────────────────────────────────── */
+/* ────────────────────────────────────────────── Cards + common UI ────────────────────────────────────────────── */
 .card{
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.08);
@@ -67,12 +46,7 @@ body{
   box-shadow: 0 20px 60px rgba(0,0,0,0.28);
   min-height: 200px;
 }
-
-.card h1, .card h2{
-  margin: 0;
-  letter-spacing: 0.01em;
-}
-
+.card h1, .card h2{ margin: 0; letter-spacing: 0.01em; }
 .panel-head{
   display:flex;
   align-items:center;
@@ -80,13 +54,7 @@ body{
   gap:10px;
   margin-bottom: 10px;
 }
-
-.panel-actions{
-  display:flex;
-  gap:8px;
-  align-items:center;
-}
-
+.panel-actions{ display:flex; gap:8px; align-items:center; }
 .pbtn{
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.06);
@@ -98,28 +66,9 @@ body{
   font-size: 12px;
 }
 .pbtn:hover{ background: rgba(255,255,255,0.10); }
-
-.row{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  flex-wrap: wrap;
-  margin-top: 10px;
-}
-
-hr{
-  border: none;
-  border-top: 1px solid rgba(255,255,255,0.10);
-  margin: 14px 0;
-}
-
-.label{
-  display:block;
-  margin: 12px 0 6px;
-  font-size: 12px;
-  color: rgba(233,238,252,0.8);
-}
-
+.row{ display:flex; gap:10px; align-items:center; flex-wrap: wrap; margin-top: 10px; }
+hr{ border: none; border-top: 1px solid rgba(255,255,255,0.10); margin: 14px 0; }
+.label{ display:block; margin: 12px 0 6px; font-size: 12px; color: rgba(233,238,252,0.8); }
 .input, .textarea{
   width: 100%;
   background: rgba(255,255,255,0.07);
@@ -128,19 +77,13 @@ hr{
   padding: 10px 12px;
   color: #e9eefc;
   outline: none;
-
   /* consistent font everywhere (Nr 7) */
   font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-weight: 400;
   font-size: 14px;
 }
-
 .textarea{ resize: vertical; }
-
-.input::placeholder, .textarea::placeholder{
-  color: rgba(233,238,252,0.45);
-}
-
+.input::placeholder, .textarea::placeholder{ color: rgba(233,238,252,0.45); }
 .btn{
   display:inline-flex;
   align-items:center;
@@ -155,14 +98,8 @@ hr{
   cursor: pointer;
   font-weight: 700;
 }
-
 .btn:hover{ opacity: 0.95; }
-
-.btn.ghost{
-  background: transparent;
-  color: #e9eefc;
-}
-
+.btn.ghost{ background: transparent; color: #e9eefc; }
 .muted{ color: rgba(233,238,252,0.72); }
 .small{ font-size: 12px; }
 
@@ -177,37 +114,14 @@ hr{
 
 /* Mini controls next to labels */
 .field { margin-top: 14px; }
-.field-head {
-  display:flex;
-  align-items:flex-end;
-  justify-content:space-between;
-  gap:12px;
-}
-.field-controls{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-.input.small{
-  max-width: 260px;
-  padding: 8px 10px;
-}
-
-.toggle{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  font-size: 12px;
-  color: rgba(255,255,255,0.75);
-}
+.field-head { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
+.field-controls{ display:flex; align-items:center; gap:10px; }
+.input.small{ max-width: 260px; padding: 8px 10px; }
+.toggle{ display:inline-flex; align-items:center; gap:8px; font-size: 12px; color: rgba(255,255,255,0.75); }
 .toggle input { transform: translateY(1px); }
 
 /* Toolbar */
-.toolbar{
-  display:flex;
-  gap:8px;
-  margin: 8px 0 8px;
-}
+.toolbar{ display:flex; gap:8px; margin: 8px 0 8px; }
 .tbtn{
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.06);
@@ -219,7 +133,6 @@ hr{
   line-height: 1;
 }
 .tbtn:hover{ background: rgba(255,255,255,0.10); }
-
 .tbtn.tdot{
   width: 34px;
   min-width: 34px;
@@ -229,13 +142,9 @@ hr{
   justify-content: center;
   padding: 0;
 }
-.tbtn.active{
-  outline: 2px solid rgba(47,107,255,0.6);
-}
+.tbtn.active{ outline: 2px solid rgba(47,107,255,0.6); }
 
-/* ──────────────────────────────────────────────
-   Modal (language picker)
-────────────────────────────────────────────── */
+/* ────────────────────────────────────────────── Modal (language picker) ────────────────────────────────────────────── */
 .modal{
   position: fixed;
   inset: 0;
@@ -255,17 +164,8 @@ hr{
   box-shadow: 0 20px 70px rgba(0,0,0,0.55);
   padding: 14px;
 }
-.modal-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom: 10px;
-}
-.modal-title{
-  font-weight: 900;
-  letter-spacing: 0.01em;
-}
+.modal-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 10px; }
+.modal-title{ font-weight: 900; letter-spacing: 0.01em; }
 .lang-list-ui{
   margin-top: 10px;
   border: 1px solid rgba(255,255,255,0.10);
@@ -285,21 +185,15 @@ hr{
 }
 .lang-item:hover{ background: rgba(255,255,255,0.06); }
 .lang-item .code{ opacity: 0.65; font-size: 12px; }
-.lang-item.active{
-  background: rgba(47,107,255,0.18);
-  border-bottom-color: rgba(47,107,255,0.18);
-}
+.lang-item.active{ background: rgba(47,107,255,0.18); border-bottom-color: rgba(47,107,255,0.18); }
 
-/* ──────────────────────────────────────────────
-   3-panel grid + resizers
-────────────────────────────────────────────── */
+/* ────────────────────────────────────────────── 3-panel grid + resizers ────────────────────────────────────────────── */
 .grid3{
   display:grid;
   grid-template-columns: 1.25fr 10px 1fr 10px 0.85fr;
   gap: 14px;
   align-items: start;
 }
-
 .v-resizer{
   width: 10px;
   border-radius: 999px;
@@ -310,7 +204,6 @@ hr{
   position: sticky;
   top: 88px;
 }
-
 @media (max-width: 1180px){
   .grid3{ grid-template-columns: 1fr; }
   .v-resizer{ display:none; }
@@ -336,9 +229,7 @@ hr{
   backdrop-filter: blur(6px);
 }
 
-/* ──────────────────────────────────────────────
-   AI Coach UI
-────────────────────────────────────────────── */
+/* ────────────────────────────────────────────── AI Coach UI ────────────────────────────────────────────── */
 .ai-chat{
   display:flex;
   flex-direction:column-reverse;
@@ -350,48 +241,18 @@ hr{
   height: 460px;
   overflow:auto;
 }
-
-.ai-compose{
-  display:flex;
-  gap:10px;
-  margin-top: 10px;
-  align-items: flex-end;
-}
-
-.ai-input{
-  flex: 1;
-  min-height: 68px;
-}
-
-.ai-send{
-  height: 42px;
-  padding: 0 16px;
-}
-
+.ai-compose{ display:flex; gap:10px; margin-top: 10px; align-items: flex-end; }
+.ai-input{ flex: 1; min-height: 68px; }
+.ai-send{ height: 42px; padding: 0 16px; }
 .msg{
   border: 1px solid rgba(255,255,255,0.10);
   background: rgba(255,255,255,0.05);
   border-radius: 12px;
   padding: 10px 12px;
 }
-
-.msg.user{
-  background: rgba(47,107,255,0.12);
-  border-color: rgba(47,107,255,0.25);
-}
-
-.msg-title{
-  font-weight: 800;
-  font-size: 12px;
-  margin-bottom: 6px;
-  opacity: 0.9;
-}
-
-.sugg{
-  margin-top: 10px;
-  border-top: 1px solid rgba(255,255,255,0.10);
-  padding-top: 10px;
-}
+.msg.user{ background: rgba(47,107,255,0.12); border-color: rgba(47,107,255,0.25); }
+.msg-title{ font-weight: 800; font-size: 12px; margin-bottom: 6px; opacity: 0.9; }
+.sugg{ margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.10); padding-top: 10px; }
 .sugg-item{
   border: 1px solid rgba(255,255,255,0.10);
   background: rgba(0,0,0,0.18);
@@ -399,25 +260,11 @@ hr{
   padding: 10px;
   margin-top: 10px;
 }
-.sugg-item .topic{
-  font-weight: 900;
-  font-size: 12px;
-  margin-bottom: 6px;
-}
-.sugg-buttons{
-  display:flex;
-  gap:10px;
-  margin-top: 10px;
-}
+.sugg-item .topic{ font-weight: 900; font-size: 12px; margin-bottom: 6px; }
+.sugg-buttons{ display:flex; gap:10px; margin-top: 10px; }
 
 /* thinking bubble */
-.thinking-row{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  font-size: 13px;
-  color: rgba(233,238,252,0.85);
-}
+.thinking-row{ display:flex; gap:10px; align-items:center; font-size: 13px; color: rgba(233,238,252,0.85); }
 .spinner{
   width: 14px;
   height: 14px;
@@ -428,9 +275,7 @@ hr{
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ──────────────────────────────────────────────
-   CV Theme Variables
-────────────────────────────────────────────── */
+/* ────────────────────────────────────────────── CV Theme Variables ────────────────────────────────────────────── */
 :root{
   --cv-bg: #f9f6f0;
   --cv-heading: #2c2c2c;
@@ -453,9 +298,7 @@ hr{
   background: var(--cv-accent);
 }
 
-/* ──────────────────────────────────────────────
-   CV Template (scoped)
-────────────────────────────────────────────── */
+/* ────────────────────────────────────────────── CV Template (scoped) ────────────────────────────────────────────── */
 .cv{
   width: 210mm;
   min-height: 297mm;
@@ -469,13 +312,11 @@ hr{
   color: var(--cv-body);
   font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-
 .cv .cv-header{
   text-align:center;
   padding: 38px 40px 20px;
   border-bottom: 1px solid var(--cv-rule);
 }
-
 .cv .cv-name{
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-size: 28px;
@@ -484,7 +325,6 @@ hr{
   text-transform: uppercase;
   color: var(--cv-heading);
 }
-
 .cv .cv-title{
   font-size: 9.5px;
   font-weight: 300;
@@ -493,7 +333,6 @@ hr{
   color: var(--cv-light);
   margin-top: 6px;
 }
-
 .cv .cv-contact{
   display:flex;
   align-items:center;
@@ -504,38 +343,12 @@ hr{
   font-size: 8.5px;
   color: var(--cv-body);
 }
-
 .cv .cv-contact .sep{ color: var(--cv-light); }
-
 .cv .cv-summary{ padding: 18px 40px 14px; }
-
-.cv .body-text{
-  font-size: 9px;
-  line-height: 1.7;
-  color: var(--cv-body);
-}
-
-.cv .cv-body{
-  display:flex;
-  flex: 1;
-  padding: 0 40px 24px;
-  gap: 30px;
-}
-
-.cv .cv-left{
-  width: 34%;
-  display:flex;
-  flex-direction:column;
-  gap: 14px;
-}
-
-.cv .cv-right{
-  flex: 1;
-  display:flex;
-  flex-direction:column;
-  gap: 14px;
-}
-
+.cv .body-text{ font-size: 9px; line-height: 1.7; color: var(--cv-body); }
+.cv .cv-body{ display:flex; flex: 1; padding: 0 40px 24px; gap: 30px; }
+.cv .cv-left{ width: 34%; display:flex; flex-direction:column; gap: 14px; }
+.cv .cv-right{ flex: 1; display:flex; flex-direction:column; gap: 14px; }
 .cv .section-title{
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-size: 10px;
@@ -546,37 +359,29 @@ hr{
   padding-bottom: 4px;
   margin-bottom: 8px;
 }
-
 .cv .edu-block{ margin-bottom: 8px; }
 .cv .edu-block h3{ font-size: 9.5px; font-weight: 600; margin:0; color: var(--cv-heading); }
 .cv .edu-block p{ font-size: 8.5px; margin:0; color: var(--cv-body); }
 .cv .edu-block .date{ font-size: 8px; color: var(--cv-light); }
 .cv .edu-block .honors{ font-size: 8px; color: var(--cv-light); font-style: italic; }
-
 .cv .cert-item{ margin-bottom: 6px; }
 .cv .cert-item h3{ font-size: 9px; font-weight: 600; margin:0; color: var(--cv-heading); }
 .cv .cert-item p{ font-size: 8px; margin:0; color: var(--cv-light); }
-
-.cv .skill-list,
-.cv .exp-bullets{
-  list-style:none;
-  padding:0;
-  margin:0;
-}
-
-.cv .skill-list li,
-.cv .exp-bullets li{
+.cv .skill-list, .cv .exp-bullets{ list-style:none; padding:0; margin:0; }
+.cv .skill-list li, .cv .exp-bullets li{
   font-size: 8.5px;
   line-height: 1.6;
   color: var(--cv-body);
   display:flex;
   align-items:flex-start;
   gap:7px;
-  margin-bottom: 4px; /* litt mer luft så det tydelig er separate bullets */
+  margin-bottom: 4px;
+  /* litt mer luft så det tydelig er separate bullets */
 }
 
-.cv .skill-list li::before,
-.cv .exp-bullets li::before{
+/* ✅ ENDRET: dot vises KUN når <li> har class="dot" */
+.cv .skill-list li.dot::before,
+.cv .exp-bullets li.dot::before{
   content:"";
   margin-top: 5px;
   flex-shrink:0;
@@ -595,67 +400,21 @@ hr{
   margin:0;
   color: var(--cv-heading);
 }
-.cv .exp-entry .meta{
-  font-size: 8.5px;
-  color: var(--cv-light);
-  margin: 2px 0 4px;
-}
-
-.cv .vol-header{
-  display:flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
-}
+.cv .exp-entry .meta{ font-size: 8.5px; color: var(--cv-light); margin: 2px 0 4px; }
+.cv .vol-header{ display:flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .cv .vol-header h3{ font-size: 9.5px; font-weight: 600; margin:0; color: var(--cv-heading); }
-.cv .vol-header .date{
-  margin-left: auto;
-  font-size: 8px;
-  color: var(--cv-light);
-  white-space: nowrap;
-  text-align: right;
-}
+.cv .vol-header .date{ margin-left: auto; font-size: 8px; color: var(--cv-light); white-space: nowrap; text-align: right; }
+.cv .vol-sub{ font-size: 8.5px; color: var(--cv-light); margin: 0 0 4px; }
+.cv .lang-list p{ font-size: 8.5px; color: var(--cv-body); margin: 2px 0; }
 
-.cv .vol-sub{
-  font-size: 8.5px;
-  color: var(--cv-light);
-  margin: 0 0 4px;
-}
-
-.cv .lang-list p{
-  font-size: 8.5px;
-  color: var(--cv-body);
-  margin: 2px 0;
-}
-
-/* ──────────────────────────────────────────────
-   Print: only CV, full A4
-────────────────────────────────────────────── */
+/* ────────────────────────────────────────────── Print: only CV, full A4 ────────────────────────────────────────────── */
 @page { size: A4; margin: 0; }
-
 @media print{
-  html, body{
-    margin:0;
-    padding:0;
-    background:white !important;
-    color:#111 !important;
-  }
-
+  html, body{ margin:0; padding:0; background:white !important; color:#111 !important; }
   /* Hide everything except #preview */
-  .topbar,
-  #panel-editor,
-  #panel-ai,
-  .v-resizer,
-  .panel-actions,
-  .ai-chat,
-  .ai-compose,
-  .btn,
-  button,
-  a { display:none !important; }
-
+  .topbar, #panel-editor, #panel-ai, .v-resizer, .panel-actions, .ai-chat, .ai-compose, .btn, button, a { display:none !important; }
   /* IMPORTANT: do not hide .container */
   #panel-preview, #preview, .cv { display:block !important; }
-
   .cv{
     width: 210mm !important;
     height: 297mm !important;
@@ -664,32 +423,13 @@ hr{
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-
   .cv section, .cv .exp-entry, .cv li { break-inside: avoid; }
 }
-/* Remove automatic bullets in the CV preview.
-   User can type "•" manually if they want. */
-.cv ul.skill-list,
-.cv ul.exp-bullets {
-  list-style: none !important;
-  padding-left: 0 !important;
-  margin-left: 0 !important;
-}
 
-.cv ul.skill-list li,
-.cv ul.exp-bullets li {
-  padding-left: 0 !important;
-  margin-left: 0 !important;
-}
-/* Remove default list markers everywhere in CV preview.
-   If user types "• " manually, it will still show as text. */
-.cv ul.no-markers,
-.cv ul.no-markers li {
-  list-style: none !important;
-}
+/* Remove automatic bullets in the CV preview. User can type "•" manually if they want. */
+.cv ul.skill-list, .cv ul.exp-bullets { list-style: none !important; padding-left: 0 !important; margin-left: 0 !important; }
+.cv ul.skill-list li, .cv ul.exp-bullets li { padding-left: 0 !important; margin-left: 0 !important; }
 
-.cv ul.no-markers {
-  padding-left: 0 !important;
-  margin-left: 0 !important;
-}
-
+/* Remove default list markers everywhere in CV preview. If user types "• " manually, it will still show as text. */
+.cv ul.no-markers, .cv ul.no-markers li { list-style: none !important; }
+.cv ul.no-markers { padding-left: 0 !important; margin-left: 0 !important; }
