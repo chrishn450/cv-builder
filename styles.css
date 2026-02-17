@@ -69,6 +69,7 @@ body{
 .row{ display:flex; gap:10px; align-items:center; flex-wrap: wrap; margin-top: 10px; }
 hr{ border: none; border-top: 1px solid rgba(255,255,255,0.10); margin: 14px 0; }
 .label{ display:block; margin: 12px 0 6px; font-size: 12px; color: rgba(233,238,252,0.8); }
+
 .input, .textarea{
   width: 100%;
   background: rgba(255,255,255,0.07);
@@ -77,13 +78,32 @@ hr{ border: none; border-top: 1px solid rgba(255,255,255,0.10); margin: 14px 0; 
   padding: 10px 12px;
   color: #e9eefc;
   outline: none;
-  /* consistent font everywhere (Nr 7) */
   font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-weight: 400;
   font-size: 14px;
 }
+
 .textarea{ resize: vertical; }
+
+/* ✅ ny: textarea brukt som “input” (rows=1) skal føles som input */
+textarea.input{
+  resize: vertical;        /* du kan gjøre den større hvis du vil */
+  line-height: 1.25;
+  min-height: 40px;        /* matcher ca input-høyde */
+}
+
+/* små title-felt (tidligere input.small) */
+.input.small{
+  max-width: 260px;
+  padding: 8px 10px;
+}
+textarea.input.small{
+  resize: none;
+  min-height: 34px;
+}
+
 .input::placeholder, .textarea::placeholder{ color: rgba(233,238,252,0.45); }
+
 .btn{
   display:inline-flex;
   align-items:center;
@@ -116,7 +136,6 @@ hr{ border: none; border-top: 1px solid rgba(255,255,255,0.10); margin: 14px 0; 
 .field { margin-top: 14px; }
 .field-head { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
 .field-controls{ display:flex; align-items:center; gap:10px; }
-.input.small{ max-width: 260px; padding: 8px 10px; }
 .toggle{ display:inline-flex; align-items:center; gap:8px; font-size: 12px; color: rgba(255,255,255,0.75); }
 .toggle input { transform: translateY(1px); }
 
@@ -284,8 +303,6 @@ hr{ border: none; border-top: 1px solid rgba(255,255,255,0.10); margin: 14px 0; 
   --cv-accent: #b8a88a;
   --cv-border: #d6cdb8;
   --cv-rule: rgba(184,168,138,0.3);
-
-  /* one source of truth */
   --cv-dot-size: 3.5px;
 }
 
@@ -376,10 +393,9 @@ hr{ border: none; border-top: 1px solid rgba(255,255,255,0.10); margin: 14px 0; 
   align-items:flex-start;
   gap:7px;
   margin-bottom: 4px;
-  /* litt mer luft så det tydelig er separate bullets */
 }
 
-/* ✅ ENDRET: dot vises KUN når <li> har class="dot" */
+/* dot vises KUN når li har class="dot" */
 .cv .skill-list li.dot::before,
 .cv .exp-bullets li.dot::before{
   content:"";
@@ -411,9 +427,7 @@ hr{ border: none; border-top: 1px solid rgba(255,255,255,0.10); margin: 14px 0; 
 @page { size: A4; margin: 0; }
 @media print{
   html, body{ margin:0; padding:0; background:white !important; color:#111 !important; }
-  /* Hide everything except #preview */
   .topbar, #panel-editor, #panel-ai, .v-resizer, .panel-actions, .ai-chat, .ai-compose, .btn, button, a { display:none !important; }
-  /* IMPORTANT: do not hide .container */
   #panel-preview, #preview, .cv { display:block !important; }
   .cv{
     width: 210mm !important;
@@ -426,10 +440,7 @@ hr{ border: none; border-top: 1px solid rgba(255,255,255,0.10); margin: 14px 0; 
   .cv section, .cv .exp-entry, .cv li { break-inside: avoid; }
 }
 
-/* Remove automatic bullets in the CV preview. User can type "•" manually if they want. */
 .cv ul.skill-list, .cv ul.exp-bullets { list-style: none !important; padding-left: 0 !important; margin-left: 0 !important; }
 .cv ul.skill-list li, .cv ul.exp-bullets li { padding-left: 0 !important; margin-left: 0 !important; }
-
-/* Remove default list markers everywhere in CV preview. If user types "• " manually, it will still show as text. */
 .cv ul.no-markers, .cv ul.no-markers li { list-style: none !important; }
 .cv ul.no-markers { padding-left: 0 !important; margin-left: 0 !important; }
