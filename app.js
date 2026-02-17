@@ -15,22 +15,42 @@
   const downloadHtmlBtn = qs("downloadHtmlBtn");
 
   const FIELD_IDS = [
-    "name", "title", "email", "phone", "location", "linkedin",
-    "summary", "clinicalSkills", "coreCompetencies", "languages",
-    "achievements", "custom1", "custom2",
+    "name",
+    "title",
+    "email",
+    "phone",
+    "location",
+    "linkedin",
+    "summary",
+    "clinicalSkills",
+    "coreCompetencies",
+    "languages",
+    "achievements",
+    "custom1",
+    "custom2",
   ];
 
   const SECTION_KEYS = [
-    "summary", "education", "licenses", "clinicalSkills", "coreCompetencies",
-    "languages", "experience", "achievements", "volunteer", "custom1", "custom2",
+    "summary",
+    "education",
+    "licenses",
+    "clinicalSkills",
+    "coreCompetencies",
+    "languages",
+    "experience",
+    "achievements",
+    "volunteer",
+    "custom1",
+    "custom2",
   ];
 
-  const CONTACT_SHOW_IDS = ["show_title", "show_email", "show_phone", "show_location", "show_linkedin"];
-
-  // ✅ NEW: strip "(...)" hints from i18n labels without touching i18n.js
-  function stripParenHint(s) {
-    return String(s || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
-  }
+  const CONTACT_SHOW_IDS = [
+    "show_title",
+    "show_email",
+    "show_phone",
+    "show_location",
+    "show_linkedin",
+  ];
 
   function render() {
     if (!preview || typeof window.renderCV !== "function") return;
@@ -52,13 +72,16 @@
       state.data = parsed.data || {};
       state.sections = parsed.sections || {};
       state.ui = parsed.ui || state.ui;
-    } catch (_) { }
+    } catch (_) {}
   }
 
   function saveState() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: state.data, sections: state.sections, ui: state.ui }));
-    } catch (_) { }
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ data: state.data, sections: state.sections, ui: state.ui })
+      );
+    } catch (_) {}
   }
 
   function ensureContactSection() {
@@ -321,6 +344,7 @@
     else state.data[fieldKey] = value;
   }
 
+  // ---- Education
   function eduToText(blocks) {
     return (blocks || [])
       .map((b) => {
@@ -356,16 +380,16 @@
         </div>
 
         <label class="label">${t("edu.degree")}</label>
-        <textarea class="input" rows="1" data-edu-degree="${idx}"></textarea>
+        <textarea class="textarea" rows="2" data-edu-degree="${idx}"></textarea>
 
         <label class="label">${t("edu.school")}</label>
-        <textarea class="input" rows="1" data-edu-school="${idx}"></textarea>
+        <textarea class="textarea" rows="2" data-edu-school="${idx}"></textarea>
 
         <label class="label">${t("edu.dates")}</label>
-        <textarea class="input" rows="1" data-edu-date="${idx}"></textarea>
+        <textarea class="textarea" rows="1" data-edu-date="${idx}"></textarea>
 
         <label class="label">${t("edu.honors")}</label>
-        <textarea class="input" rows="1" data-edu-honors="${idx}"></textarea>
+        <textarea class="textarea" rows="2" data-edu-honors="${idx}"></textarea>
       `;
       eduRoot.appendChild(wrap);
 
@@ -419,6 +443,7 @@
     });
   }
 
+  // ---- Licenses
   function licToText(items) {
     const lines = [];
     (items || []).forEach((it) => {
@@ -455,10 +480,10 @@
         </div>
 
         <label class="label">${t("lic.title")}</label>
-        <textarea class="input" rows="1" data-lic-title="${idx}"></textarea>
+        <textarea class="textarea" rows="2" data-lic-title="${idx}"></textarea>
 
         <label class="label">${t("lic.detail")}</label>
-        <textarea class="input" rows="1" data-lic-detail="${idx}"></textarea>
+        <textarea class="textarea" rows="2" data-lic-detail="${idx}"></textarea>
       `;
       licRoot.appendChild(wrap);
 
@@ -501,6 +526,7 @@
     });
   }
 
+  // ---- Experience
   function expToText(jobs) {
     return (jobs || [])
       .map((j) => {
@@ -535,18 +561,17 @@
         </div>
 
         <label class="label">${t("exp.role")}</label>
-        <textarea class="input" rows="1" data-exp-title="${idx}"></textarea>
+        <textarea class="textarea" rows="2" data-exp-title="${idx}"></textarea>
 
         <label class="label">${t("exp.meta")}</label>
-        <textarea class="input" rows="1" data-exp-meta="${idx}"></textarea>
+        <textarea class="textarea" rows="2" data-exp-meta="${idx}"></textarea>
 
         <div class="toolbar" data-exp-toolbar="${idx}">
           <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
           <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
         </div>
 
-        <!-- ✅ changed: strip "(...)" from label -->
-        <label class="label">${stripParenHint(t("exp.bullets"))}</label>
+        <!-- (FJERNET LABEL "Bullets (one per line)") -->
         <textarea class="textarea" rows="5" data-exp-bullets="${idx}"></textarea>
       `;
       expRoot.appendChild(wrap);
@@ -606,20 +631,52 @@
     });
   }
 
+  // ---- Volunteer (NY: title + date + sub + bullets)
+  function normalizeVolunteerBlock(v) {
+    const out = { title: "", date: "", sub: "", bullets: [] };
+
+    // Backwards compat: old `header` could be "TITLE | DATE"
+    const header = String(v?.header ?? v?.title ?? "").trim();
+    const date = String(v?.date ?? "").trim();
+
+    if (header && !date) {
+      const m = header.match(/^(.+?)\s*\|\s*(.+)$/);
+      if (m) {
+        out.title = m[1].trim();
+        out.date = m[2].trim();
+      } else {
+        out.title = header;
+      }
+    } else {
+      out.title = header;
+      out.date = date;
+    }
+
+    out.sub = String(v?.sub ?? "").trim();
+    out.bullets = Array.isArray(v?.bullets) ? v.bullets : [];
+    return out;
+  }
+
   function volToText(vols) {
     return (vols || [])
-      .map((v) => {
-        const header = (v.header || "").trim();
+      .map((v0) => {
+        const v = normalizeVolunteerBlock(v0);
+        const title = (v.title || "").trim();
+        const date = (v.date || "").trim();
         const sub = (v.sub || "").trim();
         const bullets = (v.bullets || []).map((x) => String(x || "").trim()).filter(Boolean);
-        return [header, sub, ...bullets].filter(Boolean).join("\n");
+
+        const firstLine = [title, date].filter(Boolean).join(" | ");
+        return [firstLine, sub, ...bullets].filter(Boolean).join("\n");
       })
       .filter((x) => x.trim().length > 0)
       .join("\n\n");
   }
 
   function syncVolunteer() {
-    ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
+    ensureArray("volunteerBlocks", 3, () => ({ title: "", date: "", sub: "", bullets: [] }));
+    state.data.volunteerBlocks = (state.data.volunteerBlocks || []).map(normalizeVolunteerBlock);
+
     const txt = volToText(state.data.volunteerBlocks);
     if (volHidden) volHidden.value = txt;
     setOverrideField("volunteer", txt);
@@ -627,10 +684,15 @@
 
   function renderVolunteer() {
     if (!volRoot) return;
-    ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
+
+    ensureArray("volunteerBlocks", 3, () => ({ title: "", date: "", sub: "", bullets: [] }));
+    state.data.volunteerBlocks = (state.data.volunteerBlocks || []).map(normalizeVolunteerBlock);
+
     volRoot.innerHTML = "";
 
-    state.data.volunteerBlocks.forEach((v, idx) => {
+    state.data.volunteerBlocks.forEach((v0, idx) => {
+      const v = normalizeVolunteerBlock(v0);
+
       const wrap = document.createElement("div");
       wrap.className = "subcard";
       wrap.innerHTML = `
@@ -639,27 +701,32 @@
           <button class="btn ghost" type="button" data-vol-remove="${idx}" style="padding:6px 10px;">${t("common.remove")}</button>
         </div>
 
-        <label class="label">${t("vol.header")}</label>
-        <textarea class="input" rows="1" data-vol-header="${idx}"></textarea>
+        <label class="label">${t("vol.title")}</label>
+        <textarea class="textarea" rows="2" data-vol-title="${idx}"></textarea>
+
+        <label class="label">${t("vol.date")}</label>
+        <textarea class="textarea" rows="1" data-vol-date="${idx}"></textarea>
 
         <label class="label">${t("vol.sub")}</label>
-        <textarea class="input" rows="1" data-vol-sub="${idx}"></textarea>
+        <textarea class="textarea" rows="2" data-vol-sub="${idx}"></textarea>
 
         <div class="toolbar" data-vol-toolbar="${idx}">
           <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
           <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
         </div>
 
-        <label class="label">${stripParenHint(t("vol.bullets"))}</label>
+        <!-- (FJERNET LABEL "Bullets (one per line)") -->
         <textarea class="textarea" rows="4" data-vol-bullets="${idx}"></textarea>
       `;
       volRoot.appendChild(wrap);
 
-      const headerEl = wrap.querySelector(`[data-vol-header="${idx}"]`);
+      const titleEl = wrap.querySelector(`[data-vol-title="${idx}"]`);
+      const dateEl = wrap.querySelector(`[data-vol-date="${idx}"]`);
       const subEl = wrap.querySelector(`[data-vol-sub="${idx}"]`);
       const bulletsEl = wrap.querySelector(`[data-vol-bullets="${idx}"]`);
 
-      headerEl.value = v.header || "";
+      titleEl.value = v.title || "";
+      dateEl.value = v.date || "";
       subEl.value = v.sub || "";
       bulletsEl.value = (v.bullets || []).join("\n");
 
@@ -670,17 +737,20 @@
           .filter(Boolean);
 
       const update = () => {
-        state.data.volunteerBlocks[idx] = {
-          header: headerEl.value,
+        state.data.volunteerBlocks[idx] = normalizeVolunteerBlock({
+          title: titleEl.value,
+          date: dateEl.value,
           sub: subEl.value,
           bullets: parseBullets(),
-        };
+        });
+
         syncVolunteer();
         saveState();
         render();
       };
 
-      headerEl.addEventListener("input", update);
+      titleEl.addEventListener("input", update);
+      dateEl.addEventListener("input", update);
       subEl.addEventListener("input", update);
       bulletsEl.addEventListener("input", update);
 
@@ -701,8 +771,8 @@
 
   if (addVolBtn) {
     addVolBtn.addEventListener("click", () => {
-      ensureArray("volunteerBlocks", 3, () => ({ header: "", sub: "", bullets: [] }));
-      state.data.volunteerBlocks.push({ header: "", sub: "", bullets: [] });
+      ensureArray("volunteerBlocks", 3, () => ({ title: "", date: "", sub: "", bullets: [] }));
+      state.data.volunteerBlocks.push({ title: "", date: "", sub: "", bullets: [] });
       syncVolunteer();
       saveState();
       renderVolunteer();
@@ -712,7 +782,7 @@
 
   // ---- Export helpers (PDF/print)
   async function exportToPrintWindow({ autoPrint = true } = {}) {
-    const cssText = await fetch("/styles.css", { cache: "no-store" }).then(r => r.text());
+    const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
     const cvHtml = preview ? preview.innerHTML : "";
 
     const html = `<!doctype html>
@@ -752,7 +822,7 @@
   if (downloadHtmlBtn) {
     downloadHtmlBtn.addEventListener("click", async () => {
       try {
-        const cssText = await fetch("/styles.css", { cache: "no-store" }).then(r => r.text());
+        const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
         const html = `<!doctype html>
 <html>
 <head>
@@ -792,7 +862,9 @@
   function setGridColumns(cols) {
     if (!grid) return;
     grid.style.gridTemplateColumns = cols;
-    try { localStorage.setItem("cv_grid_cols_v1", cols); } catch { }
+    try {
+      localStorage.setItem("cv_grid_cols_v1", cols);
+    } catch {}
   }
 
   function restoreGridColumns() {
@@ -800,7 +872,7 @@
     try {
       const saved = localStorage.getItem("cv_grid_cols_v1");
       if (saved) grid.style.gridTemplateColumns = saved;
-    } catch { }
+    } catch {}
   }
 
   function computeVisiblePanels() {
@@ -820,9 +892,18 @@
       setGridColumns("1.25fr 10px 1fr 10px 0.85fr");
       return;
     }
-    if (v.editor && v.preview && !v.ai) { setGridColumns("1.25fr 10px 1fr"); return; }
-    if (v.editor && !v.preview && v.ai) { setGridColumns("1.25fr 10px 1fr"); return; }
-    if (!v.editor && v.preview && v.ai) { setGridColumns("1fr 10px 0.85fr"); return; }
+    if (v.editor && v.preview && !v.ai) {
+      setGridColumns("1.25fr 10px 1fr");
+      return;
+    }
+    if (v.editor && !v.preview && v.ai) {
+      setGridColumns("1.25fr 10px 1fr");
+      return;
+    }
+    if (!v.editor && v.preview && v.ai) {
+      setGridColumns("1fr 10px 0.85fr");
+      return;
+    }
     setGridColumns("1fr");
   }
 
@@ -834,8 +915,8 @@
     }
 
     function closeAnyFullscreen() {
-      document.querySelectorAll(".panel.is-fullscreen").forEach(p => p.classList.remove("is-fullscreen"));
-      document.querySelectorAll(".fullscreen-backdrop").forEach(b => b.remove());
+      document.querySelectorAll(".panel.is-fullscreen").forEach((p) => p.classList.remove("is-fullscreen"));
+      document.querySelectorAll(".fullscreen-backdrop").forEach((b) => b.remove());
       setBodyLocked(false);
     }
 
@@ -850,7 +931,7 @@
       setBodyLocked(true);
     }
 
-    document.querySelectorAll('[data-action="hide"]').forEach(btn => {
+    document.querySelectorAll('[data-action="hide"]').forEach((btn) => {
       btn.addEventListener("click", () => {
         const target = btn.getAttribute("data-target");
         const panel = qs(`panel-${target}`);
@@ -863,7 +944,7 @@
       });
     });
 
-    document.querySelectorAll('[data-action="fullscreen"]').forEach(btn => {
+    document.querySelectorAll('[data-action="fullscreen"]').forEach((btn) => {
       btn.addEventListener("click", () => {
         const target = btn.getAttribute("data-target");
         const panel = qs(`panel-${target}`);
@@ -927,7 +1008,7 @@
       let previewPct, aiPct;
 
       if (isSecond) {
-        const afterEditorPx = x - (total * (editorPct / 100));
+        const afterEditorPx = x - total * (editorPct / 100);
         const afterEditorPct = (afterEditorPx / total) * 100;
         previewPct = Math.max(minPct, Math.min(remaining - minPct, afterEditorPct));
         aiPct = remaining - previewPct;
@@ -939,8 +1020,14 @@
         aiPct = remaining * (ratioAi / sum);
       }
 
-      if (previewPct < minPct) { previewPct = minPct; aiPct = remaining - previewPct; }
-      if (aiPct < minPct) { aiPct = minPct; previewPct = remaining - aiPct; }
+      if (previewPct < minPct) {
+        previewPct = minPct;
+        aiPct = remaining - previewPct;
+      }
+      if (aiPct < minPct) {
+        aiPct = minPct;
+        previewPct = remaining - aiPct;
+      }
 
       setGridColumns(`${editorPct}fr 10px ${previewPct}fr 10px ${aiPct}fr`);
     };
@@ -979,7 +1066,7 @@
     });
 
     const pill = qs("langPill");
-    const current = LANGS.find(x => x.code === (state.ui.lang || "en"));
+    const current = LANGS.find((x) => x.code === (state.ui.lang || "en"));
     if (pill) pill.textContent = current ? current.name : "English";
   }
 
@@ -988,7 +1075,7 @@
     SECTION_KEYS.forEach((k) => {
       if (!state.sections[k]) state.sections[k] = {};
       if (!state.sections[k].title || String(state.sections[k].title).trim() === "") {
-        state.sections[k].title = (CVI.getSectionDefaultTitle ? CVI.getSectionDefaultTitle(lang, k) : k);
+        state.sections[k].title = CVI.getSectionDefaultTitle ? CVI.getSectionDefaultTitle(lang, k) : k;
       }
       const ti = qs(`sec_${k}_title`);
       if (ti) ti.value = state.sections[k].title;
@@ -1026,17 +1113,17 @@
     function renderList(filter) {
       if (!list) return;
       const q = String(filter || "").toLowerCase().trim();
-      const items = LANGS.filter(l =>
-        !q || l.name.toLowerCase().includes(q) || l.code.toLowerCase().includes(q)
-      );
+      const items = LANGS.filter((l) => !q || l.name.toLowerCase().includes(q) || l.code.toLowerCase().includes(q));
 
-      list.innerHTML = items.map(l => {
-        const active = l.code === state.ui.lang ? "active" : "";
-        return `<div class="lang-item ${active}" data-lang="${l.code}">
+      list.innerHTML = items
+        .map((l) => {
+          const active = l.code === state.ui.lang ? "active" : "";
+          return `<div class="lang-item ${active}" data-lang="${l.code}">
           <div>${l.name}</div>
           <div class="code">${l.code}</div>
         </div>`;
-      }).join("");
+        })
+        .join("");
 
       list.querySelectorAll("[data-lang]").forEach((row) => {
         row.addEventListener("click", () => {
@@ -1064,14 +1151,15 @@
     if (btn) btn.addEventListener("click", open);
     if (close) close.addEventListener("click", hide);
     if (cancel) cancel.addEventListener("click", hide);
-    if (modal) modal.addEventListener("click", (e) => {
-      if (e.target === modal) hide();
-    });
+    if (modal)
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) hide();
+      });
     if (search) search.addEventListener("input", () => renderList(search.value));
   }
 
   // ---------------------------
-  // AI Coach
+  // AI Coach (uendret)
   // ---------------------------
   const AI_HISTORY_KEY = "cv_builder_ai_history_v2";
 
@@ -1080,20 +1168,27 @@
       const raw = localStorage.getItem(AI_HISTORY_KEY);
       const arr = JSON.parse(raw || "[]");
       if (!Array.isArray(arr)) return [];
-      return arr.filter(x => x && (x.role === "user" || x.role === "assistant") && typeof x.content === "string").slice(-20);
+      return arr
+        .filter((x) => x && (x.role === "user" || x.role === "assistant") && typeof x.content === "string")
+        .slice(-20);
     } catch {
       return [];
     }
   }
 
   function saveAIHistory(hist) {
-    try { localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(hist.slice(-20))); } catch { }
+    try {
+      localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(hist.slice(-20)));
+    } catch {}
   }
 
   let aiHistory = loadAIHistory();
 
   function escapeHtml(s) {
-    return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
   }
 
   function addMsg(role, title, text) {
@@ -1124,27 +1219,52 @@
   }
 
   const ALLOWED_SET_PATHS = new Set([
-    "data.name", "data.title", "data.email", "data.phone", "data.location", "data.linkedin",
-    "data.summary", "data.education", "data.licenses", "data.clinicalSkills", "data.coreCompetencies",
-    "data.languages", "data.experience", "data.achievements", "data.volunteer", "data.custom1", "data.custom2",
+    "data.name",
+    "data.title",
+    "data.email",
+    "data.phone",
+    "data.location",
+    "data.linkedin",
+    "data.summary",
+    "data.education",
+    "data.licenses",
+    "data.clinicalSkills",
+    "data.coreCompetencies",
+    "data.languages",
+    "data.experience",
+    "data.achievements",
+    "data.volunteer",
+    "data.custom1",
+    "data.custom2",
 
-    "sections.summary.enabled", "sections.summary.title",
-    "sections.education.enabled", "sections.education.title",
-    "sections.licenses.enabled", "sections.licenses.title",
-    "sections.clinicalSkills.enabled", "sections.clinicalSkills.title",
-    "sections.coreCompetencies.enabled", "sections.coreCompetencies.title",
-    "sections.languages.enabled", "sections.languages.title",
-    "sections.experience.enabled", "sections.experience.title",
-    "sections.achievements.enabled", "sections.achievements.title",
-    "sections.volunteer.enabled", "sections.volunteer.title",
-    "sections.custom1.enabled", "sections.custom1.title",
-    "sections.custom2.enabled", "sections.custom2.title",
+    "sections.summary.enabled",
+    "sections.summary.title",
+    "sections.education.enabled",
+    "sections.education.title",
+    "sections.licenses.enabled",
+    "sections.licenses.title",
+    "sections.clinicalSkills.enabled",
+    "sections.clinicalSkills.title",
+    "sections.coreCompetencies.enabled",
+    "sections.coreCompetencies.title",
+    "sections.languages.enabled",
+    "sections.languages.title",
+    "sections.experience.enabled",
+    "sections.experience.title",
+    "sections.achievements.enabled",
+    "sections.achievements.title",
+    "sections.volunteer.enabled",
+    "sections.volunteer.title",
+    "sections.custom1.enabled",
+    "sections.custom1.title",
+    "sections.custom2.enabled",
+    "sections.custom2.title",
 
     "sections.contact.show_title",
     "sections.contact.show_email",
     "sections.contact.show_phone",
     "sections.contact.show_location",
-    "sections.contact.show_linkedin"
+    "sections.contact.show_linkedin",
   ]);
 
   function setByPath(obj, path, value) {
@@ -1194,9 +1314,13 @@
     div.innerHTML = `
       <div class="msg-title">${escapeHtml(t("ai.suggestionTitle"))}</div>
       <div>${escapeHtml(message).replace(/\n/g, "<br>")}</div>
-      ${suggestions.length ? `<div class="sugg">
+      ${
+        suggestions.length
+          ? `<div class="sugg">
         <div class="muted small">${escapeHtml(t("ai.choose"))}</div>
-        ${suggestions.map((s, idx) => `
+        ${suggestions
+          .map(
+            (s, idx) => `
           <div class="sugg-item" data-sugg="${idx}">
             <div class="topic">${escapeHtml(s.topic || t("ai.suggestionTitle"))}</div>
             <div>${escapeHtml(String(s.preview || "")).replace(/\n/g, "<br>")}</div>
@@ -1205,8 +1329,12 @@
               <button class="btn ghost" type="button" data-reject="${idx}">${escapeHtml(t("ai.reject"))}</button>
             </div>
           </div>
-        `).join("")}
-      </div>` : ``}
+        `
+          )
+          .join("")}
+      </div>`
+          : ``
+      }
     `;
     chat.prepend(div);
 
@@ -1244,8 +1372,8 @@
           message: userText,
           language: uiLang,
           snapshot: snapshotForAI(),
-          history: aiHistory
-        })
+          history: aiHistory,
+        }),
       });
 
       const payload = await res.json().catch(() => ({}));
@@ -1257,15 +1385,16 @@
       saveAIHistory(aiHistory);
 
       renderSuggestionCard(payload);
-
     } catch (err) {
       thinking?.remove();
       console.error(err);
 
       const fallback =
-        uiLang === "no" ? "Beklager — noe gikk galt. Prøv igjen."
-          : (uiLang === "de" ? "Entschuldigung — etwas ist schiefgelaufen. Bitte erneut versuchen."
-            : "Sorry — something went wrong. Please try again.");
+        uiLang === "no"
+          ? "Beklager — noe gikk galt. Prøv igjen."
+          : uiLang === "de"
+          ? "Entschuldigung — etwas ist schiefgelaufen. Bitte erneut versuchen."
+          : "Sorry — something went wrong. Please try again.";
 
       aiHistory.push({ role: "assistant", content: fallback });
       saveAIHistory(aiHistory);
