@@ -1,6 +1,13 @@
-// app.js (FULL)
+// app.js (FULL) - i18n extracted to i18n.js
 (function () {
   const qs = (id) => document.getElementById(id);
+
+  // ---- i18n from external file ----
+  const CVI = window.CV_I18N || {};
+  const LANGS = CVI.LANGS || [{ code: "en", name: "English" }];
+  const t = (key) => (CVI.t ? CVI.t(state.ui.lang || "en", key) : key);
+  const getSectionDefaultTitle = (sectionKey) =>
+    CVI.getSectionDefaultTitle ? CVI.getSectionDefaultTitle(state.ui.lang || "en", sectionKey) : sectionKey;
 
   const preview = qs("preview");
   const printBtn = qs("printBtn");
@@ -8,17 +15,17 @@
   const downloadHtmlBtn = qs("downloadHtmlBtn");
 
   const FIELD_IDS = [
-    "name","title","email","phone","location","linkedin",
-    "summary","clinicalSkills","coreCompetencies","languages",
-    "achievements","custom1","custom2",
+    "name", "title", "email", "phone", "location", "linkedin",
+    "summary", "clinicalSkills", "coreCompetencies", "languages",
+    "achievements", "custom1", "custom2",
   ];
 
   const SECTION_KEYS = [
-    "summary","education","licenses","clinicalSkills","coreCompetencies",
-    "languages","experience","achievements","volunteer","custom1","custom2",
+    "summary", "education", "licenses", "clinicalSkills", "coreCompetencies",
+    "languages", "experience", "achievements", "volunteer", "custom1", "custom2",
   ];
 
-  const CONTACT_SHOW_IDS = ["show_title","show_email","show_phone","show_location","show_linkedin"];
+  const CONTACT_SHOW_IDS = ["show_title", "show_email", "show_phone", "show_location", "show_linkedin"];
 
   const state = { data: {}, sections: {}, ui: { lang: "en" } };
 
@@ -27,6 +34,7 @@
     preview.innerHTML = window.renderCV({
       ...state.data,
       sections: state.sections,
+      lang: state.ui.lang || "en",
     });
   }
 
@@ -41,18 +49,17 @@
       state.data = parsed.data || {};
       state.sections = parsed.sections || {};
       state.ui = parsed.ui || state.ui;
-    } catch (_) {}
+    } catch (_) { }
   }
 
   function saveState() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: state.data, sections: state.sections, ui: state.ui }));
-    } catch (_) {}
+    } catch (_) { }
   }
 
   function ensureContactSection() {
     if (!state.sections.contact) state.sections.contact = {};
-    // defaults true
     CONTACT_SHOW_IDS.forEach((k) => {
       if (state.sections.contact[k] == null) state.sections.contact[k] = true;
     });
@@ -76,7 +83,6 @@
   }
 
   function syncUIFromState() {
-    // simple fields
     FIELD_IDS.forEach((id) => {
       const el = qs(id);
       if (!el) return;
@@ -84,7 +90,6 @@
       el.value = val != null ? String(val) : "";
     });
 
-    // section toggles + titles
     SECTION_KEYS.forEach((k) => {
       const en = qs(`sec_${k}_enabled`);
       const ti = qs(`sec_${k}_title`);
@@ -105,7 +110,6 @@
       const el = qs(id);
       if (!el) return;
 
-      // initial
       if (state.data[id] != null && String(state.data[id]).length > 0) el.value = String(state.data[id]);
       else el.value = "";
 
@@ -117,7 +121,6 @@
       });
     });
 
-    // section toggles
     SECTION_KEYS.forEach((k) => {
       const en = qs(`sec_${k}_enabled`);
       const ti = qs(`sec_${k}_title`);
@@ -142,12 +145,11 @@
       }
     });
 
-    // contact show/hide
     ensureContactSection();
     CONTACT_SHOW_IDS.forEach((id) => {
       const el = qs(id);
       if (!el) return;
-      // initial from state
+
       el.checked = state.sections.contact[id] !== false;
 
       el.addEventListener("change", () => {
@@ -226,7 +228,6 @@
     setBulletButtonState(tb, target.dataset.bulletOn === "1");
 
     target.addEventListener("keydown", (e) => {
-      // Only intercept Enter when bullet mode is on
       if (target.dataset.bulletOn !== "1") return;
 
       if (e.key === "Enter") {
@@ -308,8 +309,8 @@
   }
 
   function setOverrideField(fieldKey, value) {
-    const t = String(value || "").trim();
-    if (t === "") delete state.data[fieldKey];
+    const tval = String(value || "").trim();
+    if (tval === "") delete state.data[fieldKey];
     else state.data[fieldKey] = value;
   }
 
@@ -343,20 +344,20 @@
       wrap.className = "subcard";
       wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
-          <div class="muted small">Education ${idx + 1}</div>
-          <button class="btn ghost" type="button" data-edu-remove="${idx}" style="padding:6px 10px;">Remove</button>
+          <div class="muted small">${t("edu.blockTitle")} ${idx + 1}</div>
+          <button class="btn ghost" type="button" data-edu-remove="${idx}" style="padding:6px 10px;">${t("common.remove")}</button>
         </div>
 
-        <label class="label">Degree</label>
+        <label class="label">${t("edu.degree")}</label>
         <input class="input" data-edu-degree="${idx}" placeholder="Master of Science in Nursing" />
 
-        <label class="label">School</label>
+        <label class="label">${t("edu.school")}</label>
         <input class="input" data-edu-school="${idx}" placeholder="The University of Texas at Austin" />
 
-        <label class="label">Dates</label>
+        <label class="label">${t("edu.dates")}</label>
         <input class="input" data-edu-date="${idx}" placeholder="2016 – 2018" />
 
-        <label class="label">Honors (optional)</label>
+        <label class="label">${t("edu.honors")}</label>
         <input class="input" data-edu-honors="${idx}" placeholder="Magna Cum Laude · GPA 3.85" />
       `;
       eduRoot.appendChild(wrap);
@@ -414,10 +415,10 @@
   function licToText(items) {
     const lines = [];
     (items || []).forEach((it) => {
-      const t = (it.title || "").trim();
+      const t1 = (it.title || "").trim();
       const d = (it.detail || "").trim();
-      if (!t && !d) return;
-      if (t) lines.push(t);
+      if (!t1 && !d) return;
+      if (t1) lines.push(t1);
       if (d) lines.push(d);
       else lines.push("");
     });
@@ -442,14 +443,14 @@
       wrap.className = "subcard";
       wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
-          <div class="muted small">License ${idx + 1}</div>
-          <button class="btn ghost" type="button" data-lic-remove="${idx}" style="padding:6px 10px;">Remove</button>
+          <div class="muted small">${t("lic.blockTitle")} ${idx + 1}</div>
+          <button class="btn ghost" type="button" data-lic-remove="${idx}" style="padding:6px 10px;">${t("common.remove")}</button>
         </div>
 
-        <label class="label">Title</label>
+        <label class="label">${t("lic.title")}</label>
         <input class="input" data-lic-title="${idx}" placeholder="Registered Nurse (RN)" />
 
-        <label class="label">Detail</label>
+        <label class="label">${t("lic.detail")}</label>
         <input class="input" data-lic-detail="${idx}" placeholder="Texas Board of Nursing · #TX-892341" />
       `;
       licRoot.appendChild(wrap);
@@ -522,23 +523,23 @@
       wrap.className = "subcard";
       wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
-          <div class="muted small">Job ${idx + 1}</div>
-          <button class="btn ghost" type="button" data-exp-remove="${idx}" style="padding:6px 10px;">Remove</button>
+          <div class="muted small">${t("exp.blockTitle")} ${idx + 1}</div>
+          <button class="btn ghost" type="button" data-exp-remove="${idx}" style="padding:6px 10px;">${t("common.remove")}</button>
         </div>
 
-        <label class="label">Role / Title</label>
-        <input class="input" data-exp-title="${idx}" placeholder="SENIOR REGISTERED NURSE – ICU" />
+        <label class="label">${t("exp.role")}</label>
+        <input class="input" data-exp-title="${idx}" placeholder="${t("exp.placeholderRole")}" />
 
-        <label class="label">Company, Location | Dates</label>
-        <input class="input" data-exp-meta="${idx}" placeholder="St. David's Medical Center, Austin, TX | January 2021 – Present" />
+        <label class="label">${t("exp.meta")}</label>
+        <input class="input" data-exp-meta="${idx}" placeholder="${t("exp.placeholderMeta")}" />
 
         <div class="toolbar" data-exp-toolbar="${idx}">
           <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
           <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
         </div>
 
-        <label class="label">Bullets (one per line)</label>
-        <textarea class="textarea" rows="5" data-exp-bullets="${idx}" placeholder="One per line..."></textarea>
+        <label class="label">${t("exp.bullets")}</label>
+        <textarea class="textarea" rows="5" data-exp-bullets="${idx}" placeholder="${t("exp.placeholderBullets")}"></textarea>
       `;
       expRoot.appendChild(wrap);
 
@@ -626,23 +627,23 @@
       wrap.className = "subcard";
       wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
-          <div class="muted small">Volunteer ${idx + 1}</div>
-          <button class="btn ghost" type="button" data-vol-remove="${idx}" style="padding:6px 10px;">Remove</button>
+          <div class="muted small">${t("vol.blockTitle")} ${idx + 1}</div>
+          <button class="btn ghost" type="button" data-vol-remove="${idx}" style="padding:6px 10px;">${t("common.remove")}</button>
         </div>
 
-        <label class="label">Header (Title + Date)</label>
-        <input class="input" data-vol-header="${idx}" placeholder="Volunteer Nurse 2019 – Present" />
+        <label class="label">${t("vol.header")}</label>
+        <input class="input" data-vol-header="${idx}" placeholder="${t("vol.placeholderHeader")}" />
 
-        <label class="label">Sub line</label>
-        <input class="input" data-vol-sub="${idx}" placeholder="Austin Free Clinic · Community Health Outreach" />
+        <label class="label">${t("vol.sub")}</label>
+        <input class="input" data-vol-sub="${idx}" placeholder="${t("vol.placeholderSub")}" />
 
         <div class="toolbar" data-vol-toolbar="${idx}">
           <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
           <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
         </div>
 
-        <label class="label">Bullets (one per line)</label>
-        <textarea class="textarea" rows="4" data-vol-bullets="${idx}" placeholder="One per line..."></textarea>
+        <label class="label">${t("vol.bullets")}</label>
+        <textarea class="textarea" rows="4" data-vol-bullets="${idx}" placeholder="${t("vol.placeholderBullets")}"></textarea>
       `;
       volRoot.appendChild(wrap);
 
@@ -784,7 +785,7 @@
   function setGridColumns(cols) {
     if (!grid) return;
     grid.style.gridTemplateColumns = cols;
-    try { localStorage.setItem("cv_grid_cols_v1", cols); } catch {}
+    try { localStorage.setItem("cv_grid_cols_v1", cols); } catch { }
   }
 
   function restoreGridColumns() {
@@ -792,7 +793,7 @@
     try {
       const saved = localStorage.getItem("cv_grid_cols_v1");
       if (saved) grid.style.gridTemplateColumns = saved;
-    } catch {}
+    } catch { }
   }
 
   function computeVisiblePanels() {
@@ -821,17 +822,17 @@
   function setupPanelButtons() {
     const showPanelsBtn = qs("showPanelsBtn");
 
-    function setBodyLocked(on){
+    function setBodyLocked(on) {
       document.body.style.overflow = on ? "hidden" : "";
     }
 
-    function closeAnyFullscreen(){
+    function closeAnyFullscreen() {
       document.querySelectorAll(".panel.is-fullscreen").forEach(p => p.classList.remove("is-fullscreen"));
       document.querySelectorAll(".fullscreen-backdrop").forEach(b => b.remove());
       setBodyLocked(false);
     }
 
-    function openFullscreen(panel){
+    function openFullscreen(panel) {
       closeAnyFullscreen();
       const bd = document.createElement("div");
       bd.className = "fullscreen-backdrop";
@@ -947,145 +948,50 @@
   }
 
   // ---------------------------
-  // i18n (UI language)
+  // i18n apply (text + placeholder + title + aria-label)
   // ---------------------------
-  const I18N = {
-    en: {
-      "app.title":"CV Builder",
-      "topbar.panels":"Panels",
-      "topbar.logout":"Log out",
-      "editor.title":"Edit content",
-      "preview.title":"Preview",
-      "ai.title":"AI Coach",
-      "ai.helptext":"Ask for review, improvements, new bullet points, or layout changes. You must approve suggestions before they are applied.",
-      "hint.send":"Tip: Ctrl/Cmd + Enter to send.",
-      "hint.toolbar":"Tip: Select text and press B for **bold**. Use • to toggle bullet typing.",
-      "common.show":"Show",
-      "common.hide":"Hide",
-      "common.fullscreen":"Fullscreen",
-      "common.clear":"Clear",
-      "common.send":"Send",
-      "common.cancel":"Cancel",
-      "btn.print":"Print",
-      "btn.downloadPdf":"Download PDF",
-      "btn.downloadHtml":"Download HTML",
-      "btn.addEducation":"+ Add education",
-      "btn.addLicense":"+ Add license",
-      "btn.addJob":"+ Add job",
-      "btn.addVolunteer":"+ Add volunteer",
-      "contact.fullName":"Full name",
-      "contact.title":"Title / Credentials",
-      "contact.email":"Email",
-      "contact.phone":"Phone",
-      "contact.location":"Location",
-      "contact.linkedin":"LinkedIn",
-      "lang.title":"Choose language",
-      "locked.title":"Access required",
-      "locked.body1":"You need access to use the CV Builder.",
-      "locked.body2":"If you just purchased: you will receive an email shortly with your secure login link.",
-      "locked.buy":"Buy access",
-      "locked.body3":"After purchase, you’ll receive an email shortly with your secure login link. Your access is valid for 30 days."
-    },
-    no: {
-      "app.title":"CV-bygger",
-      "topbar.panels":"Paneler",
-      "topbar.logout":"Logg ut",
-      "editor.title":"Rediger innhold",
-      "preview.title":"Forhåndsvisning",
-      "ai.title":"AI Coach",
-      "ai.helptext":"Be om gjennomgang, forbedringer, nye punkter eller layout. Du må godkjenne forslag før de brukes.",
-      "hint.send":"Tips: Ctrl/Cmd + Enter for å sende.",
-      "hint.toolbar":"Tips: Marker tekst og trykk B for **fet**. Bruk • for bullet-modus.",
-      "common.show":"Vis",
-      "common.hide":"Skjul",
-      "common.fullscreen":"Fullskjerm",
-      "common.clear":"Tøm",
-      "common.send":"Send",
-      "common.cancel":"Avbryt",
-      "btn.print":"Skriv ut",
-      "btn.downloadPdf":"Last ned PDF",
-      "btn.downloadHtml":"Last ned HTML",
-      "btn.addEducation":"+ Legg til utdanning",
-      "btn.addLicense":"+ Legg til lisens",
-      "btn.addJob":"+ Legg til jobb",
-      "btn.addVolunteer":"+ Legg til frivillig",
-      "contact.fullName":"Fullt navn",
-      "contact.title":"Tittel / Kompetanse",
-      "contact.email":"E-post",
-      "contact.phone":"Telefon",
-      "contact.location":"Sted",
-      "contact.linkedin":"LinkedIn",
-      "lang.title":"Velg språk",
-      "locked.title":"Tilgang kreves",
-      "locked.body1":"Du trenger tilgang for å bruke CV-byggeren.",
-      "locked.body2":"Hvis du nettopp kjøpte: du får en e-post snart med sikker innloggingslenke.",
-      "locked.buy":"Kjøp tilgang",
-      "locked.body3":"Etter kjøp får du en e-post snart med sikker innloggingslenke. Tilgangen varer i 30 dager."
-    },
-    de: {
-      "app.title":"CV Builder",
-      "topbar.panels":"Panels",
-      "topbar.logout":"Abmelden",
-      "editor.title":"Inhalte bearbeiten",
-      "preview.title":"Vorschau",
-      "ai.title":"KI-Coach",
-      "ai.helptext":"Bitte um Review, Verbesserungen, neue Bulletpoints oder Layout. Vorschläge müssen bestätigt werden.",
-      "hint.send":"Tipp: Strg/Cmd + Enter zum Senden.",
-      "hint.toolbar":"Tipp: Text markieren und B für **fett**. • für Bullet-Modus.",
-      "common.show":"Anzeigen",
-      "common.hide":"Ausblenden",
-      "common.fullscreen":"Vollbild",
-      "common.clear":"Leeren",
-      "common.send":"Senden",
-      "common.cancel":"Abbrechen",
-      "btn.print":"Drucken",
-      "btn.downloadPdf":"PDF herunterladen",
-      "btn.downloadHtml":"HTML herunterladen",
-      "btn.addEducation":"+ Ausbildung hinzufügen",
-      "btn.addLicense":"+ Lizenz hinzufügen",
-      "btn.addJob":"+ Job hinzufügen",
-      "btn.addVolunteer":"+ Ehrenamt hinzufügen",
-      "contact.fullName":"Vollständiger Name",
-      "contact.title":"Titel / Qualifikation",
-      "contact.email":"E-Mail",
-      "contact.phone":"Telefon",
-      "contact.location":"Ort",
-      "contact.linkedin":"LinkedIn",
-      "lang.title":"Sprache wählen"
-    }
-  };
-
-  const LANGS = [
-    { code: "en", name: "English" },
-    { code: "no", name: "Norsk" },
-    { code: "de", name: "Deutsch" },
-    { code: "sv", name: "Svenska" },
-    { code: "da", name: "Dansk" },
-    { code: "fr", name: "Français" },
-    { code: "es", name: "Español" },
-    { code: "it", name: "Italiano" },
-    { code: "nl", name: "Nederlands" },
-    { code: "pl", name: "Polski" },
-    { code: "pt", name: "Português" }
-  ];
-
-  function t(key) {
-    const lang = state.ui.lang || "en";
-    return (I18N[lang] && I18N[lang][key]) || (I18N.en[key]) || key;
-  }
-
   function applyI18n() {
     document.querySelectorAll("[data-i18n]").forEach((el) => {
       const key = el.getAttribute("data-i18n");
       if (!key) return;
-      const txt = t(key);
-      el.textContent = txt;
+      el.textContent = t(key);
     });
 
-    // update language pill
+    document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+      const key = el.getAttribute("data-i18n-placeholder");
+      if (!key) return;
+      el.setAttribute("placeholder", t(key));
+    });
+
+    document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+      const key = el.getAttribute("data-i18n-title");
+      if (!key) return;
+      el.setAttribute("title", t(key));
+    });
+
+    document.querySelectorAll("[data-i18n-aria]").forEach((el) => {
+      const key = el.getAttribute("data-i18n-aria");
+      if (!key) return;
+      el.setAttribute("aria-label", t(key));
+    });
+
     const pill = qs("langPill");
     const current = LANGS.find(x => x.code === (state.ui.lang || "en"));
     if (pill) pill.textContent = current ? current.name : "English";
+  }
+
+  function applyDefaultSectionTitlesForLanguage() {
+    const lang = state.ui.lang || "en";
+    SECTION_KEYS.forEach((k) => {
+      if (!state.sections[k]) state.sections[k] = {};
+      if (!state.sections[k].title || String(state.sections[k].title).trim() === "") {
+        state.sections[k].title = (CVI.getSectionDefaultTitle ? CVI.getSectionDefaultTitle(lang, k) : k);
+      }
+      const ti = qs(`sec_${k}_title`);
+      if (ti) ti.value = state.sections[k].title;
+    });
+    saveState();
+    render();
   }
 
   // language modal
@@ -1133,11 +1039,19 @@
         row.addEventListener("click", () => {
           const code = row.getAttribute("data-lang");
           if (!code) return;
+
           state.ui.lang = code;
           saveState();
+
           applyI18n();
-          // also set default section titles if user hasn't customized them:
           applyDefaultSectionTitlesForLanguage();
+
+          // IMPORTANT: re-render dynamic UI so labels/buttons update language
+          renderEducation();
+          renderLicenses();
+          renderExperience();
+          renderVolunteer();
+
           render();
           hide();
         });
@@ -1151,70 +1065,6 @@
       if (e.target === modal) hide();
     });
     if (search) search.addEventListener("input", () => renderList(search.value));
-  }
-
-  function applyDefaultSectionTitlesForLanguage() {
-    // Only overwrite if user hasn't changed it (we store a marker)
-    // If you want always-translate, remove these checks.
-    const lang = state.ui.lang || "en";
-
-    const defaults = {
-      en: {
-        summary: "Professional Summary",
-        education: "Education",
-        licenses: "Licenses & Certifications",
-        clinicalSkills: "Clinical Skills",
-        coreCompetencies: "Core Competencies",
-        languages: "Languages",
-        experience: "Professional Experience",
-        achievements: "Clinical Achievements",
-        volunteer: "Volunteer Experience",
-        custom1: "Custom Section 1",
-        custom2: "Custom Section 2",
-      },
-      no: {
-        summary: "Profesjonell oppsummering",
-        education: "Utdanning",
-        licenses: "Lisenser og sertifiseringer",
-        clinicalSkills: "Kliniske ferdigheter",
-        coreCompetencies: "Kjernekompetanse",
-        languages: "Språk",
-        experience: "Arbeidserfaring",
-        achievements: "Resultater / Utmerkelser",
-        volunteer: "Frivillig erfaring",
-        custom1: "Egendefinert seksjon 1",
-        custom2: "Egendefinert seksjon 2",
-      },
-      de: {
-        summary: "Profil",
-        education: "Ausbildung",
-        licenses: "Lizenzen & Zertifikate",
-        clinicalSkills: "Fachliche Fähigkeiten",
-        coreCompetencies: "Kernkompetenzen",
-        languages: "Sprachen",
-        experience: "Berufserfahrung",
-        achievements: "Erfolge",
-        volunteer: "Ehrenamt",
-        custom1: "Benutzerdefiniert 1",
-        custom2: "Benutzerdefiniert 2",
-      }
-    };
-
-    const map = defaults[lang] || defaults.en;
-
-    SECTION_KEYS.forEach((k) => {
-      if (!state.sections[k]) state.sections[k] = {};
-      // only set if empty
-      if (!state.sections[k].title || String(state.sections[k].title).trim() === "") {
-        state.sections[k].title = map[k] || state.sections[k].title || k;
-      }
-      // also update UI input fields
-      const ti = qs(`sec_${k}_title`);
-      if (ti && map[k]) ti.value = state.sections[k].title;
-    });
-
-    saveState();
-    render();
   }
 
   // ---------------------------
@@ -1234,13 +1084,13 @@
   }
 
   function saveAIHistory(hist) {
-    try { localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(hist.slice(-20))); } catch {}
+    try { localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(hist.slice(-20))); } catch { }
   }
 
   let aiHistory = loadAIHistory();
 
   function escapeHtml(s) {
-    return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
   function addMsg(role, title, text) {
@@ -1250,7 +1100,7 @@
     div.className = `msg ${role}`;
     div.innerHTML = `
       <div class="msg-title">${escapeHtml(title)}</div>
-      <div>${escapeHtml(text).replace(/\n/g,"<br>")}</div>
+      <div>${escapeHtml(text).replace(/\n/g, "<br>")}</div>
     `;
     chat.prepend(div);
   }
@@ -1263,7 +1113,7 @@
     div.innerHTML = `
       <div class="thinking-row">
         <span class="spinner"></span>
-        <span>AI is analyzing your CV and preparing suggestions...</span>
+        <span>${escapeHtml(t("ai.thinking"))}</span>
       </div>
     `;
     chat.prepend(div);
@@ -1271,23 +1121,22 @@
   }
 
   const ALLOWED_SET_PATHS = new Set([
-    "data.name","data.title","data.email","data.phone","data.location","data.linkedin",
-    "data.summary","data.education","data.licenses","data.clinicalSkills","data.coreCompetencies",
-    "data.languages","data.experience","data.achievements","data.volunteer","data.custom1","data.custom2",
+    "data.name", "data.title", "data.email", "data.phone", "data.location", "data.linkedin",
+    "data.summary", "data.education", "data.licenses", "data.clinicalSkills", "data.coreCompetencies",
+    "data.languages", "data.experience", "data.achievements", "data.volunteer", "data.custom1", "data.custom2",
 
-    "sections.summary.enabled","sections.summary.title",
-    "sections.education.enabled","sections.education.title",
-    "sections.licenses.enabled","sections.licenses.title",
-    "sections.clinicalSkills.enabled","sections.clinicalSkills.title",
-    "sections.coreCompetencies.enabled","sections.coreCompetencies.title",
-    "sections.languages.enabled","sections.languages.title",
-    "sections.experience.enabled","sections.experience.title",
-    "sections.achievements.enabled","sections.achievements.title",
-    "sections.volunteer.enabled","sections.volunteer.title",
-    "sections.custom1.enabled","sections.custom1.title",
-    "sections.custom2.enabled","sections.custom2.title",
+    "sections.summary.enabled", "sections.summary.title",
+    "sections.education.enabled", "sections.education.title",
+    "sections.licenses.enabled", "sections.licenses.title",
+    "sections.clinicalSkills.enabled", "sections.clinicalSkills.title",
+    "sections.coreCompetencies.enabled", "sections.coreCompetencies.title",
+    "sections.languages.enabled", "sections.languages.title",
+    "sections.experience.enabled", "sections.experience.title",
+    "sections.achievements.enabled", "sections.achievements.title",
+    "sections.volunteer.enabled", "sections.volunteer.title",
+    "sections.custom1.enabled", "sections.custom1.title",
+    "sections.custom2.enabled", "sections.custom2.title",
 
-    // contact show/hide
     "sections.contact.show_title",
     "sections.contact.show_email",
     "sections.contact.show_phone",
@@ -1319,11 +1168,9 @@
       setByPath(state.sections, p, patch.value);
     }
 
-    // After applying patches: sync UI inputs + structured blocks + preview
     saveState();
     syncUIFromState();
 
-    // Re-render structured blocks from current state (so left panel matches)
     renderEducation();
     renderLicenses();
     renderExperience();
@@ -1342,17 +1189,17 @@
     const div = document.createElement("div");
     div.className = "msg assistant";
     div.innerHTML = `
-      <div class="msg-title">Suggestion</div>
-      <div>${escapeHtml(message).replace(/\n/g,"<br>")}</div>
+      <div class="msg-title">${escapeHtml(t("ai.suggestionTitle"))}</div>
+      <div>${escapeHtml(message).replace(/\n/g, "<br>")}</div>
       ${suggestions.length ? `<div class="sugg">
-        <div class="muted small">Choose which suggestions to apply:</div>
+        <div class="muted small">${escapeHtml(t("ai.choose"))}</div>
         ${suggestions.map((s, idx) => `
           <div class="sugg-item" data-sugg="${idx}">
-            <div class="topic">${escapeHtml(s.topic || "Suggestion")}</div>
-            <div>${escapeHtml(String(s.preview || "")).replace(/\n/g,"<br>")}</div>
+            <div class="topic">${escapeHtml(s.topic || t("ai.suggestionTitle"))}</div>
+            <div>${escapeHtml(String(s.preview || "")).replace(/\n/g, "<br>")}</div>
             <div class="sugg-buttons">
-              <button class="btn" type="button" data-accept="${idx}">Accept</button>
-              <button class="btn ghost" type="button" data-reject="${idx}">Reject</button>
+              <button class="btn" type="button" data-accept="${idx}">${escapeHtml(t("ai.accept"))}</button>
+              <button class="btn ghost" type="button" data-reject="${idx}">${escapeHtml(t("ai.reject"))}</button>
             </div>
           </div>
         `).join("")}
@@ -1364,17 +1211,16 @@
       const accept = div.querySelector(`[data-accept="${idx}"]`);
       const reject = div.querySelector(`[data-reject="${idx}"]`);
       accept?.addEventListener("click", () => {
-        // Apply all patches for this single suggestion
         const patches = Array.isArray(s.patches) ? s.patches : [];
         patches.forEach(applyChangePatch);
         accept.disabled = true;
         if (reject) reject.disabled = true;
-        accept.textContent = "Applied ✓";
+        accept.textContent = t("ai.applied");
       });
       reject?.addEventListener("click", () => {
         if (accept) accept.disabled = true;
         reject.disabled = true;
-        reject.textContent = "Rejected";
+        reject.textContent = t("ai.rejected");
       });
     });
   }
@@ -1413,9 +1259,10 @@
       thinking?.remove();
       console.error(err);
 
-      const fallback = uiLang === "no"
-        ? "Beklager — noe gikk galt. Prøv igjen."
-        : (uiLang === "de" ? "Entschuldigung — etwas ist schiefgelaufen. Bitte erneut versuchen." : "Sorry — something went wrong. Please try again.");
+      const fallback =
+        uiLang === "no" ? "Beklager — noe gikk galt. Prøv igjen."
+          : (uiLang === "de" ? "Entschuldigung — etwas ist schiefgelaufen. Bitte erneut versuchen."
+            : "Sorry — something went wrong. Please try again.");
 
       aiHistory.push({ role: "assistant", content: fallback });
       saveAIHistory(aiHistory);
@@ -1445,7 +1292,7 @@
       const text = String(aiInput.value || "").trim();
       if (!text) return;
 
-      addMsg("user", "You", text);
+      addMsg("user", t("ai.you"), text);
       aiHistory.push({ role: "user", content: text });
       saveAIHistory(aiHistory);
 
@@ -1495,6 +1342,9 @@
   if (!state.ui.lang) state.ui.lang = "en";
   setupLanguageModal();
   applyI18n();
+
+  // Ensure section titles get defaults if empty (first run)
+  applyDefaultSectionTitlesForLanguage();
 
   saveState();
   render();
