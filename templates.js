@@ -51,8 +51,7 @@
     return s.replace(/^([•\-·]\s+)/, "");
   }
 
-  // --- FIX Nr1: merge wrapped lines into previous bullet when text is coming from template-like wrapping.
-  // Rule: If a line does NOT look like a new bullet starter and previous bullet exists, append it.
+  // Merge wrapped lines into previous bullet when template-like wrapping happens.
   function mergeWrappedLinesIntoBullets(rawLines) {
     const out = [];
     rawLines.forEach((ln) => {
@@ -60,17 +59,12 @@
       if (!line) return;
 
       const isExplicitBullet = /^([•\-·]\s+)/.test(line);
-      const looksLikeNewBullet =
-        isExplicitBullet ||
-        /^[A-Z0-9(]/.test(line) === false ? false : false;
 
-      // If it starts with bullet prefix => new bullet
       if (isExplicitBullet) {
         out.push(stripBulletPrefix(line));
         return;
       }
 
-      // If no bullet prefix: treat as continuation if we already started bullets
       if (out.length > 0) {
         out[out.length - 1] = (out[out.length - 1] + " " + line).replace(/\s+/g, " ").trim();
       } else {
@@ -104,7 +98,7 @@
     });
   }
 
-  function parseVolunteer(s) {
+  function parseVolunteer(s, { presentWord = "Present" } = {}) {
     return blocks(s).map((block) => {
       const ls = block.split("\n").map((l) => l.trim()).filter(Boolean);
 
@@ -118,9 +112,11 @@
         volDate = m[2];
       }
 
-      // Or "Title 2019 – Present"
+      // Or "Title 2019 – Present" (Present localized)
       if (!volDate) {
-        const m2 = volTitle.match(/^(.*?)(\b\d{4}\s*–\s*(?:Present|\d{4})\b)$/);
+        const pw = String(presentWord || "Present").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const re = new RegExp(`^(.*?)(\\b\\d{4}\\s*–\\s*(?:${pw}|\\d{4})\\b)$`);
+        const m2 = volTitle.match(re);
         if (m2) {
           volTitle = m2[1].trim();
           volDate = m2[2].trim();
@@ -246,16 +242,20 @@
     `;
   }
 
-  function renderVolunteerSection(title, volunteerText) {
-    const vols = parseVolunteer(volunteerText);
+  function renderVolunteerSection(title, volunteerText, { presentWord } = {}) {
+    const vols = parseVolunteer(volunteerText, { presentWord });
     if (!vols.length) return "";
 
-    const volHTML = vols.map((v) => {
-      const bulletsHTML = (v.volBullets && v.volBullets.length)
-        ? `<ul class="exp-bullets">${v.volBullets.map((b) => `<li>${fmtInline(b, { preserveNewlines: true })}</li>`).join("")}</ul>`
-        : "";
+    const volHTML = vols
+      .map((v) => {
+        const bulletsHTML =
+          v.volBullets && v.volBullets.length
+            ? `<ul class="exp-bullets">${v.volBullets
+                .map((b) => `<li>${fmtInline(b, { preserveNewlines: true })}</li>`)
+                .join("")}</ul>`
+            : "";
 
-      return `
+        return `
         <div class="exp-entry">
           <div class="vol-header">
             <h3>${fmtInline(v.volTitle)}</h3>
@@ -265,7 +265,8 @@
           ${bulletsHTML}
         </div>
       `;
-    }).join("");
+      })
+      .join("");
 
     return `
       <section>
@@ -277,7 +278,29 @@
 
   window.renderCV = function renderCV(data) {
     const raw = data || {};
+    const lang = raw.lang || raw?.ui?.lang || "en";
 
+    // i18n hooks from i18n.js (optional, fallback-safe)
+    const CVI = window.CV_I18N || {};
+    const getDefaultTitle = (key) =>
+      (CVI.getSectionDefaultTitle ? CVI.getSectionDefaultTitle(lang, key) : key);
+
+    const presentWordByLang = {
+      en: "Present",
+      no: "Nå",
+      de: "Heute",
+      sv: "Nu",
+      da: "Nu",
+      fr: "Présent",
+      es: "Actualidad",
+      it: "Presente",
+      nl: "Heden",
+      pl: "Obecnie",
+      pt: "Atual"
+    };
+    const presentWord = presentWordByLang[lang] || "Present";
+
+    // Sample defaults (only used if user fields are empty)
     const defaults = {
       name: "Sarah Johnson",
       title: "Registered Nurse · BSN, RN",
@@ -372,24 +395,64 @@
         "Provide free health screenings and vaccinations to 200+ underserved community members annually",
 
       custom1: "",
-      custom2: "",
+      custom2: ""
     };
 
+    // Use user data if present, else fallback to defaults
     const d = {};
     for (const k in defaults) d[k] = hasText(raw[k]) ? raw[k] : defaults[k];
 
+    // Default section config, titles now come from i18n defaults (per language)
     const defaultSections = {
-      summary: { enabled: true, title: "Professional Summary" },
-      education: { enabled: true, title: "Education" },
-      licenses: { enabled: true, title: "Licenses & Certifications" },
-      clinicalSkills: { enabled: true, title: "Clinical Skills", mode: "bullets", boldFirstLine: false },
-      coreCompetencies: { enabled: true, title: "Core Competencies", mode: "bullets", boldFirstLine: false },
-      languages: { enabled: true, title: "Languages", mode: "paragraph", boldFirstLine: false },
-      experience: { enabled: true, title: "Professional Experience" },
-      achievements: { enabled: true, title: "Clinical Achievements", mode: "bullets", boldFirstLine: false },
-      volunteer: { enabled: true, title: "Volunteer Experience" },
-      custom1: { enabled: false, title: "Custom Section 1", mode: "bullets", boldFirstLine: false, column: "right" },
-      custom2: { enabled: false, title: "Custom Section 2", mode: "bullets", boldFirstLine: false, column: "right" },
+      summary: { enabled: true, title: getDefaultTitle("summary") },
+      education: { enabled: true, title: getDefaultTitle("education") },
+      licenses: { enabled: true, title: getDefaultTitle("licenses") },
+
+      clinicalSkills: {
+        enabled: true,
+        title: getDefaultTitle("clinicalSkills"),
+        mode: "bullets",
+        boldFirstLine: false
+      },
+      coreCompetencies: {
+        enabled: true,
+        title: getDefaultTitle("coreCompetencies"),
+        mode: "bullets",
+        boldFirstLine: false
+      },
+      languages: {
+        enabled: true,
+        title: getDefaultTitle("languages"),
+        mode: "paragraph",
+        boldFirstLine: false
+      },
+
+      experience: { enabled: true, title: getDefaultTitle("experience") },
+
+      achievements: {
+        enabled: true,
+        title: getDefaultTitle("achievements"),
+        mode: "bullets",
+        boldFirstLine: false
+      },
+
+      volunteer: { enabled: true, title: getDefaultTitle("volunteer") },
+
+      custom1: {
+        enabled: false,
+        title: getDefaultTitle("custom1"),
+        mode: "bullets",
+        boldFirstLine: false,
+        column: "right"
+      },
+      custom2: {
+        enabled: false,
+        title: getDefaultTitle("custom2"),
+        mode: "bullets",
+        boldFirstLine: false,
+        column: "right"
+      },
+
       contact: {
         show_title: true,
         show_email: true,
@@ -399,7 +462,15 @@
       }
     };
 
+    // Merge saved config over defaults
     const sections = { ...defaultSections, ...(raw.sections || {}) };
+
+    // Helper: get final section title with fallback to i18n defaults
+    const sectionTitle = (key, fallbackKeyForCustom) => {
+      const t0 = sections?.[key]?.title;
+      if (t0 && String(t0).trim()) return String(t0).trim();
+      return getDefaultTitle(fallbackKeyForCustom || key);
+    };
 
     // Contact show/hide
     const contactCfg = sections.contact || defaultSections.contact;
@@ -423,7 +494,7 @@
       sections.summary?.enabled
         ? `
           <section class="cv-summary">
-            <h2 class="section-title">${esc(sections.summary.title || "Professional Summary")}</h2>
+            <h2 class="section-title">${esc(sectionTitle("summary"))}</h2>
             <p class="body-text">${fmtInline(d.summary, { preserveNewlines: true })}</p>
           </section>
         `
@@ -433,10 +504,10 @@
       const cfg = sections[key];
       if (!cfg?.enabled) return "";
       return renderSimpleSection({
-        title: cfg.title || "Custom Section",
+        title: cfg.title && String(cfg.title).trim() ? cfg.title : sectionTitle(key, "custom1"),
         content: d[key] || "",
         mode: cfg.mode || "bullets",
-        boldFirstLine: !!cfg.boldFirstLine,
+        boldFirstLine: !!cfg.boldFirstLine
       });
     }
 
@@ -451,47 +522,49 @@
       .join("");
 
     const leftHTML = [
-      sections.education?.enabled ? renderEducationSection(sections.education.title, d.education) : "",
-      sections.licenses?.enabled ? renderLicensesSection(sections.licenses.title, d.licenses) : "",
+      sections.education?.enabled ? renderEducationSection(sectionTitle("education"), d.education) : "",
+      sections.licenses?.enabled ? renderLicensesSection(sectionTitle("licenses"), d.licenses) : "",
       sections.clinicalSkills?.enabled
         ? renderSimpleSection({
-            title: sections.clinicalSkills.title,
+            title: sectionTitle("clinicalSkills"),
             content: d.clinicalSkills,
             mode: sections.clinicalSkills.mode || "bullets",
-            boldFirstLine: !!sections.clinicalSkills.boldFirstLine,
+            boldFirstLine: !!sections.clinicalSkills.boldFirstLine
           })
         : "",
       sections.coreCompetencies?.enabled
         ? renderSimpleSection({
-            title: sections.coreCompetencies.title,
+            title: sectionTitle("coreCompetencies"),
             content: d.coreCompetencies,
             mode: sections.coreCompetencies.mode || "bullets",
-            boldFirstLine: !!sections.coreCompetencies.boldFirstLine,
+            boldFirstLine: !!sections.coreCompetencies.boldFirstLine
           })
         : "",
       sections.languages?.enabled
         ? renderSimpleSection({
-            title: sections.languages.title,
+            title: sectionTitle("languages"),
             content: d.languages,
             mode: sections.languages.mode || "paragraph",
-            boldFirstLine: !!sections.languages.boldFirstLine,
+            boldFirstLine: !!sections.languages.boldFirstLine
           })
         : "",
-      leftCustomHTML,
+      leftCustomHTML
     ].join("");
 
     const rightHTML = [
-      sections.experience?.enabled ? renderExperienceSection(sections.experience.title, d.experience) : "",
+      sections.experience?.enabled ? renderExperienceSection(sectionTitle("experience"), d.experience) : "",
       sections.achievements?.enabled
         ? renderSimpleSection({
-            title: sections.achievements.title,
+            title: sectionTitle("achievements"),
             content: d.achievements,
             mode: sections.achievements.mode || "bullets",
-            boldFirstLine: !!sections.achievements.boldFirstLine,
+            boldFirstLine: !!sections.achievements.boldFirstLine
           })
         : "",
-      sections.volunteer?.enabled ? renderVolunteerSection(sections.volunteer.title, d.volunteer) : "",
-      rightCustomHTML,
+      sections.volunteer?.enabled
+        ? renderVolunteerSection(sectionTitle("volunteer"), d.volunteer, { presentWord })
+        : "",
+      rightCustomHTML
     ].join("");
 
     return `
