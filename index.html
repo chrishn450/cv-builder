@@ -28,7 +28,7 @@
           <div class="modal-title" data-i18n="lang.title">Choose language</div>
           <button id="langClose" class="pbtn" type="button" aria-label="Close">✕</button>
         </div>
-        <textarea id="langSearch" class="input" rows="1" data-i18n-placeholder="ph.langSearch" placeholder="Search language..."></textarea>
+        <input id="langSearch" class="input" data-i18n-placeholder="ph.langSearch" placeholder="Search language..." />
         <div id="langList" class="lang-list-ui"></div>
         <div class="row" style="justify-content:flex-end;">
           <button id="langCancel" class="btn ghost" type="button" data-i18n="common.cancel">Cancel</button>
@@ -69,7 +69,7 @@
                 <label class="label" data-i18n="contact.fullName">Full name</label>
                 <div class="field-controls"></div>
               </div>
-              <textarea id="name" class="input" rows="1" placeholder="Sarah Johnson"></textarea>
+              <input id="name" class="input" placeholder="Sarah Johnson" />
             </div>
 
             <div class="field">
@@ -82,7 +82,7 @@
                   </label>
                 </div>
               </div>
-              <textarea id="title" class="input" rows="1" placeholder="Registered Nurse · BSN, RN"></textarea>
+              <input id="title" class="input" placeholder="Registered Nurse · BSN, RN" />
             </div>
 
             <div class="field">
@@ -95,7 +95,7 @@
                   </label>
                 </div>
               </div>
-              <textarea id="email" class="input" rows="1" placeholder="sarah.johnson@email.com"></textarea>
+              <input id="email" class="input" placeholder="sarah.johnson@email.com" />
             </div>
 
             <div class="field">
@@ -108,7 +108,7 @@
                   </label>
                 </div>
               </div>
-              <textarea id="phone" class="input" rows="1" placeholder="(555) 123-4567"></textarea>
+              <input id="phone" class="input" placeholder="(555) 123-4567" />
             </div>
 
             <div class="field">
@@ -121,7 +121,7 @@
                   </label>
                 </div>
               </div>
-              <textarea id="location" class="input" rows="1" placeholder="Austin, TX 78701"></textarea>
+              <input id="location" class="input" placeholder="Austin, TX 78701" />
             </div>
 
             <div class="field">
@@ -134,7 +134,7 @@
                   </label>
                 </div>
               </div>
-              <textarea id="linkedin" class="input" rows="1" placeholder="linkedin.com/in/..."></textarea>
+              <input id="linkedin" class="input" placeholder="linkedin.com/in/..." />
             </div>
 
             <!-- SUMMARY -->
@@ -146,7 +146,7 @@
                     <input type="checkbox" id="sec_summary_enabled" checked />
                     <span data-i18n="common.show">Show</span>
                   </label>
-                  <textarea id="sec_summary_title" class="input small" rows="1">Professional Summary</textarea>
+                  <input id="sec_summary_title" class="input small" value="Professional Summary" />
                 </div>
               </div>
               <div class="toolbar" data-for="summary">
@@ -165,9 +165,10 @@
                     <input type="checkbox" id="sec_education_enabled" checked />
                     <span data-i18n="common.show">Show</span>
                   </label>
-                  <textarea id="sec_education_title" class="input small" rows="1">Education</textarea>
+                  <input id="sec_education_title" class="input small" value="Education" />
                 </div>
               </div>
+
               <div id="educationBlocks"></div>
               <div class="row" style="margin-top:10px;">
                 <button id="addEducationBlock" class="btn ghost" type="button" data-i18n="btn.addEducation">+ Add education</button>
@@ -184,9 +185,10 @@
                     <input type="checkbox" id="sec_licenses_enabled" checked />
                     <span data-i18n="common.show">Show</span>
                   </label>
-                  <textarea id="sec_licenses_title" class="input small" rows="1">Licenses & Certifications</textarea>
+                  <input id="sec_licenses_title" class="input small" value="Licenses & Certifications" />
                 </div>
               </div>
+
               <div id="licenseBlocks"></div>
               <div class="row" style="margin-top:10px;">
                 <button id="addLicenseBlock" class="btn ghost" type="button" data-i18n="btn.addLicense">+ Add license</button>
@@ -203,14 +205,15 @@
                     <input type="checkbox" id="sec_clinicalSkills_enabled" checked />
                     <span data-i18n="common.show">Show</span>
                   </label>
-                  <textarea id="sec_clinicalSkills_title" class="input small" rows="1">Clinical Skills</textarea>
+                  <input id="sec_clinicalSkills_title" class="input small" value="Clinical Skills" />
                 </div>
               </div>
               <div class="toolbar" data-for="clinicalSkills">
                 <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
                 <button class="tbtn tdot" data-action="bullets" type="button"></button>
               </div>
-              <textarea id="clinicalSkills" class="textarea" rows="6" data-i18n-placeholder="ph.onePerLine" placeholder="One per line..."></textarea>
+              <!-- placeholder fjernet -->
+              <textarea id="clinicalSkills" class="textarea" rows="6"></textarea>
             </div>
 
             <!-- CORE COMPETENCIES -->
@@ -222,14 +225,15 @@
                     <input type="checkbox" id="sec_coreCompetencies_enabled" checked />
                     <span data-i18n="common.show">Show</span>
                   </label>
-                  <textarea id="sec_coreCompetencies_title" class="input small" rows="1">Core Competencies</textarea>
+                  <input id="sec_coreCompetencies_title" class="input small" value="Core Competencies" />
                 </div>
               </div>
               <div class="toolbar" data-for="coreCompetencies">
                 <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
                 <button class="tbtn tdot" data-action="bullets" type="button"></button>
               </div>
-              <textarea id="coreCompetencies" class="textarea" rows="5" data-i18n-placeholder="ph.onePerLine" placeholder="One per line..."></textarea>
+              <!-- placeholder fjernet -->
+              <textarea id="coreCompetencies" class="textarea" rows="5"></textarea>
             </div>
 
             <!-- LANGUAGES -->
@@ -241,14 +245,15 @@
                     <input type="checkbox" id="sec_languages_enabled" checked />
                     <span data-i18n="common.show">Show</span>
                   </label>
-                  <textarea id="sec_languages_title" class="input small" rows="1">Languages</textarea>
+                  <input id="sec_languages_title" class="input small" value="Languages" />
                 </div>
               </div>
               <div class="toolbar" data-for="languages">
                 <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
                 <button class="tbtn tdot" data-action="bullets" type="button"></button>
               </div>
-              <textarea id="languages" class="textarea" rows="3" data-i18n-placeholder="ph.onePerLine" placeholder="One per line..."></textarea>
+              <!-- placeholder fjernet -->
+              <textarea id="languages" class="textarea" rows="3"></textarea>
             </div>
 
             <!-- EXPERIENCE -->
@@ -260,9 +265,10 @@
                     <input type="checkbox" id="sec_experience_enabled" checked />
                     <span data-i18n="common.show">Show</span>
                   </label>
-                  <textarea id="sec_experience_title" class="input small" rows="1">Professional Experience</textarea>
+                  <input id="sec_experience_title" class="input small" value="Professional Experience" />
                 </div>
               </div>
+
               <div id="experienceJobs"></div>
               <div class="row" style="margin-top:10px;">
                 <button id="addExperienceJob" class="btn ghost" type="button" data-i18n="btn.addJob">+ Add job</button>
@@ -279,14 +285,15 @@
                     <input type="checkbox" id="sec_achievements_enabled" checked />
                     <span data-i18n="common.show">Show</span>
                   </label>
-                  <textarea id="sec_achievements_title" class="input small" rows="1">Clinical Achievements</textarea>
+                  <input id="sec_achievements_title" class="input small" value="Clinical Achievements" />
                 </div>
               </div>
               <div class="toolbar" data-for="achievements">
                 <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
                 <button class="tbtn tdot" data-action="bullets" type="button"></button>
               </div>
-              <textarea id="achievements" class="textarea" rows="4" data-i18n-placeholder="ph.onePerLine" placeholder="One per line..."></textarea>
+              <!-- placeholder fjernet -->
+              <textarea id="achievements" class="textarea" rows="4"></textarea>
             </div>
 
             <!-- VOLUNTEER -->
@@ -298,9 +305,10 @@
                     <input type="checkbox" id="sec_volunteer_enabled" checked />
                     <span data-i18n="common.show">Show</span>
                   </label>
-                  <textarea id="sec_volunteer_title" class="input small" rows="1">Volunteer Experience</textarea>
+                  <input id="sec_volunteer_title" class="input small" value="Volunteer Experience" />
                 </div>
               </div>
+
               <div id="volunteerBlocks"></div>
               <div class="row" style="margin-top:10px;">
                 <button id="addVolunteerBlock" class="btn ghost" type="button" data-i18n="btn.addVolunteer">+ Add volunteer</button>
@@ -319,14 +327,15 @@
                     <input type="checkbox" id="sec_custom1_enabled" />
                     <span data-i18n="common.show">Show</span>
                   </label>
-                  <textarea id="sec_custom1_title" class="input small" rows="1">Custom Section 1</textarea>
+                  <input id="sec_custom1_title" class="input small" value="Custom Section 1" />
                 </div>
               </div>
               <div class="toolbar" data-for="custom1">
                 <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
                 <button class="tbtn tdot" data-action="bullets" type="button"></button>
               </div>
-              <textarea id="custom1" class="textarea" rows="5" data-i18n-placeholder="ph.custom" placeholder="..."></textarea>
+              <!-- placeholder fjernet -->
+              <textarea id="custom1" class="textarea" rows="5"></textarea>
             </div>
 
             <!-- CUSTOM 2 -->
@@ -338,14 +347,15 @@
                     <input type="checkbox" id="sec_custom2_enabled" />
                     <span data-i18n="common.show">Show</span>
                   </label>
-                  <textarea id="sec_custom2_title" class="input small" rows="1">Custom Section 2</textarea>
+                  <input id="sec_custom2_title" class="input small" value="Custom Section 2" />
                 </div>
               </div>
               <div class="toolbar" data-for="custom2">
                 <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
                 <button class="tbtn tdot" data-action="bullets" type="button"></button>
               </div>
-              <textarea id="custom2" class="textarea" rows="5" data-i18n-placeholder="ph.custom" placeholder="..."></textarea>
+              <!-- placeholder fjernet -->
+              <textarea id="custom2" class="textarea" rows="5"></textarea>
             </div>
 
             <div class="row">
@@ -354,8 +364,9 @@
               <button id="downloadHtmlBtn" class="btn ghost" type="button" data-i18n="btn.downloadHtml">Download HTML</button>
             </div>
 
-            <!-- ✅ fjernet toolbar-hint-linja du ikke ville ha -->
-            <!-- <p class="muted small" data-i18n="hint.toolbar">...</p> -->
+            <p class="muted small" data-i18n="hint.toolbar">
+              Tip: Select text and press <b>B</b> for <code>**bold**</code>. Use <b>•</b> to toggle bullet typing.
+            </p>
           </div>
 
           <!-- RESIZER 1 -->
@@ -386,14 +397,18 @@
                 <button class="pbtn" type="button" data-action="fullscreen" data-target="ai" data-i18n="common.fullscreen">Fullscreen</button>
               </div>
             </div>
+
             <p class="muted small" style="margin-top:-2px;" data-i18n="ai.helptext">
               Ask for review, improvements, new bullet points, or layout changes. You must approve suggestions before they are applied.
             </p>
+
             <div id="aiChat" class="ai-chat"></div>
+
             <div class="ai-compose">
               <textarea id="aiInput" class="textarea ai-input" rows="3" data-i18n-placeholder="ph.ai" placeholder="e.g. Improve my summary and make it more results-driven"></textarea>
               <button id="aiSend" class="btn ai-send" type="button" data-i18n="common.send">Send</button>
             </div>
+
             <p class="muted small" style="margin-top:10px;" data-i18n="hint.send">Tip: Ctrl/Cmd + Enter to send.</p>
           </div>
 
