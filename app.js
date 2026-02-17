@@ -2,12 +2,12 @@
 (function () {
   const qs = (id) => document.getElementById(id);
 
+  const state = { data: {}, sections: {}, ui: { lang: "en" } };
+
   // ---- i18n from external file ----
   const CVI = window.CV_I18N || {};
   const LANGS = CVI.LANGS || [{ code: "en", name: "English" }];
   const t = (key) => (CVI.t ? CVI.t(state.ui.lang || "en", key) : key);
-  const getSectionDefaultTitle = (sectionKey) =>
-    CVI.getSectionDefaultTitle ? CVI.getSectionDefaultTitle(state.ui.lang || "en", sectionKey) : sectionKey;
 
   const preview = qs("preview");
   const printBtn = qs("printBtn");
@@ -26,8 +26,6 @@
   ];
 
   const CONTACT_SHOW_IDS = ["show_title", "show_email", "show_phone", "show_location", "show_linkedin"];
-
-  const state = { data: {}, sections: {}, ui: { lang: "en" } };
 
   function render() {
     if (!preview || typeof window.renderCV !== "function") return;
@@ -162,139 +160,116 @@
   }
 
   // ---------- Toolbar helpers (Bold + Bullet toggle) ----------
-function wrapSelectionWith(el, left, right) {
-  const v = el.value || "";
-  const start = el.selectionStart ?? 0;
-  const end = el.selectionEnd ?? start;
-  el.value = v.slice(0, start) + left + v.slice(start, end) + right + v.slice(end);
-  el.setSelectionRange(start + left.length, end + left.length);
-}
+  function wrapSelectionWith(el, left, right) {
+    const v = el.value || "";
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? start;
+    el.value = v.slice(0, start) + left + v.slice(start, end) + right + v.slice(end);
+    el.setSelectionRange(start + left.length, end + left.length);
+  }
 
-const BULLET = "• ";
+  const BULLET = "• ";
 
-function setBulletButtonState(tb, on) {
-  const btn = tb.querySelector('[data-action="bullets"]');
-  if (!btn) return;
-  btn.classList.toggle("active", !!on);
-  btn.setAttribute("aria-pressed", String(!!on));
-}
+  function setBulletButtonState(tb, on) {
+    const btn = tb.querySelector('[data-action="bullets"]');
+    if (!btn) return;
+    btn.classList.toggle("active", !!on);
+    btn.setAttribute("aria-pressed", String(!!on));
+  }
 
-function getLineStart(v, pos) {
-  return v.lastIndexOf("\n", pos - 1) + 1;
-}
+  function getLineStart(v, pos) {
+    return v.lastIndexOf("\n", pos - 1) + 1;
+  }
 
-function lineHasBulletPrefix(v, lineStart) {
-  const head2 = v.slice(lineStart, lineStart + 2);
-  return head2 === "• " || head2 === "- ";
-}
+  function lineHasBulletPrefix(v, lineStart) {
+    const head2 = v.slice(lineStart, lineStart + 2);
+    return head2 === "• " || head2 === "- ";
+  }
 
-function ensureBulletPrefixAtCurrentLine(el) {
-  const v = el.value || "";
-  const pos = el.selectionStart ?? v.length;
-  const lineStart = getLineStart(v, pos);
+  function ensureBulletPrefixAtCurrentLine(el) {
+    const v = el.value || "";
+    const pos = el.selectionStart ?? v.length;
+    const lineStart = getLineStart(v, pos);
 
-  // Hvis linja allerede starter med bullet, gjør ingenting
-  if (lineHasBulletPrefix(v, lineStart)) return;
+    if (lineHasBulletPrefix(v, lineStart)) return;
 
-  // Sett inn bullet i starten av linja
-  el.value = v.slice(0, lineStart) + BULLET + v.slice(lineStart);
-  const newPos = pos + BULLET.length;
-  el.setSelectionRange(newPos, newPos);
-}
-
-function insertBulletNewline(el) {
-  const v = el.value || "";
-  const pos = el.selectionStart ?? v.length;
-  const insert = "\n" + BULLET;
-  el.value = v.slice(0, pos) + insert + v.slice(pos);
-  el.setSelectionRange(pos + insert.length, pos + insert.length);
-}
-
-function removeEmptyBulletLine(el) {
-  const v = el.value || "";
-  const pos = el.selectionStart ?? v.length;
-  const lineStart = getLineStart(v, pos);
-  const lineEndIdx = v.indexOf("\n", lineStart);
-  const lineEnd = lineEndIdx === -1 ? v.length : lineEndIdx;
-  const line = v.slice(lineStart, lineEnd);
-
-  // Hvis linja bare er "•" eller "-" så fjern prefixet
-  if ((line.startsWith("• ") && line.trim() === "•") || (line.startsWith("- ") && line.trim() === "-")) {
-    el.value = v.slice(0, lineStart) + v.slice(lineStart + 2);
-    const newPos = Math.max(lineStart, pos - 2);
+    el.value = v.slice(0, lineStart) + BULLET + v.slice(lineStart);
+    const newPos = pos + BULLET.length;
     el.setSelectionRange(newPos, newPos);
   }
-}
 
-function bindToolbar(tb, target, onChange) {
-  if (!tb || !target) return;
+  function insertBulletNewline(el) {
+    const v = el.value || "";
+    const pos = el.selectionStart ?? v.length;
+    const insert = "\n" + BULLET;
+    el.value = v.slice(0, pos) + insert + v.slice(pos);
+    el.setSelectionRange(pos + insert.length, pos + insert.length);
+  }
 
-  // Bullet-mode state per textarea (ikke lagret i localStorage)
-  target.dataset.bulletOn = target.dataset.bulletOn || "";
-  setBulletButtonState(tb, target.dataset.bulletOn === "1");
+  function removeEmptyBulletLine(el) {
+    const v = el.value || "";
+    const pos = el.selectionStart ?? v.length;
+    const lineStart = getLineStart(v, pos);
+    const lineEndIdx = v.indexOf("\n", lineStart);
+    const lineEnd = lineEndIdx === -1 ? v.length : lineEndIdx;
+    const line = v.slice(lineStart, lineEnd);
 
-  // Når bullet-mode er på: Enter lager ny linje + bullet
-  target.addEventListener("keydown", (e) => {
-    if (target.dataset.bulletOn !== "1") return;
-
-    if (e.key === "Enter") {
-      e.preventDefault();
-      insertBulletNewline(target);
-      onChange();
-      return;
+    if ((line.startsWith("• ") && line.trim() === "•") || (line.startsWith("- ") && line.trim() === "-")) {
+      el.value = v.slice(0, lineStart) + v.slice(lineStart + 2);
+      const newPos = Math.max(lineStart, pos - 2);
+      el.setSelectionRange(newPos, newPos);
     }
+  }
 
-    if (e.key === "Backspace") {
-      // liten delay så cursor/tekst oppdateres først
-      setTimeout(() => {
-        removeEmptyBulletLine(target);
-        onChange();
-      }, 0);
-    }
-  });
+  function bindToolbar(tb, target, onChange) {
+    if (!tb || !target) return;
 
-  tb.querySelectorAll(".tbtn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const action = btn.getAttribute("data-action");
-      target.focus();
+    target.dataset.bulletOn = target.dataset.bulletOn || "";
+    setBulletButtonState(tb, target.dataset.bulletOn === "1");
 
-      if (action === "bold") {
-        wrapSelectionWith(target, "**", "**");
+    target.addEventListener("keydown", (e) => {
+      if (target.dataset.bulletOn !== "1") return;
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        insertBulletNewline(target);
         onChange();
         return;
       }
 
-      if (action === "bullets") {
-        // Toggle bullet mode
-        const on = target.dataset.bulletOn === "1" ? "" : "1";
-        target.dataset.bulletOn = on;
-        setBulletButtonState(tb, on === "1");
-
-        // Hvis vi slår på: sørg for bullet på nåværende linje (så man kan starte direkte)
-        if (on === "1") {
-          ensureBulletPrefixAtCurrentLine(target);
+      if (e.key === "Backspace") {
+        setTimeout(() => {
+          removeEmptyBulletLine(target);
           onChange();
-        }
-        return;
+        }, 0);
       }
     });
-  });
-}
 
-function bindSimpleToolbars() {
-  document.querySelectorAll(".toolbar[data-for]").forEach((tb) => {
-    const fieldId = tb.getAttribute("data-for");
-    const target = document.getElementById(fieldId);
-    if (!target) return;
+    tb.querySelectorAll(".tbtn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const action = btn.getAttribute("data-action");
+        target.focus();
 
-    bindToolbar(tb, target, () => {
-      state.data[fieldId] = target.value;
-      if (String(target.value).trim() === "") delete state.data[fieldId];
-      saveState();
-      render();
+        if (action === "bold") {
+          wrapSelectionWith(target, "**", "**");
+          onChange();
+          return;
+        }
+
+        if (action === "bullets") {
+          const on = target.dataset.bulletOn === "1" ? "" : "1";
+          target.dataset.bulletOn = on;
+          setBulletButtonState(tb, on === "1");
+
+          if (on === "1") {
+            ensureBulletPrefixAtCurrentLine(target);
+            onChange();
+          }
+          return;
+        }
+      });
     });
-  });
-}
+  }
 
   function bindSimpleToolbars() {
     document.querySelectorAll(".toolbar[data-for]").forEach((tb) => {
@@ -376,16 +351,16 @@ function bindSimpleToolbars() {
         </div>
 
         <label class="label">${t("edu.degree")}</label>
-        <input class="input" data-edu-degree="${idx}" placeholder="Master of Science in Nursing" />
+        <input class="input" data-edu-degree="${idx}" />
 
         <label class="label">${t("edu.school")}</label>
-        <input class="input" data-edu-school="${idx}" placeholder="The University of Texas at Austin" />
+        <input class="input" data-edu-school="${idx}" />
 
         <label class="label">${t("edu.dates")}</label>
-        <input class="input" data-edu-date="${idx}" placeholder="2016 – 2018" />
+        <input class="input" data-edu-date="${idx}" />
 
         <label class="label">${t("edu.honors")}</label>
-        <input class="input" data-edu-honors="${idx}" placeholder="Magna Cum Laude · GPA 3.85" />
+        <input class="input" data-edu-honors="${idx}" />
       `;
       eduRoot.appendChild(wrap);
 
@@ -475,10 +450,10 @@ function bindSimpleToolbars() {
         </div>
 
         <label class="label">${t("lic.title")}</label>
-        <input class="input" data-lic-title="${idx}" placeholder="Registered Nurse (RN)" />
+        <input class="input" data-lic-title="${idx}" />
 
         <label class="label">${t("lic.detail")}</label>
-        <input class="input" data-lic-detail="${idx}" placeholder="Texas Board of Nursing · #TX-892341" />
+        <input class="input" data-lic-detail="${idx}" />
       `;
       licRoot.appendChild(wrap);
 
@@ -555,10 +530,10 @@ function bindSimpleToolbars() {
         </div>
 
         <label class="label">${t("exp.role")}</label>
-        <input class="input" data-exp-title="${idx}" placeholder="${t("exp.placeholderRole")}" />
+        <input class="input" data-exp-title="${idx}" />
 
         <label class="label">${t("exp.meta")}</label>
-        <input class="input" data-exp-meta="${idx}" placeholder="${t("exp.placeholderMeta")}" />
+        <input class="input" data-exp-meta="${idx}" />
 
         <div class="toolbar" data-exp-toolbar="${idx}">
           <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
@@ -566,7 +541,7 @@ function bindSimpleToolbars() {
         </div>
 
         <label class="label">${t("exp.bullets")}</label>
-        <textarea class="textarea" rows="5" data-exp-bullets="${idx}" placeholder="${t("exp.placeholderBullets")}"></textarea>
+        <textarea class="textarea" rows="5" data-exp-bullets="${idx}"></textarea>
       `;
       expRoot.appendChild(wrap);
 
@@ -659,10 +634,10 @@ function bindSimpleToolbars() {
         </div>
 
         <label class="label">${t("vol.header")}</label>
-        <input class="input" data-vol-header="${idx}" placeholder="${t("vol.placeholderHeader")}" />
+        <input class="input" data-vol-header="${idx}" />
 
         <label class="label">${t("vol.sub")}</label>
-        <input class="input" data-vol-sub="${idx}" placeholder="${t("vol.placeholderSub")}" />
+        <input class="input" data-vol-sub="${idx}" />
 
         <div class="toolbar" data-vol-toolbar="${idx}">
           <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
@@ -670,7 +645,7 @@ function bindSimpleToolbars() {
         </div>
 
         <label class="label">${t("vol.bullets")}</label>
-        <textarea class="textarea" rows="4" data-vol-bullets="${idx}" placeholder="${t("vol.placeholderBullets")}"></textarea>
+        <textarea class="textarea" rows="4" data-vol-bullets="${idx}"></textarea>
       `;
       volRoot.appendChild(wrap);
 
@@ -729,7 +704,7 @@ function bindSimpleToolbars() {
     });
   }
 
-  // ---- Export helpers (FIX: reliable PDF/print)
+  // ---- Export helpers (PDF/print)
   async function exportToPrintWindow({ autoPrint = true } = {}) {
     const cssText = await fetch("/styles.css", { cache: "no-store" }).then(r => r.text());
     const cvHtml = preview ? preview.innerHTML : "";
@@ -768,7 +743,6 @@ function bindSimpleToolbars() {
   if (printBtn) printBtn.addEventListener("click", () => exportToPrintWindow({ autoPrint: true }));
   if (downloadPdfBtn) downloadPdfBtn.addEventListener("click", () => exportToPrintWindow({ autoPrint: true }));
 
-  // ---- Download HTML
   if (downloadHtmlBtn) {
     downloadHtmlBtn.addEventListener("click", async () => {
       try {
@@ -899,11 +873,7 @@ function bindSimpleToolbars() {
     });
 
     window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        document.querySelectorAll(".panel.is-fullscreen").forEach(p => p.classList.remove("is-fullscreen"));
-        document.querySelectorAll(".fullscreen-backdrop").forEach(b => b.remove());
-        document.body.style.overflow = "";
-      }
+      if (e.key === "Escape") closeAnyFullscreen();
     });
 
     if (showPanelsBtn) {
@@ -975,7 +945,7 @@ function bindSimpleToolbars() {
   }
 
   // ---------------------------
-  // i18n apply (text + placeholder + title + aria-label)
+  // i18n apply
   // ---------------------------
   function applyI18n() {
     document.querySelectorAll("[data-i18n]").forEach((el) => {
@@ -1073,7 +1043,7 @@ function bindSimpleToolbars() {
           applyI18n();
           applyDefaultSectionTitlesForLanguage();
 
-          // IMPORTANT: re-render dynamic UI so labels/buttons update language
+          // Re-render dynamic blocks so their labels update
           renderEducation();
           renderLicenses();
           renderExperience();
@@ -1095,7 +1065,7 @@ function bindSimpleToolbars() {
   }
 
   // ---------------------------
-  // AI Coach (per-suggestion accept + sync to UI)
+  // AI Coach
   // ---------------------------
   const AI_HISTORY_KEY = "cv_builder_ai_history_v2";
 
@@ -1369,8 +1339,6 @@ function bindSimpleToolbars() {
   if (!state.ui.lang) state.ui.lang = "en";
   setupLanguageModal();
   applyI18n();
-
-  // Ensure section titles get defaults if empty (first run)
   applyDefaultSectionTitlesForLanguage();
 
   saveState();
