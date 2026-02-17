@@ -46,10 +46,10 @@
       .filter(Boolean);
   }
 
-  function stripBulletPrefix(t) {
-    const s = String(t ?? "").trim();
-    return s.replace(/^([•\-·]\s+)/, "");
-  }
+  // NOTE:
+  // Vi STRIPPER IKKE bullet-prefix lenger.
+  // Brukeren skal kunne skrive "• " selv og se det i preview.
+  // Det som ga "auto dot" var <ul> med default list-style, ikke teksten.
 
   // Merge wrapped lines into previous bullet when template-like wrapping happens.
   function mergeWrappedLinesIntoBullets(rawLines) {
@@ -61,7 +61,7 @@
       const isExplicitBullet = /^([•\-·]\s+)/.test(line);
 
       if (isExplicitBullet) {
-        out.push(stripBulletPrefix(line));
+        out.push(line); // behold bullet-tegnet hvis user skrev det
         return;
       }
 
@@ -152,10 +152,11 @@
       `;
     }
 
-    // bullets: one li per line
+    // IMPORTANT FIX:
+    // Vi bruker fortsatt <ul><li> for spacing, men fjerner auto-dots:
     const lis = items
       .map((t, idx) => {
-        const inner = fmtInline(stripBulletPrefix(t), { preserveNewlines: true });
+        const inner = fmtInline(t, { preserveNewlines: true }); // behold user-tegn som •
         if (boldFirstLine && idx === 0) return `<li><strong>${inner}</strong></li>`;
         return `<li>${inner}</li>`;
       })
@@ -164,7 +165,7 @@
     return `
       <section>
         <h2 class="section-title">${esc(title)}</h2>
-        <ul class="skill-list">${lis}</ul>
+        <ul class="skill-list" style="list-style:none; padding-left:0; margin:0;">${lis}</ul>
       </section>
     `;
   }
@@ -183,7 +184,11 @@
           <div class="exp-entry">
             <h3>${fmtInline(e.title)}</h3>
             ${e.meta ? `<p class="meta">${fmtInline(e.meta, { preserveNewlines: true })}</p>` : ""}
-            ${bullets ? `<ul class="exp-bullets">${bullets}</ul>` : ""}
+            ${
+              bullets
+                ? `<ul class="exp-bullets" style="list-style:none; padding-left:0; margin:0;">${bullets}</ul>`
+                : ""
+            }
           </div>
         `;
       })
@@ -250,7 +255,7 @@
       .map((v) => {
         const bulletsHTML =
           v.volBullets && v.volBullets.length
-            ? `<ul class="exp-bullets">${v.volBullets
+            ? `<ul class="exp-bullets" style="list-style:none; padding-left:0; margin:0;">${v.volBullets
                 .map((b) => `<li>${fmtInline(b, { preserveNewlines: true })}</li>`)
                 .join("")}</ul>`
             : "";
@@ -285,18 +290,13 @@
     const getDefaultTitle = (key) =>
       (CVI.getSectionDefaultTitle ? CVI.getSectionDefaultTitle(lang, key) : key);
 
+    // Begrenset til EN/NO/DE/ES/FR (som du ønsket)
     const presentWordByLang = {
       en: "Present",
       no: "Nå",
       de: "Heute",
-      sv: "Nu",
-      da: "Nu",
       fr: "Présent",
-      es: "Actualidad",
-      it: "Presente",
-      nl: "Heden",
-      pl: "Obecnie",
-      pt: "Atual"
+      es: "Actualidad"
     };
     const presentWord = presentWordByLang[lang] || "Present";
 
