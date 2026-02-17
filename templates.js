@@ -11,9 +11,7 @@
   function fmtInline(text, { preserveNewlines = false } = {}) {
     const t = String(text ?? "");
     if (!t) return "";
-
     const parts = t.split(/(\*\*[^*]+\*\*)/g);
-
     const html = parts
       .map((p) => {
         const m = p.match(/^\*\*([^*]+)\*\*$/);
@@ -21,7 +19,6 @@
         return esc(p);
       })
       .join("");
-
     if (!preserveNewlines) return html;
     return html.replace(/\n/g, "<br>");
   }
@@ -46,11 +43,6 @@
       .filter(Boolean);
   }
 
-  // NOTE:
-  // Vi STRIPPER IKKE bullet-prefix lenger.
-  // Brukeren skal kunne skrive "• " selv og se det i preview.
-  // Det som ga "auto dot" var <ul> med default list-style, ikke teksten.
-
   // Merge wrapped lines into previous bullet when template-like wrapping happens.
   function mergeWrappedLinesIntoBullets(rawLines) {
     const out = [];
@@ -59,19 +51,19 @@
       if (!line) return;
 
       const isExplicitBullet = /^([•\-·]\s+)/.test(line);
-
       if (isExplicitBullet) {
         out.push(line); // behold bullet-tegnet hvis user skrev det
         return;
       }
 
       if (out.length > 0) {
-        out[out.length - 1] = (out[out.length - 1] + " " + line).replace(/\s+/g, " ").trim();
+        out[out.length - 1] = (out[out.length - 1] + " " + line)
+          .replace(/\s+/g, " ")
+          .trim();
       } else {
         out.push(line);
       }
     });
-
     return out;
   }
 
@@ -131,8 +123,16 @@
     });
   }
 
+  // --- helper: dot only if explicit bullet prefix OR default-preview ---
+  function splitBulletPrefix(line) {
+    const s = String(line ?? "");
+    const m = s.match(/^([•\-·]\s+)(.*)$/);
+    if (m) return { hasPrefix: true, text: m[2] ?? "" };
+    return { hasPrefix: false, text: s };
+  }
+
   // mode: "bullets" | "paragraph"
-  function renderSimpleSection({ title, content, mode, boldFirstLine }) {
+  function renderSimpleSection({ title, content, mode, boldFirstLine, isDefaultContent }) {
     const items = lines(content);
     if (!items.length) return "";
 
@@ -144,6 +144,7 @@
           return `<p>${inner}</p>`;
         })
         .join("");
+
       return `
         <section>
           <h2 class="section-title">${esc(title)}</h2>
@@ -152,13 +153,17 @@
       `;
     }
 
-    // IMPORTANT FIX:
-    // Vi bruker fortsatt <ul><li> for spacing, men fjerner auto-dots:
+    // bullets mode
     const lis = items
-      .map((t, idx) => {
-        const inner = fmtInline(t, { preserveNewlines: true }); // behold user-tegn som •
-        if (boldFirstLine && idx === 0) return `<li><strong>${inner}</strong></li>`;
-        return `<li>${inner}</li>`;
+      .map((rawLine, idx) => {
+        const { hasPrefix, text } = splitBulletPrefix(rawLine);
+        const showDot = !!isDefaultContent || hasPrefix;   // ✅ default preview beholder dots
+        const lineForDisplay = hasPrefix ? text : rawLine; // ✅ user må ha prefix for dot
+        const inner = fmtInline(lineForDisplay, { preserveNewlines: true });
+
+        const cls = showDot ? "dot" : "";
+        if (boldFirstLine && idx === 0) return `<li class="${cls}"><strong>${inner}</strong></li>`;
+        return `<li class="${cls}">${inner}</li>`;
       })
       .join("");
 
@@ -170,25 +175,26 @@
     `;
   }
 
-  function renderExperienceSection(title, experienceText) {
+  function renderExperienceSection(title, experienceText, { isDefaultContent } = {}) {
     const exps = parseExperience(experienceText);
     if (!exps.length) return "";
 
     const expHTML = exps
       .map((e) => {
         const bullets = (e.bullets || [])
-          .map((b) => `<li>${fmtInline(b, { preserveNewlines: true })}</li>`)
+          .map((b) => {
+            const { hasPrefix, text } = splitBulletPrefix(b);
+            const showDot = !!isDefaultContent || hasPrefix;
+            const bDisplay = hasPrefix ? text : b;
+            return `<li class="${showDot ? "dot" : ""}">${fmtInline(bDisplay, { preserveNewlines: true })}</li>`;
+          })
           .join("");
 
         return `
           <div class="exp-entry">
             <h3>${fmtInline(e.title)}</h3>
             ${e.meta ? `<p class="meta">${fmtInline(e.meta, { preserveNewlines: true })}</p>` : ""}
-            ${
-              bullets
-                ? `<ul class="exp-bullets" style="list-style:none; padding-left:0; margin:0;">${bullets}</ul>`
-                : ""
-            }
+            ${bullets ? `<ul class="exp-bullets" style="list-style:none; padding-left:0; margin:0;">${bullets}</ul>` : ""}
           </div>
         `;
       })
@@ -209,12 +215,13 @@
     const eduHTML = edu
       .map(
         (e) => `
-        <div class="edu-block">
-          <h3>${fmtInline(e.degree)}</h3>
-          ${e.school ? `<p>${fmtInline(e.school)}</p>` : ""}
-          ${e.date ? `<p class="date">${fmtInline(e.date)}</p>` : ""}
-          ${e.honors ? `<p class="honors">${fmtInline(e.honors)}</p>` : ""}
-        </div>`
+          <div class="edu-block">
+            <h3>${fmtInline(e.degree)}</h3>
+            ${e.school ? `<p>${fmtInline(e.school)}</p>` : ""}
+            ${e.date ? `<p class="date">${fmtInline(e.date)}</p>` : ""}
+            ${e.honors ? `<p class="honors">${fmtInline(e.honors)}</p>` : ""}
+          </div>
+        `
       )
       .join("");
 
@@ -236,7 +243,8 @@
         <div class="cert-item">
           <h3>${fmtInline(licLines[j] || "")}</h3>
           ${licLines[j + 1] ? `<p>${fmtInline(licLines[j + 1])}</p>` : ""}
-        </div>`;
+        </div>
+      `;
     }
 
     return `
@@ -247,7 +255,7 @@
     `;
   }
 
-  function renderVolunteerSection(title, volunteerText, { presentWord } = {}) {
+  function renderVolunteerSection(title, volunteerText, { presentWord, isDefaultContent } = {}) {
     const vols = parseVolunteer(volunteerText, { presentWord });
     if (!vols.length) return "";
 
@@ -255,21 +263,30 @@
       .map((v) => {
         const bulletsHTML =
           v.volBullets && v.volBullets.length
-            ? `<ul class="exp-bullets" style="list-style:none; padding-left:0; margin:0;">${v.volBullets
-                .map((b) => `<li>${fmtInline(b, { preserveNewlines: true })}</li>`)
-                .join("")}</ul>`
+            ? `
+              <ul class="exp-bullets" style="list-style:none; padding-left:0; margin:0;">
+                ${v.volBullets
+                  .map((b) => {
+                    const { hasPrefix, text } = splitBulletPrefix(b);
+                    const showDot = !!isDefaultContent || hasPrefix;
+                    const bDisplay = hasPrefix ? text : b;
+                    return `<li class="${showDot ? "dot" : ""}">${fmtInline(bDisplay, { preserveNewlines: true })}</li>`;
+                  })
+                  .join("")}
+              </ul>
+            `
             : "";
 
         return `
-        <div class="exp-entry">
-          <div class="vol-header">
-            <h3>${fmtInline(v.volTitle)}</h3>
-            ${v.volDate ? `<span class="date">${fmtInline(v.volDate)}</span>` : ""}
+          <div class="exp-entry">
+            <div class="vol-header">
+              <h3>${fmtInline(v.volTitle)}</h3>
+              ${v.volDate ? `<span class="date">${fmtInline(v.volDate)}</span>` : ""}
+            </div>
+            ${v.volSub ? `<p class="vol-sub">${fmtInline(v.volSub)}</p>` : ""}
+            ${bulletsHTML}
           </div>
-          ${v.volSub ? `<p class="vol-sub">${fmtInline(v.volSub)}</p>` : ""}
-          ${bulletsHTML}
-        </div>
-      `;
+        `;
       })
       .join("");
 
@@ -287,17 +304,10 @@
 
     // i18n hooks from i18n.js (optional, fallback-safe)
     const CVI = window.CV_I18N || {};
-    const getDefaultTitle = (key) =>
-      (CVI.getSectionDefaultTitle ? CVI.getSectionDefaultTitle(lang, key) : key);
+    const getDefaultTitle = (key) => (CVI.getSectionDefaultTitle ? CVI.getSectionDefaultTitle(lang, key) : key);
 
-    // Begrenset til EN/NO/DE/ES/FR (som du ønsket)
-    const presentWordByLang = {
-      en: "Present",
-      no: "Nå",
-      de: "Heute",
-      fr: "Présent",
-      es: "Actualidad"
-    };
+    // Begrenset til EN/NO/DE/ES/FR
+    const presentWordByLang = { en: "Present", no: "Nå", de: "Heute", fr: "Présent", es: "Actualidad" };
     const presentWord = presentWordByLang[lang] || "Present";
 
     // Sample defaults (only used if user fields are empty)
@@ -308,12 +318,10 @@
       email: "sarah.johnson@email.com",
       location: "Austin, TX 78701",
       linkedin: "linkedin.com/in/sarahjohnsonrn",
-
       summary:
         "Compassionate and detail-oriented Registered Nurse with 7+ years of progressive experience in acute care, emergency, and critical care settings. Proven ability to manage" +
         "4–6 critically ill patients per shift while maintaining 98% patient satisfaction scores. Skilled in patient assessment, evidence-based care planning, and interdisciplinary" +
         "collaboration. Committed to delivering measurable outcomes and continuous quality improvement in fast-paced hospital environments.",
-
       education:
         "Master of Science in Nursing\n" +
         "The University of Texas at Austin\n" +
@@ -322,7 +330,6 @@
         "The University of Texas at Austin\n" +
         "2012 – 2016\n" +
         "Magna Cum Laude · GPA 3.85",
-
       licenses:
         "Registered Nurse (RN)\n" +
         "Texas Board of Nursing · #TX-892341\n" +
@@ -334,7 +341,6 @@
         "American Heart Association · Exp. Aug 2026\n" +
         "TNCC\n" +
         "Emergency Nurses Association",
-
       clinicalSkills:
         "Patient Assessment & Triage\n" +
         "IV Therapy & Venipuncture\n" +
@@ -345,18 +351,13 @@
         "Electronic Health Records (Epic)\n" +
         "Care Plan Development\n" +
         "Infection Control Protocols",
-
       coreCompetencies:
         "Team Leadership & Mentoring\n" +
         "Critical Thinking\n" +
         "Patient & Family Education\n" +
         "Time Management\n" +
         "Interdisciplinary Collaboration",
-
-      languages:
-        "English — Native\n" +
-        "Spanish — Conversational",
-
+      languages: "English — Native\n" + "Spanish — Conversational",
       experience:
         "SENIOR REGISTERED NURSE – ICU\n" +
         "St. David's Medical Center, Austin, TX | January 2021 – Present\n" +
@@ -382,21 +383,22 @@
         "Monitored and documented vital signs, lab results, and medication responses with 100% charting\n" +
         "compliance\n" +
         "Educated 500+ families on post-discharge care plans, medication schedules, and follow-up procedures",
-
       achievements:
         "Spearheaded ICU sepsis screening protocol resulting in 22% faster identification and 15% reduction in mortality\n" +
         "Developed new-hire orientation program adopted hospital-wide, reducing onboarding time by 3 weeks\n" +
         "Published research on nurse-led ventilator weaning protocols in the Journal of Critical Care Nursing (2022)\n" +
         "Awarded Daisy Award for Extraordinary Nurses (2021) — nominated by patients and families",
-
       volunteer:
         "Volunteer Nurse 2019 – Present\n" +
         "Austin Free Clinic · Community Health Outreach\n" +
         "Provide free health screenings and vaccinations to 200+ underserved community members annually",
-
       custom1: "",
-      custom2: ""
+      custom2: "",
     };
+
+    // ✅ track which fields are default-preview vs user-filled
+    const isDefault = {};
+    for (const k in defaults) isDefault[k] = !hasText(raw[k]);
 
     // Use user data if present, else fallback to defaults
     const d = {};
@@ -407,59 +409,15 @@
       summary: { enabled: true, title: getDefaultTitle("summary") },
       education: { enabled: true, title: getDefaultTitle("education") },
       licenses: { enabled: true, title: getDefaultTitle("licenses") },
-
-      clinicalSkills: {
-        enabled: true,
-        title: getDefaultTitle("clinicalSkills"),
-        mode: "bullets",
-        boldFirstLine: false
-      },
-      coreCompetencies: {
-        enabled: true,
-        title: getDefaultTitle("coreCompetencies"),
-        mode: "bullets",
-        boldFirstLine: false
-      },
-      languages: {
-        enabled: true,
-        title: getDefaultTitle("languages"),
-        mode: "paragraph",
-        boldFirstLine: false
-      },
-
+      clinicalSkills: { enabled: true, title: getDefaultTitle("clinicalSkills"), mode: "bullets", boldFirstLine: false },
+      coreCompetencies: { enabled: true, title: getDefaultTitle("coreCompetencies"), mode: "bullets", boldFirstLine: false },
+      languages: { enabled: true, title: getDefaultTitle("languages"), mode: "paragraph", boldFirstLine: false },
       experience: { enabled: true, title: getDefaultTitle("experience") },
-
-      achievements: {
-        enabled: true,
-        title: getDefaultTitle("achievements"),
-        mode: "bullets",
-        boldFirstLine: false
-      },
-
+      achievements: { enabled: true, title: getDefaultTitle("achievements"), mode: "bullets", boldFirstLine: false },
       volunteer: { enabled: true, title: getDefaultTitle("volunteer") },
-
-      custom1: {
-        enabled: false,
-        title: getDefaultTitle("custom1"),
-        mode: "bullets",
-        boldFirstLine: false,
-        column: "right"
-      },
-      custom2: {
-        enabled: false,
-        title: getDefaultTitle("custom2"),
-        mode: "bullets",
-        boldFirstLine: false,
-        column: "right"
-      },
-
-      contact: {
-        show_title: true,
-        show_email: true,
-        show_phone: true,
-        show_location: true,
-        show_linkedin: true
-      }
+      custom1: { enabled: false, title: getDefaultTitle("custom1"), mode: "bullets", boldFirstLine: false, column: "right" },
+      custom2: { enabled: false, title: getDefaultTitle("custom2"), mode: "bullets", boldFirstLine: false, column: "right" },
+      contact: { show_title: true, show_email: true, show_phone: true, show_location: true, show_linkedin: true },
     };
 
     // Merge saved config over defaults
@@ -474,7 +432,6 @@
 
     // Contact show/hide
     const contactCfg = sections.contact || defaultSections.contact;
-
     const contactParts = [];
     if (contactCfg.show_phone && d.phone) contactParts.push(d.phone);
     if (contactCfg.show_email && d.email) contactParts.push(d.email);
@@ -490,15 +447,14 @@
 
     const showTitle = contactCfg.show_title !== false;
 
-    const summaryHTML =
-      sections.summary?.enabled
-        ? `
-          <section class="cv-summary">
-            <h2 class="section-title">${esc(sectionTitle("summary"))}</h2>
-            <p class="body-text">${fmtInline(d.summary, { preserveNewlines: true })}</p>
-          </section>
-        `
-        : "";
+    const summaryHTML = sections.summary?.enabled
+      ? `
+        <section class="cv-summary">
+          <h2 class="section-title">${esc(sectionTitle("summary"))}</h2>
+          <p class="body-text">${fmtInline(d.summary, { preserveNewlines: true })}</p>
+        </section>
+      `
+      : "";
 
     function renderCustom(key) {
       const cfg = sections[key];
@@ -507,7 +463,8 @@
         title: cfg.title && String(cfg.title).trim() ? cfg.title : sectionTitle(key, "custom1"),
         content: d[key] || "",
         mode: cfg.mode || "bullets",
-        boldFirstLine: !!cfg.boldFirstLine
+        boldFirstLine: !!cfg.boldFirstLine,
+        isDefaultContent: !!isDefault[key],
       });
     }
 
@@ -529,7 +486,8 @@
             title: sectionTitle("clinicalSkills"),
             content: d.clinicalSkills,
             mode: sections.clinicalSkills.mode || "bullets",
-            boldFirstLine: !!sections.clinicalSkills.boldFirstLine
+            boldFirstLine: !!sections.clinicalSkills.boldFirstLine,
+            isDefaultContent: !!isDefault.clinicalSkills,
           })
         : "",
       sections.coreCompetencies?.enabled
@@ -537,7 +495,8 @@
             title: sectionTitle("coreCompetencies"),
             content: d.coreCompetencies,
             mode: sections.coreCompetencies.mode || "bullets",
-            boldFirstLine: !!sections.coreCompetencies.boldFirstLine
+            boldFirstLine: !!sections.coreCompetencies.boldFirstLine,
+            isDefaultContent: !!isDefault.coreCompetencies,
           })
         : "",
       sections.languages?.enabled
@@ -545,26 +504,30 @@
             title: sectionTitle("languages"),
             content: d.languages,
             mode: sections.languages.mode || "paragraph",
-            boldFirstLine: !!sections.languages.boldFirstLine
+            boldFirstLine: !!sections.languages.boldFirstLine,
+            isDefaultContent: !!isDefault.languages,
           })
         : "",
-      leftCustomHTML
+      leftCustomHTML,
     ].join("");
 
     const rightHTML = [
-      sections.experience?.enabled ? renderExperienceSection(sectionTitle("experience"), d.experience) : "",
+      sections.experience?.enabled
+        ? renderExperienceSection(sectionTitle("experience"), d.experience, { isDefaultContent: !!isDefault.experience })
+        : "",
       sections.achievements?.enabled
         ? renderSimpleSection({
             title: sectionTitle("achievements"),
             content: d.achievements,
             mode: sections.achievements.mode || "bullets",
-            boldFirstLine: !!sections.achievements.boldFirstLine
+            boldFirstLine: !!sections.achievements.boldFirstLine,
+            isDefaultContent: !!isDefault.achievements,
           })
         : "",
       sections.volunteer?.enabled
-        ? renderVolunteerSection(sectionTitle("volunteer"), d.volunteer, { presentWord })
+        ? renderVolunteerSection(sectionTitle("volunteer"), d.volunteer, { presentWord, isDefaultContent: !!isDefault.volunteer })
         : "",
-      rightCustomHTML
+      rightCustomHTML,
     ].join("");
 
     return `
