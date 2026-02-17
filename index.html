@@ -1,485 +1,408 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CV Builder</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-
-  <link rel="stylesheet" href="/styles.css" />
-</head>
-<body>
-  <header class="topbar">
-    <div class="brand" data-i18n="app.title">CV Builder</div>
-
-    <div class="actions">
-      <button id="langBtn" class="btn ghost" type="button" title="Language">
-        <span class="lang-pill" id="langPill">English</span>
-      </button>
-
-      <button id="showPanelsBtn" class="btn ghost" type="button" data-i18n="topbar.panels">Panels</button>
-      <button id="logoutBtn" class="btn ghost" style="display:none;" data-i18n="topbar.logout">Log out</button>
-    </div>
-  </header>
-
-  <!-- Language modal -->
-  <div id="langModal" class="modal" style="display:none;">
-    <div class="modal-card">
-      <div class="modal-head">
-        <div class="modal-title" data-i18n="lang.title">Choose language</div>
-        <button id="langClose" class="pbtn" type="button" aria-label="Close">✕</button>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CV Builder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand" data-i18n="app.title">CV Builder</div>
+      <div class="actions">
+        <button id="langBtn" class="btn ghost" type="button" title="Language">
+          <span class="lang-pill" id="langPill">English</span>
+        </button>
+        <button id="showPanelsBtn" class="btn ghost" type="button" data-i18n="topbar.panels">Panels</button>
+        <button id="logoutBtn" class="btn ghost" style="display:none;" data-i18n="topbar.logout">Log out</button>
       </div>
+    </header>
 
-      <input
-        id="langSearch"
-        class="input"
-        data-i18n-placeholder="ph.langSearch"
-        placeholder="Search language..."
-      />
-
-      <div id="langList" class="lang-list-ui"></div>
-
-      <div class="row" style="justify-content:flex-end;">
-        <button id="langCancel" class="btn ghost" type="button" data-i18n="common.cancel">Cancel</button>
+    <!-- Language modal -->
+    <div id="langModal" class="modal" style="display:none;">
+      <div class="modal-card">
+        <div class="modal-head">
+          <div class="modal-title" data-i18n="lang.title">Choose language</div>
+          <button id="langClose" class="pbtn" type="button" aria-label="Close">✕</button>
+        </div>
+        <textarea id="langSearch" class="input" rows="1" data-i18n-placeholder="ph.langSearch" placeholder="Search language..."></textarea>
+        <div id="langList" class="lang-list-ui"></div>
+        <div class="row" style="justify-content:flex-end;">
+          <button id="langCancel" class="btn ghost" type="button" data-i18n="common.cancel">Cancel</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <main class="container">
-    <section id="locked" class="card" style="display:none;">
-      <h1 data-i18n="locked.title">Access required</h1>
-      <p data-i18n="locked.body1">You need access to use the CV Builder.</p>
-      <p class="muted" data-i18n="locked.body2">If you just purchased: you will receive an email shortly with your secure login link.</p>
-      <div class="row">
-        <a class="btn" id="buyLink" href="#" target="_blank" rel="noreferrer" data-i18n="locked.buy">Buy access</a>
-      </div>
-      <hr />
-      <p class="muted small" data-i18n="locked.body3">
-        After purchase, you’ll receive an email shortly with your secure login link. Your access is valid for 30 days.
-      </p>
-    </section>
-
-    <section id="app" style="display:none;">
-      <div class="grid3" id="grid3">
-        <!-- LEFT: editor -->
-        <div class="card panel" id="panel-editor" data-panel="editor">
-          <div class="panel-head">
-            <h2 data-i18n="editor.title">Edit content</h2>
-            <div class="panel-actions">
-              <button class="pbtn" type="button" data-action="hide" data-target="editor" title="Hide" data-i18n="common.hide">Hide</button>
-              <button class="pbtn" type="button" data-action="fullscreen" data-target="editor" title="Fullscreen" data-i18n="common.fullscreen">Fullscreen</button>
-            </div>
-          </div>
-
-          <!-- CONTACT FIELDS -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="contact.fullName">Full name</label>
-              <div class="field-controls"></div>
-            </div>
-            <input id="name" class="input" placeholder="Sarah Johnson" />
-          </div>
-
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="contact.title">Title / Credentials</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="show_title" checked />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-              </div>
-            </div>
-            <input id="title" class="input" placeholder="Registered Nurse · BSN, RN" />
-          </div>
-
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="contact.email">Email</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="show_email" checked />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-              </div>
-            </div>
-            <input id="email" class="input" placeholder="sarah.johnson@email.com" />
-          </div>
-
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="contact.phone">Phone</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="show_phone" checked />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-              </div>
-            </div>
-            <input id="phone" class="input" placeholder="(555) 123-4567" />
-          </div>
-
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="contact.location">Location</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="show_location" checked />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-              </div>
-            </div>
-            <input id="location" class="input" placeholder="Austin, TX 78701" />
-          </div>
-
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="contact.linkedin">LinkedIn</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="show_linkedin" checked />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-              </div>
-            </div>
-            <input id="linkedin" class="input" placeholder="linkedin.com/in/..." />
-          </div>
-
-          <!-- SUMMARY -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="sec.summary.label">Professional Summary</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="sec_summary_enabled" checked />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-                <input id="sec_summary_title" class="input small" value="Professional Summary" />
-              </div>
-            </div>
-            <div class="toolbar" data-for="summary">
-              <button class="tbtn" data-action="bold" type="button" title="Bold (** **)"><b>B</b></button>
-              <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
-            </div>
-            <textarea
-              id="summary"
-              class="textarea"
-              rows="5"
-              data-i18n-placeholder="ph.summary"
-              placeholder="Write your summary..."
-            ></textarea>
-          </div>
-
-          <!-- EDUCATION (structured) -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="sec.education.label">Education</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="sec_education_enabled" checked />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-                <input id="sec_education_title" class="input small" value="Education" />
-              </div>
-            </div>
-
-            <div id="educationBlocks"></div>
-
-            <div class="row" style="margin-top:10px;">
-              <button id="addEducationBlock" class="btn ghost" type="button" data-i18n="btn.addEducation">+ Add education</button>
-            </div>
-
-            <textarea id="education" class="textarea" rows="6" style="display:none;"></textarea>
-          </div>
-
-          <!-- LICENSES -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="sec.licenses.label">Licenses & Certifications</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="sec_licenses_enabled" checked />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-                <input id="sec_licenses_title" class="input small" value="Licenses & Certifications" />
-              </div>
-            </div>
-
-            <div id="licenseBlocks"></div>
-
-            <div class="row" style="margin-top:10px;">
-              <button id="addLicenseBlock" class="btn ghost" type="button" data-i18n="btn.addLicense">+ Add license</button>
-            </div>
-
-            <textarea id="licenses" class="textarea" rows="6" style="display:none;"></textarea>
-          </div>
-
-          <!-- CLINICAL SKILLS -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="sec.clinicalSkills.label">Clinical Skills (one per line)</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="sec_clinicalSkills_enabled" checked />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-                <input id="sec_clinicalSkills_title" class="input small" value="Clinical Skills" />
-              </div>
-            </div>
-            <div class="toolbar" data-for="clinicalSkills">
-              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-              <button class="tbtn tdot" data-action="bullets" type="button"></button>
-            </div>
-            <textarea
-              id="clinicalSkills"
-              class="textarea"
-              rows="6"
-              data-i18n-placeholder="ph.onePerLine"
-              placeholder="One per line..."
-            ></textarea>
-          </div>
-
-          <!-- CORE COMPETENCIES -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="sec.coreCompetencies.label">Core Competencies (one per line)</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="sec_coreCompetencies_enabled" checked />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-                <input id="sec_coreCompetencies_title" class="input small" value="Core Competencies" />
-              </div>
-            </div>
-            <div class="toolbar" data-for="coreCompetencies">
-              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-              <button class="tbtn tdot" data-action="bullets" type="button"></button>
-            </div>
-            <textarea
-              id="coreCompetencies"
-              class="textarea"
-              rows="5"
-              data-i18n-placeholder="ph.onePerLine"
-              placeholder="One per line..."
-            ></textarea>
-          </div>
-
-          <!-- LANGUAGES -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="sec.languages.label">Languages (one per line)</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="sec_languages_enabled" checked />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-                <input id="sec_languages_title" class="input small" value="Languages" />
-              </div>
-            </div>
-            <div class="toolbar" data-for="languages">
-              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-              <button class="tbtn tdot" data-action="bullets" type="button"></button>
-            </div>
-            <textarea
-              id="languages"
-              class="textarea"
-              rows="3"
-              data-i18n-placeholder="ph.onePerLine"
-              placeholder="One per line..."
-            ></textarea>
-          </div>
-
-          <!-- EXPERIENCE -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="sec.experience.label">Experience (jobs)</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="sec_experience_enabled" checked />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-                <input id="sec_experience_title" class="input small" value="Professional Experience" />
-              </div>
-            </div>
-
-            <div id="experienceJobs"></div>
-
-            <div class="row" style="margin-top:10px;">
-              <button id="addExperienceJob" class="btn ghost" type="button" data-i18n="btn.addJob">+ Add job</button>
-            </div>
-
-            <textarea id="experience" class="textarea" rows="10" style="display:none;"></textarea>
-          </div>
-
-          <!-- ACHIEVEMENTS -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="sec.achievements.label">Clinical Achievements (one per line)</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="sec_achievements_enabled" checked />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-                <input id="sec_achievements_title" class="input small" value="Clinical Achievements" />
-              </div>
-            </div>
-            <div class="toolbar" data-for="achievements">
-              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-              <button class="tbtn tdot" data-action="bullets" type="button"></button>
-            </div>
-            <textarea
-              id="achievements"
-              class="textarea"
-              rows="4"
-              data-i18n-placeholder="ph.onePerLine"
-              placeholder="One per line..."
-            ></textarea>
-          </div>
-
-          <!-- VOLUNTEER -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="sec.volunteer.label">Volunteer</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="sec_volunteer_enabled" checked />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-                <input id="sec_volunteer_title" class="input small" value="Volunteer Experience" />
-              </div>
-            </div>
-
-            <div id="volunteerBlocks"></div>
-
-            <div class="row" style="margin-top:10px;">
-              <button id="addVolunteerBlock" class="btn ghost" type="button" data-i18n="btn.addVolunteer">+ Add volunteer</button>
-            </div>
-
-            <textarea id="volunteer" class="textarea" rows="6" style="display:none;"></textarea>
-          </div>
-
-          <hr />
-
-          <!-- CUSTOM 1 -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="sec.custom1.label">Custom Section 1</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="sec_custom1_enabled" />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-                <input id="sec_custom1_title" class="input small" value="Custom Section 1" />
-              </div>
-            </div>
-            <div class="toolbar" data-for="custom1">
-              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-              <button class="tbtn tdot" data-action="bullets" type="button"></button>
-            </div>
-            <textarea
-              id="custom1"
-              class="textarea"
-              rows="5"
-              data-i18n-placeholder="ph.custom"
-              placeholder="..."
-            ></textarea>
-          </div>
-
-          <!-- CUSTOM 2 -->
-          <div class="field">
-            <div class="field-head">
-              <label class="label" data-i18n="sec.custom2.label">Custom Section 2</label>
-              <div class="field-controls">
-                <label class="toggle">
-                  <input type="checkbox" id="sec_custom2_enabled" />
-                  <span data-i18n="common.show">Show</span>
-                </label>
-                <input id="sec_custom2_title" class="input small" value="Custom Section 2" />
-              </div>
-            </div>
-            <div class="toolbar" data-for="custom2">
-              <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
-              <button class="tbtn tdot" data-action="bullets" type="button"></button>
-            </div>
-            <textarea
-              id="custom2"
-              class="textarea"
-              rows="5"
-              data-i18n-placeholder="ph.custom"
-              placeholder="..."
-            ></textarea>
-          </div>
-
-          <div class="row">
-            <button id="printBtn" class="btn" type="button" data-i18n="btn.print">Print</button>
-            <button id="downloadPdfBtn" class="btn ghost" type="button" data-i18n="btn.downloadPdf">Download PDF</button>
-            <button id="downloadHtmlBtn" class="btn ghost" type="button" data-i18n="btn.downloadHtml">Download HTML</button>
-          </div>
-
-          <p class="muted small" data-i18n="hint.toolbar">
-            Tip: Select text and press <b>B</b> for <code>**bold**</code>. Use <b>•</b> to toggle bullet typing.
-          </p>
+    <main class="container">
+      <section id="locked" class="card" style="display:none;">
+        <h1 data-i18n="locked.title">Access required</h1>
+        <p data-i18n="locked.body1">You need access to use the CV Builder.</p>
+        <p class="muted" data-i18n="locked.body2">If you just purchased: you will receive an email shortly with your secure login link.</p>
+        <div class="row">
+          <a class="btn" id="buyLink" href="#" target="_blank" rel="noreferrer" data-i18n="locked.buy">Buy access</a>
         </div>
+        <hr />
+        <p class="muted small" data-i18n="locked.body3">
+          After purchase, you’ll receive an email shortly with your secure login link. Your access is valid for 30 days.
+        </p>
+      </section>
 
-        <!-- RESIZER 1 -->
-        <div class="v-resizer" id="resizer-1" title="Drag to resize"></div>
+      <section id="app" style="display:none;">
+        <div class="grid3" id="grid3">
 
-        <!-- MIDDLE: preview -->
-        <div class="card panel" id="panel-preview" data-panel="preview">
-          <div class="panel-head">
-            <h2 data-i18n="preview.title">Preview</h2>
-            <div class="panel-actions">
-              <button class="pbtn" type="button" data-action="hide" data-target="preview" data-i18n="common.hide">Hide</button>
-              <button class="pbtn" type="button" data-action="fullscreen" data-target="preview" data-i18n="common.fullscreen">Fullscreen</button>
+          <!-- LEFT: editor -->
+          <div class="card panel" id="panel-editor" data-panel="editor">
+            <div class="panel-head">
+              <h2 data-i18n="editor.title">Edit content</h2>
+              <div class="panel-actions">
+                <button class="pbtn" type="button" data-action="hide" data-target="editor" title="Hide" data-i18n="common.hide">Hide</button>
+                <button class="pbtn" type="button" data-action="fullscreen" data-target="editor" title="Fullscreen" data-i18n="common.fullscreen">Fullscreen</button>
+              </div>
             </div>
-          </div>
-          <div id="preview" class="cv"></div>
-        </div>
 
-        <!-- RESIZER 2 -->
-        <div class="v-resizer" id="resizer-2" title="Drag to resize"></div>
-
-        <!-- RIGHT: AI coach -->
-        <div class="card panel" id="panel-ai" data-panel="ai">
-          <div class="panel-head">
-            <h2 data-i18n="ai.title">AI Coach</h2>
-            <div class="panel-actions">
-              <button class="pbtn" id="aiClear" type="button" data-i18n="common.clear">Clear</button>
-              <button class="pbtn" type="button" data-action="hide" data-target="ai" data-i18n="common.hide">Hide</button>
-              <button class="pbtn" type="button" data-action="fullscreen" data-target="ai" data-i18n="common.fullscreen">Fullscreen</button>
+            <!-- CONTACT FIELDS -->
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="contact.fullName">Full name</label>
+                <div class="field-controls"></div>
+              </div>
+              <textarea id="name" class="input" rows="1" placeholder="Sarah Johnson"></textarea>
             </div>
+
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="contact.title">Title / Credentials</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="show_title" checked />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                </div>
+              </div>
+              <textarea id="title" class="input" rows="1" placeholder="Registered Nurse · BSN, RN"></textarea>
+            </div>
+
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="contact.email">Email</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="show_email" checked />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                </div>
+              </div>
+              <textarea id="email" class="input" rows="1" placeholder="sarah.johnson@email.com"></textarea>
+            </div>
+
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="contact.phone">Phone</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="show_phone" checked />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                </div>
+              </div>
+              <textarea id="phone" class="input" rows="1" placeholder="(555) 123-4567"></textarea>
+            </div>
+
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="contact.location">Location</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="show_location" checked />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                </div>
+              </div>
+              <textarea id="location" class="input" rows="1" placeholder="Austin, TX 78701"></textarea>
+            </div>
+
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="contact.linkedin">LinkedIn</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="show_linkedin" checked />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                </div>
+              </div>
+              <textarea id="linkedin" class="input" rows="1" placeholder="linkedin.com/in/..."></textarea>
+            </div>
+
+            <!-- SUMMARY -->
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="sec.summary.label">Professional Summary</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="sec_summary_enabled" checked />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                  <textarea id="sec_summary_title" class="input small" rows="1">Professional Summary</textarea>
+                </div>
+              </div>
+              <div class="toolbar" data-for="summary">
+                <button class="tbtn" data-action="bold" type="button" title="Bold (** **)"><b>B</b></button>
+                <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
+              </div>
+              <textarea id="summary" class="textarea" rows="5" data-i18n-placeholder="ph.summary" placeholder="Write your summary..."></textarea>
+            </div>
+
+            <!-- EDUCATION (structured) -->
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="sec.education.label">Education</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="sec_education_enabled" checked />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                  <textarea id="sec_education_title" class="input small" rows="1">Education</textarea>
+                </div>
+              </div>
+              <div id="educationBlocks"></div>
+              <div class="row" style="margin-top:10px;">
+                <button id="addEducationBlock" class="btn ghost" type="button" data-i18n="btn.addEducation">+ Add education</button>
+              </div>
+              <textarea id="education" class="textarea" rows="6" style="display:none;"></textarea>
+            </div>
+
+            <!-- LICENSES -->
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="sec.licenses.label">Licenses & Certifications</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="sec_licenses_enabled" checked />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                  <textarea id="sec_licenses_title" class="input small" rows="1">Licenses & Certifications</textarea>
+                </div>
+              </div>
+              <div id="licenseBlocks"></div>
+              <div class="row" style="margin-top:10px;">
+                <button id="addLicenseBlock" class="btn ghost" type="button" data-i18n="btn.addLicense">+ Add license</button>
+              </div>
+              <textarea id="licenses" class="textarea" rows="6" style="display:none;"></textarea>
+            </div>
+
+            <!-- CLINICAL SKILLS -->
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="sec.clinicalSkills.label">Clinical Skills (one per line)</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="sec_clinicalSkills_enabled" checked />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                  <textarea id="sec_clinicalSkills_title" class="input small" rows="1">Clinical Skills</textarea>
+                </div>
+              </div>
+              <div class="toolbar" data-for="clinicalSkills">
+                <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+                <button class="tbtn tdot" data-action="bullets" type="button"></button>
+              </div>
+              <textarea id="clinicalSkills" class="textarea" rows="6" data-i18n-placeholder="ph.onePerLine" placeholder="One per line..."></textarea>
+            </div>
+
+            <!-- CORE COMPETENCIES -->
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="sec.coreCompetencies.label">Core Competencies (one per line)</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="sec_coreCompetencies_enabled" checked />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                  <textarea id="sec_coreCompetencies_title" class="input small" rows="1">Core Competencies</textarea>
+                </div>
+              </div>
+              <div class="toolbar" data-for="coreCompetencies">
+                <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+                <button class="tbtn tdot" data-action="bullets" type="button"></button>
+              </div>
+              <textarea id="coreCompetencies" class="textarea" rows="5" data-i18n-placeholder="ph.onePerLine" placeholder="One per line..."></textarea>
+            </div>
+
+            <!-- LANGUAGES -->
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="sec.languages.label">Languages (one per line)</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="sec_languages_enabled" checked />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                  <textarea id="sec_languages_title" class="input small" rows="1">Languages</textarea>
+                </div>
+              </div>
+              <div class="toolbar" data-for="languages">
+                <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+                <button class="tbtn tdot" data-action="bullets" type="button"></button>
+              </div>
+              <textarea id="languages" class="textarea" rows="3" data-i18n-placeholder="ph.onePerLine" placeholder="One per line..."></textarea>
+            </div>
+
+            <!-- EXPERIENCE -->
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="sec.experience.label">Experience (jobs)</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="sec_experience_enabled" checked />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                  <textarea id="sec_experience_title" class="input small" rows="1">Professional Experience</textarea>
+                </div>
+              </div>
+              <div id="experienceJobs"></div>
+              <div class="row" style="margin-top:10px;">
+                <button id="addExperienceJob" class="btn ghost" type="button" data-i18n="btn.addJob">+ Add job</button>
+              </div>
+              <textarea id="experience" class="textarea" rows="10" style="display:none;"></textarea>
+            </div>
+
+            <!-- ACHIEVEMENTS -->
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="sec.achievements.label">Clinical Achievements (one per line)</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="sec_achievements_enabled" checked />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                  <textarea id="sec_achievements_title" class="input small" rows="1">Clinical Achievements</textarea>
+                </div>
+              </div>
+              <div class="toolbar" data-for="achievements">
+                <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+                <button class="tbtn tdot" data-action="bullets" type="button"></button>
+              </div>
+              <textarea id="achievements" class="textarea" rows="4" data-i18n-placeholder="ph.onePerLine" placeholder="One per line..."></textarea>
+            </div>
+
+            <!-- VOLUNTEER -->
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="sec.volunteer.label">Volunteer</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="sec_volunteer_enabled" checked />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                  <textarea id="sec_volunteer_title" class="input small" rows="1">Volunteer Experience</textarea>
+                </div>
+              </div>
+              <div id="volunteerBlocks"></div>
+              <div class="row" style="margin-top:10px;">
+                <button id="addVolunteerBlock" class="btn ghost" type="button" data-i18n="btn.addVolunteer">+ Add volunteer</button>
+              </div>
+              <textarea id="volunteer" class="textarea" rows="6" style="display:none;"></textarea>
+            </div>
+
+            <hr />
+
+            <!-- CUSTOM 1 -->
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="sec.custom1.label">Custom Section 1</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="sec_custom1_enabled" />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                  <textarea id="sec_custom1_title" class="input small" rows="1">Custom Section 1</textarea>
+                </div>
+              </div>
+              <div class="toolbar" data-for="custom1">
+                <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+                <button class="tbtn tdot" data-action="bullets" type="button"></button>
+              </div>
+              <textarea id="custom1" class="textarea" rows="5" data-i18n-placeholder="ph.custom" placeholder="..."></textarea>
+            </div>
+
+            <!-- CUSTOM 2 -->
+            <div class="field">
+              <div class="field-head">
+                <label class="label" data-i18n="sec.custom2.label">Custom Section 2</label>
+                <div class="field-controls">
+                  <label class="toggle">
+                    <input type="checkbox" id="sec_custom2_enabled" />
+                    <span data-i18n="common.show">Show</span>
+                  </label>
+                  <textarea id="sec_custom2_title" class="input small" rows="1">Custom Section 2</textarea>
+                </div>
+              </div>
+              <div class="toolbar" data-for="custom2">
+                <button class="tbtn" data-action="bold" type="button"><b>B</b></button>
+                <button class="tbtn tdot" data-action="bullets" type="button"></button>
+              </div>
+              <textarea id="custom2" class="textarea" rows="5" data-i18n-placeholder="ph.custom" placeholder="..."></textarea>
+            </div>
+
+            <div class="row">
+              <button id="printBtn" class="btn" type="button" data-i18n="btn.print">Print</button>
+              <button id="downloadPdfBtn" class="btn ghost" type="button" data-i18n="btn.downloadPdf">Download PDF</button>
+              <button id="downloadHtmlBtn" class="btn ghost" type="button" data-i18n="btn.downloadHtml">Download HTML</button>
+            </div>
+
+            <!-- ✅ fjernet toolbar-hint-linja du ikke ville ha -->
+            <!-- <p class="muted small" data-i18n="hint.toolbar">...</p> -->
           </div>
 
-          <p class="muted small" style="margin-top:-2px;" data-i18n="ai.helptext">
-            Ask for review, improvements, new bullet points, or layout changes. You must approve suggestions before they are applied.
-          </p>
+          <!-- RESIZER 1 -->
+          <div class="v-resizer" id="resizer-1" title="Drag to resize"></div>
 
-          <div id="aiChat" class="ai-chat"></div>
-
-          <div class="ai-compose">
-            <textarea
-              id="aiInput"
-              class="textarea ai-input"
-              rows="3"
-              data-i18n-placeholder="ph.ai"
-              placeholder="e.g. Improve my summary and make it more results-driven"
-            ></textarea>
-            <button id="aiSend" class="btn ai-send" type="button" data-i18n="common.send">Send</button>
+          <!-- MIDDLE: preview -->
+          <div class="card panel" id="panel-preview" data-panel="preview">
+            <div class="panel-head">
+              <h2 data-i18n="preview.title">Preview</h2>
+              <div class="panel-actions">
+                <button class="pbtn" type="button" data-action="hide" data-target="preview" data-i18n="common.hide">Hide</button>
+                <button class="pbtn" type="button" data-action="fullscreen" data-target="preview" data-i18n="common.fullscreen">Fullscreen</button>
+              </div>
+            </div>
+            <div id="preview" class="cv"></div>
           </div>
 
-          <p class="muted small" style="margin-top:10px;" data-i18n="hint.send">
-            Tip: Ctrl/Cmd + Enter to send.
-          </p>
+          <!-- RESIZER 2 -->
+          <div class="v-resizer" id="resizer-2" title="Drag to resize"></div>
+
+          <!-- RIGHT: AI coach -->
+          <div class="card panel" id="panel-ai" data-panel="ai">
+            <div class="panel-head">
+              <h2 data-i18n="ai.title">AI Coach</h2>
+              <div class="panel-actions">
+                <button class="pbtn" id="aiClear" type="button" data-i18n="common.clear">Clear</button>
+                <button class="pbtn" type="button" data-action="hide" data-target="ai" data-i18n="common.hide">Hide</button>
+                <button class="pbtn" type="button" data-action="fullscreen" data-target="ai" data-i18n="common.fullscreen">Fullscreen</button>
+              </div>
+            </div>
+            <p class="muted small" style="margin-top:-2px;" data-i18n="ai.helptext">
+              Ask for review, improvements, new bullet points, or layout changes. You must approve suggestions before they are applied.
+            </p>
+            <div id="aiChat" class="ai-chat"></div>
+            <div class="ai-compose">
+              <textarea id="aiInput" class="textarea ai-input" rows="3" data-i18n-placeholder="ph.ai" placeholder="e.g. Improve my summary and make it more results-driven"></textarea>
+              <button id="aiSend" class="btn ai-send" type="button" data-i18n="common.send">Send</button>
+            </div>
+            <p class="muted small" style="margin-top:10px;" data-i18n="hint.send">Tip: Ctrl/Cmd + Enter to send.</p>
+          </div>
+
         </div>
-      </div>
-    </section>
-  </main>
+      </section>
+    </main>
 
-  <script src="/templates.js"></script>
-  <script src="/i18n.js"></script>
-  <script src="/app.js"></script>
-</body>
+    <script src="/templates.js"></script>
+    <script src="/i18n.js"></script>
+    <script src="/app.js"></script>
+  </body>
 </html>
