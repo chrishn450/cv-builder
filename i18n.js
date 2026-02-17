@@ -4,19 +4,13 @@
     { code: "en", name: "English" },
     { code: "no", name: "Norsk" },
     { code: "de", name: "Deutsch" },
-    { code: "sv", name: "Svenska" },
-    { code: "da", name: "Dansk" },
-    { code: "fr", name: "Français" },
     { code: "es", name: "Español" },
-    { code: "it", name: "Italiano" },
-    { code: "nl", name: "Nederlands" },
-    { code: "pl", name: "Polski" },
-    { code: "pt", name: "Português" }
+    { code: "fr", name: "Français" }
   ];
 
-  // UI + editor + AI + dynamiske labels
   const I18N = {
     en: {
+      // App UI
       "app.title": "CV Builder",
       "topbar.panels": "Panels",
       "topbar.logout": "Log out",
@@ -62,7 +56,24 @@
       "locked.body3":
         "After purchase, you’ll receive an email shortly with your secure login link. Your access is valid for 30 days.",
 
-      // Structured blocks (dynamic)
+      // Editor section labels (these fix the “sec.summary.label” issue)
+      "sec.summary.label": "Summary",
+      "sec.education.label": "Education",
+      "sec.licenses.label": "Licenses",
+      "sec.clinicalSkills.label": "Clinical Skills",
+      "sec.coreCompetencies.label": "Core Competencies",
+      "sec.languages.label": "Languages",
+      "sec.experience.label": "Experience",
+      "sec.achievements.label": "Achievements",
+      "sec.volunteer.label": "Volunteer",
+      "sec.custom1.label": "Custom 1",
+      "sec.custom2.label": "Custom 2",
+
+      // Placeholders (faded text)
+      "ph.summary": "Write your summary...",
+      "ph.ai": "Write a message to AI...",
+
+      // Structured blocks (dynamic UI)
       "edu.blockTitle": "Education",
       "edu.degree": "Degree",
       "edu.school": "School",
@@ -89,7 +100,7 @@
       "vol.placeholderSub": "Austin Free Clinic · Community Health Outreach",
       "vol.placeholderBullets": "One per line...",
 
-      // AI (dynamic)
+      // AI (dynamic UI)
       "ai.thinking": "AI is analyzing your CV and preparing suggestions...",
       "ai.suggestionTitle": "Suggestion",
       "ai.choose": "Choose which suggestions to apply:",
@@ -145,6 +156,21 @@
       "locked.buy": "Kjøp tilgang",
       "locked.body3":
         "Etter kjøp får du en e-post snart med sikker innloggingslenke. Tilgangen varer i 30 dager.",
+
+      "sec.summary.label": "Oppsummering",
+      "sec.education.label": "Utdanning",
+      "sec.licenses.label": "Lisenser",
+      "sec.clinicalSkills.label": "Kliniske ferdigheter",
+      "sec.coreCompetencies.label": "Kjernekompetanse",
+      "sec.languages.label": "Språk",
+      "sec.experience.label": "Erfaring",
+      "sec.achievements.label": "Resultater",
+      "sec.volunteer.label": "Frivillig",
+      "sec.custom1.label": "Egendefinert 1",
+      "sec.custom2.label": "Egendefinert 2",
+
+      "ph.summary": "Skriv oppsummeringen din...",
+      "ph.ai": "Skriv en melding til AI...",
 
       "edu.blockTitle": "Utdanning",
       "edu.degree": "Grad",
@@ -219,6 +245,21 @@
 
       "lang.title": "Sprache wählen",
 
+      "sec.summary.label": "Profil",
+      "sec.education.label": "Ausbildung",
+      "sec.licenses.label": "Lizenzen",
+      "sec.clinicalSkills.label": "Fähigkeiten",
+      "sec.coreCompetencies.label": "Kernkompetenzen",
+      "sec.languages.label": "Sprachen",
+      "sec.experience.label": "Berufserfahrung",
+      "sec.achievements.label": "Erfolge",
+      "sec.volunteer.label": "Ehrenamt",
+      "sec.custom1.label": "Benutzerdefiniert 1",
+      "sec.custom2.label": "Benutzerdefiniert 2",
+
+      "ph.summary": "Schreibe deine Zusammenfassung...",
+      "ph.ai": "Schreibe eine Nachricht an die KI...",
+
       "edu.blockTitle": "Ausbildung",
       "edu.degree": "Abschluss",
       "edu.school": "Schule",
@@ -253,10 +294,185 @@
       "ai.applied": "Angewendet ✓",
       "ai.rejected": "Abgelehnt",
       "ai.you": "Du"
+    },
+
+    es: {
+      "app.title": "Creador de CV",
+      "topbar.panels": "Paneles",
+      "topbar.logout": "Cerrar sesión",
+      "editor.title": "Editar contenido",
+      "preview.title": "Vista previa",
+      "ai.title": "Coach IA",
+      "ai.helptext":
+        "Pide revisión, mejoras, nuevos puntos o cambios de diseño. Debes aprobar las sugerencias antes de aplicarlas.",
+      "hint.send": "Consejo: Ctrl/Cmd + Enter para enviar.",
+      "hint.toolbar": "Consejo: Selecciona texto y pulsa B para **negrita**. Usa • para modo viñetas.",
+
+      "common.show": "Mostrar",
+      "common.hide": "Ocultar",
+      "common.fullscreen": "Pantalla completa",
+      "common.clear": "Limpiar",
+      "common.send": "Enviar",
+      "common.cancel": "Cancelar",
+      "common.remove": "Eliminar",
+
+      "btn.print": "Imprimir",
+      "btn.downloadPdf": "Descargar PDF",
+      "btn.downloadHtml": "Descargar HTML",
+      "btn.addEducation": "+ Añadir educación",
+      "btn.addLicense": "+ Añadir licencia",
+      "btn.addJob": "+ Añadir trabajo",
+      "btn.addVolunteer": "+ Añadir voluntariado",
+
+      "contact.fullName": "Nombre completo",
+      "contact.title": "Título / Credenciales",
+      "contact.email": "Email",
+      "contact.phone": "Teléfono",
+      "contact.location": "Ubicación",
+      "contact.linkedin": "LinkedIn",
+
+      "lang.title": "Elegir idioma",
+
+      "sec.summary.label": "Resumen",
+      "sec.education.label": "Educación",
+      "sec.licenses.label": "Licencias",
+      "sec.clinicalSkills.label": "Habilidades clínicas",
+      "sec.coreCompetencies.label": "Competencias clave",
+      "sec.languages.label": "Idiomas",
+      "sec.experience.label": "Experiencia",
+      "sec.achievements.label": "Logros",
+      "sec.volunteer.label": "Voluntariado",
+      "sec.custom1.label": "Personalizado 1",
+      "sec.custom2.label": "Personalizado 2",
+
+      "ph.summary": "Escribe tu resumen...",
+      "ph.ai": "Escribe un mensaje a la IA...",
+
+      "edu.blockTitle": "Educación",
+      "edu.degree": "Título",
+      "edu.school": "Centro",
+      "edu.dates": "Fechas",
+      "edu.honors": "Honores (opcional)",
+
+      "lic.blockTitle": "Licencia",
+      "lic.title": "Título",
+      "lic.detail": "Detalle",
+
+      "exp.blockTitle": "Trabajo",
+      "exp.role": "Puesto / Título",
+      "exp.meta": "Empresa, lugar | Fechas",
+      "exp.bullets": "Puntos (uno por línea)",
+      "exp.placeholderRole": "ENFERMERA/O – UCI",
+      "exp.placeholderMeta": "Hospital, Ciudad | Enero 2021 – Actualidad",
+      "exp.placeholderBullets": "Uno por línea...",
+
+      "vol.blockTitle": "Voluntariado",
+      "vol.header": "Encabezado (título + fecha)",
+      "vol.sub": "Línea secundaria",
+      "vol.bullets": "Puntos (uno por línea)",
+      "vol.placeholderHeader": "Enfermera voluntaria 2019 – Actualidad",
+      "vol.placeholderSub": "Clínica · Programa comunitario",
+      "vol.placeholderBullets": "Uno por línea...",
+
+      "ai.thinking": "La IA está analizando tu CV y preparando sugerencias...",
+      "ai.suggestionTitle": "Sugerencia",
+      "ai.choose": "Elige qué sugerencias aplicar:",
+      "ai.accept": "Aceptar",
+      "ai.reject": "Rechazar",
+      "ai.applied": "Aplicado ✓",
+      "ai.rejected": "Rechazado",
+      "ai.you": "Tú"
+    },
+
+    fr: {
+      "app.title": "Créateur de CV",
+      "topbar.panels": "Panneaux",
+      "topbar.logout": "Se déconnecter",
+      "editor.title": "Modifier le contenu",
+      "preview.title": "Aperçu",
+      "ai.title": "Coach IA",
+      "ai.helptext":
+        "Demande une relecture, des améliorations, de nouveaux points ou des changements de mise en page. Tu dois approuver les suggestions avant application.",
+      "hint.send": "Astuce : Ctrl/Cmd + Entrée pour envoyer.",
+      "hint.toolbar": "Astuce : Sélectionne du texte puis B pour **gras**. • pour le mode puces.",
+
+      "common.show": "Afficher",
+      "common.hide": "Masquer",
+      "common.fullscreen": "Plein écran",
+      "common.clear": "Effacer",
+      "common.send": "Envoyer",
+      "common.cancel": "Annuler",
+      "common.remove": "Supprimer",
+
+      "btn.print": "Imprimer",
+      "btn.downloadPdf": "Télécharger PDF",
+      "btn.downloadHtml": "Télécharger HTML",
+      "btn.addEducation": "+ Ajouter formation",
+      "btn.addLicense": "+ Ajouter licence",
+      "btn.addJob": "+ Ajouter poste",
+      "btn.addVolunteer": "+ Ajouter bénévolat",
+
+      "contact.fullName": "Nom complet",
+      "contact.title": "Titre / Diplômes",
+      "contact.email": "E-mail",
+      "contact.phone": "Téléphone",
+      "contact.location": "Lieu",
+      "contact.linkedin": "LinkedIn",
+
+      "lang.title": "Choisir la langue",
+
+      "sec.summary.label": "Résumé",
+      "sec.education.label": "Formation",
+      "sec.licenses.label": "Licences",
+      "sec.clinicalSkills.label": "Compétences cliniques",
+      "sec.coreCompetencies.label": "Compétences clés",
+      "sec.languages.label": "Langues",
+      "sec.experience.label": "Expérience",
+      "sec.achievements.label": "Réalisations",
+      "sec.volunteer.label": "Bénévolat",
+      "sec.custom1.label": "Personnalisé 1",
+      "sec.custom2.label": "Personnalisé 2",
+
+      "ph.summary": "Écris ton résumé...",
+      "ph.ai": "Écris un message à l’IA...",
+
+      "edu.blockTitle": "Formation",
+      "edu.degree": "Diplôme",
+      "edu.school": "Établissement",
+      "edu.dates": "Dates",
+      "edu.honors": "Mentions (optionnel)",
+
+      "lic.blockTitle": "Licence",
+      "lic.title": "Titre",
+      "lic.detail": "Détail",
+
+      "exp.blockTitle": "Poste",
+      "exp.role": "Rôle / Titre",
+      "exp.meta": "Entreprise, lieu | Dates",
+      "exp.bullets": "Puces (une par ligne)",
+      "exp.placeholderRole": "INFIRMIER/ÈRE – RÉANIMATION",
+      "exp.placeholderMeta": "Hôpital, Ville | Janvier 2021 – Présent",
+      "exp.placeholderBullets": "Une par ligne...",
+
+      "vol.blockTitle": "Bénévolat",
+      "vol.header": "En-tête (titre + date)",
+      "vol.sub": "Sous-ligne",
+      "vol.bullets": "Puces (une par ligne)",
+      "vol.placeholderHeader": "Infirmier/ère bénévole 2019 – Présent",
+      "vol.placeholderSub": "Clinique · Programme communautaire",
+      "vol.placeholderBullets": "Une par ligne...",
+
+      "ai.thinking": "L’IA analyse ton CV et prépare des suggestions...",
+      "ai.suggestionTitle": "Suggestion",
+      "ai.choose": "Choisis quelles suggestions appliquer :",
+      "ai.accept": "Accepter",
+      "ai.reject": "Refuser",
+      "ai.applied": "Appliqué ✓",
+      "ai.rejected": "Refusé",
+      "ai.you": "Toi"
     }
   };
 
-  // Standard seksjonstitler (for preview/template og for editor-titler hvis tomme)
   const SECTION_DEFAULTS = {
     en: {
       summary: "Professional Summary",
@@ -296,6 +512,32 @@
       volunteer: "Ehrenamt",
       custom1: "Benutzerdefiniert 1",
       custom2: "Benutzerdefiniert 2"
+    },
+    es: {
+      summary: "Resumen profesional",
+      education: "Educación",
+      licenses: "Licencias y certificaciones",
+      clinicalSkills: "Habilidades clínicas",
+      coreCompetencies: "Competencias clave",
+      languages: "Idiomas",
+      experience: "Experiencia profesional",
+      achievements: "Logros",
+      volunteer: "Voluntariado",
+      custom1: "Sección personalizada 1",
+      custom2: "Sección personalizada 2"
+    },
+    fr: {
+      summary: "Résumé professionnel",
+      education: "Formation",
+      licenses: "Licences & certifications",
+      clinicalSkills: "Compétences cliniques",
+      coreCompetencies: "Compétences clés",
+      languages: "Langues",
+      experience: "Expérience professionnelle",
+      achievements: "Réalisations",
+      volunteer: "Bénévolat",
+      custom1: "Section personnalisée 1",
+      custom2: "Section personnalisée 2"
     }
   };
 
@@ -310,7 +552,6 @@
     return m[sectionKey] || sectionKey;
   }
 
-  // eksponer
   window.CV_I18N = {
     LANGS,
     I18N,
