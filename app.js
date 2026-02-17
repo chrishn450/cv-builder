@@ -27,6 +27,11 @@
 
   const CONTACT_SHOW_IDS = ["show_title", "show_email", "show_phone", "show_location", "show_linkedin"];
 
+  // ✅ NEW: strip "(...)" hints from i18n labels without touching i18n.js
+  function stripParenHint(s) {
+    return String(s || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
+  }
+
   function render() {
     if (!preview || typeof window.renderCV !== "function") return;
     preview.innerHTML = window.renderCV({
@@ -344,7 +349,6 @@
     state.data.educationBlocks.forEach((b, idx) => {
       const wrap = document.createElement("div");
       wrap.className = "subcard";
-      // ✅ inputs -> textarea (rows=1). No other behavioral change.
       wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
           <div class="muted small">${t("edu.blockTitle")} ${idx + 1}</div>
@@ -444,7 +448,6 @@
     state.data.licenseBlocks.forEach((b, idx) => {
       const wrap = document.createElement("div");
       wrap.className = "subcard";
-      // ✅ inputs -> textarea (rows=1)
       wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
           <div class="muted small">${t("lic.blockTitle")} ${idx + 1}</div>
@@ -525,7 +528,6 @@
     state.data.experienceJobs.forEach((job, idx) => {
       const wrap = document.createElement("div");
       wrap.className = "subcard";
-      // ✅ role/meta inputs -> textarea (rows=1). bullets already textarea.
       wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
           <div class="muted small">${t("exp.blockTitle")} ${idx + 1}</div>
@@ -543,7 +545,8 @@
           <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
         </div>
 
-        <label class="label">${t("exp.bullets")}</label>
+        <!-- ✅ changed: strip "(...)" from label -->
+        <label class="label">${stripParenHint(t("exp.bullets"))}</label>
         <textarea class="textarea" rows="5" data-exp-bullets="${idx}"></textarea>
       `;
       expRoot.appendChild(wrap);
@@ -630,7 +633,6 @@
     state.data.volunteerBlocks.forEach((v, idx) => {
       const wrap = document.createElement("div");
       wrap.className = "subcard";
-      // ✅ header/sub inputs -> textarea (rows=1). bullets already textarea.
       wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
           <div class="muted small">${t("vol.blockTitle")} ${idx + 1}</div>
@@ -648,7 +650,7 @@
           <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
         </div>
 
-        <label class="label">${t("vol.bullets")}</label>
+        <label class="label">${stripParenHint(t("vol.bullets"))}</label>
         <textarea class="textarea" rows="4" data-vol-bullets="${idx}"></textarea>
       `;
       volRoot.appendChild(wrap);
