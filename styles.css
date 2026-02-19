@@ -314,19 +314,24 @@ hr{
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ────────────────────────────────────────────── CV Theme Variables ────────────────────────────────────────────── */
+/* ✅ Lysere “papir” (hakket lysere enn sist) */
 :root{
-  /* litt lysere “papir” */
-  --cv-bg: #f8f8f6;
+  --cv-bg: #fbfbfa;           /* ← template fargen */
   --cv-heading: #2b2b2b;
-  --cv-body: #343434;
-  --cv-light: #7b7b7b;
-  --cv-accent: #c6b28e;
-  --cv-border: #eadfcd;
+  --cv-body: #363636;
+  --cv-light: #7c7c7c;
 
-  /* linjefarge */
-  --cv-rule: rgba(0,0,0,0.14);
+  --cv-accent: #c6b28e;
+  --cv-border: #efe7db;
+
+  /* linjer */
+  --cv-rule: rgba(0,0,0,0.18);
+  --cv-rule-thin: rgba(0,0,0,0.14);
 
   --cv-dot-size: 3.5px;
+
+  /* divider plasseres i “gap” */
+  --cv-divider-x: 33.5%; /* flytt midtlinja mot venstre: juster denne */
 }
 
 /* Bullet toggle button = SAME dot as CV */
@@ -350,28 +355,28 @@ hr{
   flex-direction: column;
   overflow: hidden;
   color: var(--cv-body);
-  font-family: "Source Sans 3", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* tving lik bakgrunn */
+/* ✅ tving lik bakgrunn overalt */
 .cv .cv-header,
 .cv .cv-body{
   background: var(--cv-bg);
 }
 
-/* Bold i CV: lett/pen */
+/* ✅ “pen” bold (mindre klumpete) */
 .cv strong{
-  font-weight: 550;
+  font-weight: 550; /* ← her bestemmer du “feitheten” */
   color: #222;
 }
 
 /* Header */
 .cv .cv-header{
   text-align:center;
-  padding: 40px 54px 18px;
-  border-bottom: 1.5px solid var(--cv-rule);
+  padding: 44px 54px 10px;
 }
 
+/* Navn */
 .cv .cv-name{
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-size: 30px;
@@ -381,6 +386,7 @@ hr{
   color: var(--cv-heading);
 }
 
+/* Tittel */
 .cv .cv-title{
   font-size: 9.4px;
   font-weight: 300;
@@ -391,27 +397,38 @@ hr{
   opacity: 0.95;
 }
 
-/* Kontaktlinje (icons + text) */
+/* ✅ Kontakt-wrap med TYKKERE linjer over/under */
+.cv .cv-contact-wrap{
+  margin-top: 16px;
+  padding: 10px 0;
+  position: relative;
+}
+.cv .cv-contact-wrap::before,
+.cv .cv-contact-wrap::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  height: 0;
+  border-top: 1.6px solid var(--cv-rule);   /* ← tykkere enn seksjonslinjer */
+}
+.cv .cv-contact-wrap::before{ top:0; }
+.cv .cv-contact-wrap::after{ bottom:0; }
+
+/* Kontakt-linje: ikoner + tekst (ingen pills) */
 .cv .cv-contact{
   display:flex;
   align-items:center;
   justify-content:center;
   flex-wrap:wrap;
-  gap: 6px 16px;
-  margin-top: 16px;
+  gap: 6px 18px;
   font-size: 8.6px;
   color: var(--cv-body);
 }
-.cv .cv-contact .sep{ display:none; }
-
 .cv .cv-contact .citem{
   display:inline-flex;
   align-items:center;
   gap: 8px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  border-radius: 0;
 }
 .cv .cv-contact svg{
   width: 12px;
@@ -420,51 +437,62 @@ hr{
   color: var(--cv-body);
 }
 
-/* Body */
-.cv .cv-body{
-  display:flex;
-  flex: 1;
-
-  /* ✅ MER SPACING før kolonnene begynner */
-  padding: 26px 54px 26px;
-
-  gap: 26px;
-  position: relative; /* for midtlinje */
+/* Body text */
+.cv .body-text{
+  font-size: 9.1px;
+  line-height: 1.75;
+  color: var(--cv-body);
 }
 
-/* ✅ Flytt midtlinja mer til venstre ved å gjøre venstre kolonne smalere */
-.cv .cv-left{ width: 30%; display:flex; flex-direction:column; gap: 18px; }
-.cv .cv-right{ flex: 1; display:flex; flex-direction:column; gap: 18px; }
+/* ✅ mer spacing før kolonner begynner */
+.cv .cv-body{
+  position: relative;
+  display:flex;
+  flex: 1;
+  padding: 18px 54px 26px;  /* ← økt topp-padding */
+  gap: 34px;                /* “luft” mellom kolonner (divider går her) */
+}
 
-/* ✅ Midtlinje mellom kolonnene */
+/* ✅ Midtlinje: starter litt lavere + ligger i gap (så linjer “krysser” ikke visuelt) */
 .cv .cv-body::before{
   content:"";
   position:absolute;
-  top: 10px;                 /* litt gap før den starter */
-  bottom: 10px;
-  left: calc(30% + (26px / 2)); /* venstre kolonne + halv gap */
+  top: 30px;                /* ← liten gap før den nedover starter */
+  bottom: 24px;
+  left: calc(var(--cv-divider-x) + 54px); /* 54px = samme som padding venstre */
   width: 1px;
-  background: rgba(0,0,0,0.18);
+  background: rgba(0,0,0,0.20);
+  opacity: 0.9;
+  pointer-events:none;
 }
 
-/* Overskrifter */
+/* Kolonner */
+.cv .cv-left{
+  width: var(--cv-divider-x);
+  display:flex;
+  flex-direction:column;
+  gap: 18px;
+  padding-right: 12px; /* sikrer at ingenting “treffer” divider visuelt */
+}
+.cv .cv-right{
+  flex: 1;
+  display:flex;
+  flex-direction:column;
+  gap: 18px;
+  padding-left: 12px;  /* sikrer at linjer stopper før divider */
+}
+
+/* ✅ Seksjonstitler: font/spacing som referanse */
 .cv .section-title{
-  font-family: "Cormorant Garamond", Georgia, serif;
+  font-family: "Cormorant Garamond", Georgia, serif; /* ← her endrer du overskrifts-font */
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.32em;
   color: var(--cv-heading);
-  border-bottom: 0.75px solid var(--cv-rule);
+  border-bottom: 0.75px solid var(--cv-rule-thin); /* ← her bestemmes tykkelsen på disse linjene */
   padding-bottom: 6px;
   margin-bottom: 12px;
-}
-
-/* Brødtekst */
-.cv .body-text{
-  font-size: 9.1px;
-  line-height: 1.75;
-  color: var(--cv-body);
 }
 
 /* Education */
@@ -500,6 +528,7 @@ hr{
   margin-bottom: 6px;
 }
 
+/* Auto dots only when default */
 .cv ul.auto-dots li::before{
   content:"";
   margin-top: 6px;
@@ -553,7 +582,6 @@ hr{
   text-align: right;
 }
 .cv .vol-sub{ font-size: 8.5px; color: var(--cv-light); margin: 0 0 6px; }
-
 .cv .lang-list p{ font-size: 8.5px; color: var(--cv-body); margin: 3px 0; }
 
 /* ────────────────────────────────────────────── Print: only CV, full A4 ────────────────────────────────────────────── */
