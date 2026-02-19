@@ -447,18 +447,19 @@ hr{
   display:flex;
   flex: 1;
 
-  /* dette styrer “avstand ned til kolonnene” */
-  padding: 26px 54px 26px;
+  /* mer luft før kolonnene begynner (og hindrer divider fra å komme inn i headings) */
+  padding: 36px 54px 26px;
 
   position: relative;
 }
 
-/* midtlinja (ligger OVER linjer/tekst så det aldri ser ut som ting krysser) */
+/* midtlinja */
 .cv .cv-body::before{
   content:"";
   position:absolute;
 
-  top: 10px;
+  /* START UNDER heading-linjene */
+  top: 44px;        /* ← øk/minsk hvis du vil */
   bottom: 0;
 
   left: calc(54px + var(--cv-divider-x));
@@ -466,9 +467,10 @@ hr{
 
   width: 1px;
   background: var(--cv-rule);
-  z-index: 3;              /* viktig */
+  z-index: 3;
   pointer-events: none;
 }
+
 
 /* kolonner */
 .cv .cv-left{
