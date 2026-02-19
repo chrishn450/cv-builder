@@ -358,7 +358,11 @@ hr{
 }
 
 /* ✅ Bold i CV blir “lettere” som i referansen */
-.cv strong{ font-weight: 600; }
+.cv strong{
+  font-weight: 600;
+  color: #222;
+}
+
 
 .cv .cv-header{
   text-align:center;
