@@ -44,6 +44,7 @@
       .filter(Boolean);
   }
 
+  // Merge wrapped lines into previous "bullet line" (only for DEFAULT text)
   function mergeWrappedLinesIntoBullets(rawLines) {
     const out = [];
     rawLines.forEach((ln) => {
@@ -99,12 +100,14 @@
       let volTitle = ls[0] || "";
       let volDate = "";
 
+      // Support "Title | Date"
       const m = volTitle.match(/^(.+?)\s*\|\s*(.+)$/);
       if (m) {
         volTitle = m[1];
         volDate = m[2];
       }
 
+      // Or "Title 2019 – Present"
       if (!volDate) {
         const pw = String(presentWord || "Present").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const re = new RegExp(`^(.*?)(\\b\\d{4}\\s*–\\s*(?:${pw}|\\d{4})\\b)$`);
@@ -124,6 +127,7 @@
     });
   }
 
+  // mode: "bullets" | "paragraph"
   function renderSimpleSection({ title, content, mode, boldFirstLine, autoDots }) {
     const items = lines(content);
     if (!items.length) return "";
@@ -280,6 +284,7 @@
     const raw = data || {};
     const lang = raw.lang || raw?.ui?.lang || "en";
 
+    // i18n hooks
     const CVI = window.CV_I18N || {};
     const getDefaultTitle = (key) => (CVI.getSectionDefaultTitle ? CVI.getSectionDefaultTitle(lang, key) : key);
 
@@ -371,6 +376,7 @@
       custom2: ""
     };
 
+    // Track defaults
     const isDefault = {};
     const d = {};
     for (const k in defaults) {
@@ -424,9 +430,10 @@
     const contactHTML = contactParts.join("");
     const showTitle = contactCfg.show_title !== false;
 
-    const summaryHTML = sections.summary?.enabled
+    // ✅ Summary flyttet til høyre kolonne (ikke lenger “over” kolonnene)
+    const summaryInRight = sections.summary?.enabled
       ? `
-        <section class="cv-summary">
+        <section>
           <h2 class="section-title">${esc(sectionTitle("summary"))}</h2>
           <p class="body-text">${fmtInline(d.summary, { preserveNewlines: true })}</p>
         </section>
@@ -489,6 +496,7 @@
     ].join("");
 
     const rightHTML = [
+      summaryInRight, // ✅ først i høyre kolonne
       sections.experience?.enabled
         ? renderExperienceSection(sectionTitle("experience"), d.experience, {
             mergeWrapped: isDefault.experience,
@@ -519,15 +527,8 @@
         <header class="cv-header">
           <h1 class="cv-name">${fmtInline(d.name)}</h1>
           ${showTitle ? `<p class="cv-title">${fmtInline(d.title)}</p>` : ``}
-
-          <div class="cv-contact-wrap">
-            <div class="cv-contact">${contactHTML}</div>
-          </div>
-
-          <div class="cv-header-afterspace"></div>
+          <div class="cv-contact">${contactHTML}</div>
         </header>
-
-        ${summaryHTML}
 
         <div class="cv-body">
           <div class="cv-left">${leftHTML}</div>
