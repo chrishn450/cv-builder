@@ -647,3 +647,66 @@ hr{
   }
   .cv section, .cv .exp-entry, .cv li { break-inside: avoid; }
 }
+/* ────────────────────────────── CV OVERRIDE (MÅ LIGGE HELT NEDERST) ────────────────────────────── */
+
+/* Kontroller */
+:root{
+  --cv-divider-x: 30%;
+  --cv-divider-gap: 14px;  /* <-- endre denne (prøv 0px / 80px for test) */
+  --cv-divider-w: 1px;
+  --cv-divider-top: 44px;
+  --cv-body-pad-x: 54px;
+}
+
+/* Tving .cv-body til grid uansett hva som finnes før */
+.cv .cv-body{
+  display: grid !important;
+  grid-template-columns:
+    minmax(0, var(--cv-divider-x))
+    var(--cv-divider-gap)
+    var(--cv-divider-w)
+    var(--cv-divider-gap)
+    minmax(0, 1fr) !important;
+
+  padding: 36px var(--cv-body-pad-x) 26px !important;
+  position: relative !important;
+}
+
+/* Hvis du har wrapper inni .cv-body, gjør den layout-nøytral */
+.cv .cv-body > :not(.cv-left):not(.cv-right){
+  display: contents !important;
+}
+
+/* Midtlinja i egen grid-kolonne */
+.cv .cv-body::before{
+  content: "" !important;
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  width: var(--cv-divider-w) !important;
+  background: var(--cv-rule) !important;
+  margin-top: var(--cv-divider-top) !important;
+  align-self: stretch !important;
+  z-index: 3 !important;
+  pointer-events: none !important;
+}
+
+/* Tving kolonnene til riktig grid-kolonne + null ut gammel padding/margin */
+.cv .cv-left{
+  grid-column: 1 !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  padding-top: var(--cv-divider-top) !important;
+}
+
+.cv .cv-right{
+  grid-column: 5 !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  padding-top: var(--cv-divider-top) !important;
+}
+
+/* Seksjon-linjene stopper før midtlinja med samme gap */
+.cv .cv-left  .section-title::after{ right: var(--cv-divider-gap) !important; }
+.cv .cv-right .section-title::after{ left:  var(--cv-divider-gap) !important; }
