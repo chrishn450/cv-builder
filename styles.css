@@ -331,7 +331,7 @@ hr{
   --cv-dot-size: 3.5px;
 
   /* divider plasseres i “gap” */
-  --cv-divider-x: 30%; /* flytt midtlinja mot venstre: juster denne */
+  --cv-divider-x: 27%; /* flytt midtlinja mot venstre: juster denne */
 }
 
 /* Bullet toggle button = SAME dot as CV */
@@ -479,7 +479,7 @@ hr{
   display:flex;
   flex-direction:column;
   gap: 18px;
-  padding-left: 24px;  /* sikrer at linjer stopper før divider */
+  padding-left: 36px;  /* sikrer at linjer stopper før divider */
 }
 
 /* ✅ Seksjonstitler: font/spacing som referanse */
