@@ -635,14 +635,14 @@ hr{
 .cv .exp-bullets li,
 .cv .lang-list p,
 .cv .edu-block p{
-  font-size: 11px !important;
-  line-height: 1.55 !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
 }
 
 
 /* section headers */
 .cv .section-title{
-  font-size: 11.5px !important;
+  font-size: 14px !important;
 }
 
 
@@ -650,7 +650,7 @@ hr{
 .cv .exp-entry h3,
 .cv .edu-block h3,
 .cv .cert-item h3{
-  font-size: 11px !important;
+  font-size: 13px !important;
 }
 
 
@@ -658,7 +658,7 @@ hr{
 .cv .cv-contact,
 .cv .exp-entry .meta,
 .cv .vol-sub{
-  font-size: 10px !important;
+  font-size: 11px !important;
 }
 
 
@@ -666,7 +666,7 @@ hr{
 .cv .edu-block .date,
 .cv .edu-block .honors,
 .cv .vol-header .date{
-  font-size: 9.2px !important;
+  font-size: 10px !important;
 }
 
 
