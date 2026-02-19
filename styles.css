@@ -359,7 +359,7 @@ hr{
 
 /* ✅ Bold i CV blir “lettere” som i referansen */
 .cv strong{
-  font-weight: 600;
+  font-weight: 500;
   color: #222;
 }
 
