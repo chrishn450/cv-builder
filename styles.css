@@ -710,3 +710,60 @@ hr{
 /* Seksjon-linjene stopper før midtlinja med samme gap */
 .cv .cv-left  .section-title::after{ right: var(--cv-divider-gap) !important; }
 .cv .cv-right .section-title::after{ left:  var(--cv-divider-gap) !important; }
+/* ────────────────────────────── CV FINAL OVERRIDE (legg HELT nederst) ────────────────────────────── */
+:root{
+  --cv-divider-x: 30%;      /* venstre kolonne bredde */
+  --cv-divider-gap: 14px;   /* avstand fra midtlinja til begge kolonner */
+  --cv-divider-w: 1px;      /* midtlinje tykkelse */
+  --cv-divider-top: 44px;   /* start for innhold + midtlinje */
+
+  /* hvis du vil at underlinjene skal stoppe tettere enn kolonne-gapet */
+  --cv-title-stop-gap: 10px;  /* <- gjør denne mindre for mindre "gap her også" */
+}
+
+/* Grid-layout med fysisk "gap-kolonne" på begge sider av linja */
+.cv .cv-body{
+  display: grid !important;
+  grid-template-columns:
+    minmax(0, var(--cv-divider-x))
+    var(--cv-divider-gap)
+    var(--cv-divider-w)
+    var(--cv-divider-gap)
+    minmax(0, 1fr) !important;
+
+  padding: 36px 54px 26px !important;
+  position: relative !important;
+}
+
+/* Midtlinja */
+.cv .cv-body::before{
+  content:"" !important;
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  width: var(--cv-divider-w) !important;
+  background: var(--cv-rule) !important;
+  margin-top: var(--cv-divider-top) !important;
+  align-self: stretch !important;
+  z-index: 3 !important;
+  pointer-events: none !important;
+}
+
+/* Kolonner: tving inn i grid, null ut alt som kan “låse” dem */
+.cv .cv-left{
+  grid-column: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  padding-top: var(--cv-divider-top) !important;
+}
+
+.cv .cv-right{
+  grid-column: 5 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  padding-top: var(--cv-divider-top) !important;
+}
+
+/* Underlinjer under SECTION TITLES: "mindre gap her også" */
+.cv .cv-left  .section-title::after{ right: var(--cv-title-stop-gap) !important; }
+.cv .cv-right .section-title::after{ left:  var(--cv-title-stop-gap) !important; }
+
