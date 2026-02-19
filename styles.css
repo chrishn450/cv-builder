@@ -395,7 +395,7 @@ hr{
   font-weight: 300;
   letter-spacing: 0.42em;
   text-transform: uppercase;
-  color: var(--cv-light);
+  color: var(--cv-text);
   margin-top: 6px;
   opacity: 0.95;
 }
