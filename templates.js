@@ -420,7 +420,6 @@
     if (contactCfg.show_email && d.email) contactParts.push(contactChip(ICONS.email, d.email));
     if (contactCfg.show_location && d.location) contactParts.push(contactChip(ICONS.location, d.location));
     if (contactCfg.show_linkedin && d.linkedin) contactParts.push(contactChip(ICONS.linkedin, d.linkedin));
-
     const contactHTML = contactParts.join("");
 
     const showTitle = contactCfg.show_title !== false;
@@ -523,11 +522,12 @@
           <div class="cv-contact">${contactHTML}</div>
         </header>
 
-        ${summaryHTML}
-
         <div class="cv-body">
           <div class="cv-left">${leftHTML}</div>
-          <div class="cv-right">${rightHTML}</div>
+          <div class="cv-right">
+            ${summaryHTML}
+            ${rightHTML}
+          </div>
         </div>
       </div>
     `;
