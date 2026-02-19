@@ -325,7 +325,7 @@ hr{
   --cv-rule-thin: rgba(0,0,0,0.14);
 
   /* MASTER KONTROLLER */
-  --cv-divider-pos: 33%;     /* hvor linja står */
+  --cv-divider-pos: 35%;     /* hvor linja står */
   --cv-divider-safe: 30px;   /* “no-go” på begge sider */
   --cv-divider-w: 1px;       /* linjebredde */
   --cv-body-pad-x: 54px;
