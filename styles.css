@@ -321,20 +321,21 @@ hr{
   --cv-accent: #c6b28e;
   --cv-border: #eadfcd;
 
+  /* linjer */
   --cv-rule: rgba(0,0,0,0.18);
   --cv-rule-thin: rgba(0,0,0,0.14);
 
-  /* ====== NYE MASTER KONTROLLER (du justerer bare disse) ====== */
-  --cv-divider-pos: 30%;     /* hvor linja står fra venstre (av tilgjengelig innholdsbredde) */
-  --cv-divider-safe: 24px;   /* “no-go” på begge sider av linja (tekst/linjer kan ikke gå nærmere) */
+  /* ====== MASTER KONTROLLER (du justerer bare disse) ====== */
+  --cv-divider-pos: 30%;     /* hvor den vertikale linja står (fra venstre av innholdsbredde) */
+  --cv-divider-safe: 24px;   /* “no-go” på begge sider av linja (tekst/linjer stopper her) */
   --cv-divider-w: 1px;       /* linjebredde */
-
-  --cv-body-pad-x: 54px;
-  --cv-divider-top: 24px;
+  --cv-divider-top: 24px;    /* avstand fra toppen av .cv-body ned til start av linje + kolonner */
+  --cv-body-pad-x: 54px;     /* venstre/høyre innvendig marg i CV-body */
 
   /* seksjonslinjer stopper samme avstand fra midtlinja */
   --cv-title-stop-gap: var(--cv-divider-safe);
 
+  /* kontakt-streker */
   --cv-contact-rule: rgba(0,0,0,0.20);
   --cv-contact-thickness: 2px;
 
@@ -361,7 +362,7 @@ hr{
   display: flex;
   flex-direction: column;
 
-  /* VIKTIG: ikke klipp midtlinja */
+  /* ikke klipp midtlinja */
   overflow: visible;
 
   color: var(--cv-body);
@@ -439,10 +440,10 @@ hr{
   color: var(--cv-body);
 }
 
-/* ────────────────────────────── Summary (legacy class ok) ────────────────────────────── */
+/* ────────────────────────────── Summary ────────────────────────────── */
 .cv .cv-summary{
   padding: 18px 54px 12px;
-  margin-bottom: 14px;
+  margin-bottom: 14px; /* Juster denne hvis du vil ha kolonnene nærmere kontakt */
 }
 .cv .body-text{
   font-size: 9.1px;
@@ -451,6 +452,7 @@ hr{
 }
 
 /* ────────────────────────────── Two columns + divider (GRID) ────────────────────────────── */
+/* INGEN DOBBEL: cv-divider-top styrer alt (linje + kolonner) via padding-top her */
 .cv .cv-body{
   display:grid;
   grid-template-columns:
@@ -461,32 +463,29 @@ hr{
     minmax(0, 1fr);                   /* høyre innhold */
 
   flex: 1;
-  padding: 36px var(--cv-body-pad-x) 26px;
+  padding: var(--cv-divider-top) var(--cv-body-pad-x) 26px; /* ← viktig: ingen ekstra 36px */
   position: relative;
 }
 
-
-/* midtlinja – følger hele høyden av .cv-body */
+/* midtlinja – følger hele høyden av .cv-body (ingen margin-top her!) */
 .cv .cv-body::before{
   content:"";
   grid-column: 3;
   grid-row: 1 / -1;
   width: var(--cv-divider-w);
   background: var(--cv-rule);
-  margin-top: var(--cv-divider-top);
+  margin-top: 0;            /* ← viktig: ikke dobbel */
   align-self: stretch;
   z-index: 3;
   pointer-events: none;
 }
 
-/* kolonner – starter samme sted som linja */
+/* kolonner – INGEN padding-top her (ellers dobbel) */
 .cv .cv-left{
   grid-column: 1;
   width: auto;
   margin: 0;
-  padding: 0;
-  padding-top: var(--cv-divider-top);
-
+  padding: 0;               /* ← viktig */
   display:flex;
   flex-direction:column;
   gap: 18px;
@@ -497,9 +496,7 @@ hr{
   grid-column: 5;
   width: auto;
   margin: 0;
-  padding: 0;
-  padding-top: var(--cv-divider-top);
-
+  padding: 0;               /* ← viktig */
   display:flex;
   flex-direction:column;
   gap: 18px;
@@ -534,7 +531,7 @@ hr{
   background: var(--cv-rule-thin);
 }
 
-/* stoppe før midtlinja (kontrolleres av egen variabel) */
+/* stoppe før midtlinja (samme safe-zone som tekst) */
 .cv .cv-left  .section-title::after{ right: var(--cv-title-stop-gap); }
 .cv .cv-right .section-title::after{ left:  var(--cv-title-stop-gap); }
 
@@ -628,20 +625,3 @@ hr{
 .cv .vol-sub{ font-size: 8.5px; color: var(--cv-light); margin: 0 0 6px; }
 
 .cv .lang-list p{ font-size: 8.5px; color: var(--cv-body); margin: 3px 0; }
-
-/* ────────────────────────────────────────────── Print: only CV, full A4 ────────────────────────────────────────────── */
-@page { size: A4; margin: 0; }
-@media print{
-  html, body{ margin:0; padding:0; background:white !important; color:#111 !important; }
-  .topbar, #panel-editor, #panel-ai, .v-resizer, .panel-actions, .ai-chat, .ai-compose, .btn, button, a { display:none !important; }
-  #panel-preview, #preview, .cv { display:block !important; }
-  .cv{
-    width: 210mm !important;
-    height: 297mm !important;
-    margin:0 !important;
-    border: 1px solid var(--cv-border) !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  .cv section, .cv .exp-entry, .cv li { break-inside: avoid; }
-}
