@@ -331,7 +331,7 @@ hr{
   --cv-dot-size: 3.5px;
 
   /* divider plasseres i “gap” */
-  --cv-divider-x: 33.5%; /* flytt midtlinja mot venstre: juster denne */
+  --cv-divider-x: 30%; /* flytt midtlinja mot venstre: juster denne */
 }
 
 /* Bullet toggle button = SAME dot as CV */
@@ -449,7 +449,7 @@ hr{
   position: relative;
   display:flex;
   flex: 1;
-  padding: 18px 54px 26px;  /* ← økt topp-padding */
+  padding: 24px 54px 26px;  /* ← økt topp-padding */
   gap: 34px;                /* “luft” mellom kolonner (divider går her) */
 }
 
