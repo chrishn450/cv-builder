@@ -360,6 +360,8 @@ hr{
   overflow: visible;
   color: var(--cv-body);
   font-family: "Source Sans 3", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;        /* ← LEGG TIL DENNE */
+  line-height: 1.5;
 }
 
 /* force same paper tone everywhere */
