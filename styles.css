@@ -329,12 +329,8 @@ hr{
   --cv-divider-x: 30%;      /* venstre kolonne-bredde */
   --cv-divider-gap: 30px;  /* 30px luft til begge kolonner */
   --cv-divider-w: 1px;     /* tykkelse på midtlinja */
-
-  /* body padding (brukes også i beregninger/lesbarhet) */
-  --cv-body-pad-x: 54px;
-
-  /* hvor langt ned midtlinja starter */
-  --cv-divider-top: 44px;
+  --cv-body-pad-x: 54px;   /* sidepadding i body */
+  --cv-divider-top: 44px;  /* start for linje + innhold */
 
   /* kontakt-streker (som referanse) */
   --cv-contact-rule: rgba(0,0,0,0.20);
@@ -485,7 +481,12 @@ hr{
   pointer-events: none;
 }
 
-/* kolonner */
+/* kolonner – starter samme sted som streken */
+.cv .cv-left,
+.cv .cv-right{
+  padding-top: var(--cv-divider-top);
+}
+
 .cv .cv-left{
   grid-column: 1;
   width: auto;
