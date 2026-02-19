@@ -314,15 +314,15 @@ hr{
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ────────────────────────────────────────────── CV Theme Variables ────────────────────────────────────────────── */
-/* ✅ Endret: varmere/offwhite og mer “bilde 2” */
+/* ✅ varm papirfarge som referanse-bildet */
 :root{
-  --cv-bg: #fbf7f2;
+  --cv-bg: #f7f2ea;
   --cv-heading: #2b2b2b;
   --cv-body: #343434;
   --cv-light: #7b7b7b;
   --cv-accent: #c6b28e;
-  --cv-border: #e6dcc8;
-  --cv-rule: rgba(198,178,142,0.35);
+  --cv-border: #eadfcd;
+  --cv-rule: rgba(0,0,0,0.14); /* referanse har ganske nøytrale linjer */
   --cv-dot-size: 3.5px;
 }
 
@@ -341,7 +341,7 @@ hr{
   min-height: 297mm;
   max-width: 100%;
   background: var(--cv-bg);
-  border: 1px solid var(--cv-border); /* ✅ mindre “hard” */
+  border: 1px solid var(--cv-border);
   margin: 10px auto 0;
   display: flex;
   flex-direction: column;
@@ -350,52 +350,62 @@ hr{
   font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* ✅ tving lik bakgrunn overalt (fjerner “annen tone” bak topplinje) */
+.cv .cv-header,
+.cv .cv-summary,
+.cv .cv-body{
+  background: var(--cv-bg);
+}
+
+/* ✅ Bold i CV blir “lettere” som i referansen */
+.cv strong{ font-weight: 600; }
+
 .cv .cv-header{
   text-align:center;
-  padding: 46px 52px 22px; /* ✅ mer luft */
+  padding: 44px 54px 18px; /* litt mer luft men fortsatt A4 */
   border-bottom: 1px solid var(--cv-rule);
 }
 
 .cv .cv-name{
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
-  font-size: 30px;                 /* ✅ litt større */
+  font-size: 30px;
   font-weight: 600;
-  letter-spacing: 0.28em;          /* ✅ litt mindre = penere */
+  letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--cv-heading);
 }
 
 .cv .cv-title{
-  font-size: 9.5px;
+  font-size: 9.4px;
   font-weight: 300;
-  letter-spacing: 0.42em;          /* ✅ litt mindre */
+  letter-spacing: 0.42em;
   text-transform: uppercase;
   color: var(--cv-light);
   margin-top: 6px;
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
-/* ✅ Kontaktlinje med “chips” + ikoner */
+/* Kontaktlinje: ikoner + ren (ingen pills) */
 .cv .cv-contact{
   display:flex;
   align-items:center;
   justify-content:center;
   flex-wrap:wrap;
-  gap: 8px 14px;
+  gap: 6px 16px;
   margin-top: 16px;
   font-size: 8.6px;
   color: var(--cv-body);
 }
-.cv .cv-contact .sep{ display:none; } /* (fallback) */
+.cv .cv-contact .sep{ display:none; }
 
 .cv .cv-contact .citem{
   display:inline-flex;
   align-items:center;
   gap: 8px;
-  padding: 4px 8px;
-  border: 1px solid rgba(0,0,0,0.08);
-  background: rgba(255,255,255,0.55);
-  border-radius: 999px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
 }
 .cv .cv-contact svg{
   width: 12px;
@@ -404,38 +414,58 @@ hr{
   color: var(--cv-body);
 }
 
-.cv .cv-summary{ padding: 18px 52px 10px; } /* ✅ mer side-padding */
-.cv .body-text{ font-size: 9.2px; line-height: 1.75; color: var(--cv-body); } /* ✅ mer luftig */
+.cv .cv-summary{
+  padding: 18px 54px 12px;
+}
+
+.cv .body-text{
+  font-size: 9.1px;
+  line-height: 1.75;
+  color: var(--cv-body);
+}
+
+/* ✅ mer luft mellom seksjoner (som referanse), men A4-safe */
+.cv .cv-summary{ margin-bottom: 14px; }
 
 .cv .cv-body{
   display:flex;
   flex: 1;
-  padding: 0 52px 28px; /* ✅ mer luft + fyller siden bedre */
-  gap: 34px;            /* ✅ mer luft mellom kolonner */
+  padding: 0 54px 26px;
+  gap: 34px;
 }
-.cv .cv-left{ width: 32%; display:flex; flex-direction:column; gap: 14px; } /* ✅ litt smalere */
-.cv .cv-right{ flex: 1; display:flex; flex-direction:column; gap: 14px; }
 
-/* ✅ Penere overskrifter */
+.cv .cv-left{ width: 33%; display:flex; flex-direction:column; gap: 18px; }
+.cv .cv-right{ flex: 1; display:flex; flex-direction:column; gap: 18px; }
+
+/* ✅ Overskrifter: match referanse (EDUCATION-look) */
 .cv .section-title{
-  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
-  font-size: 10.5px;
-  font-weight: 500;
+  font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 9.2px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.34em;
   color: var(--cv-heading);
   border-bottom: 1px solid var(--cv-rule);
-  padding-bottom: 5px;
-  margin-bottom: 10px;
+  padding-bottom: 7px;
+  margin-bottom: 12px;
 }
 
-.cv .edu-block{ margin-bottom: 8px; }
-.cv .edu-block h3{ font-size: 9.5px; font-weight: 600; margin:0; color: var(--cv-heading); }
+.cv section{ margin-bottom: 4px; } /* litt luft uten å sprenge A4 */
+
+/* Education */
+.cv .edu-block{ margin-bottom: 10px; }
+.cv .edu-block h3{
+  font-size: 9.4px;
+  font-weight: 600; /* kan settes til 500 hvis du vil enda lettere */
+  margin:0;
+  color: var(--cv-heading);
+}
 .cv .edu-block p{ font-size: 8.5px; margin:0; color: var(--cv-body); }
 .cv .edu-block .date{ font-size: 8px; color: var(--cv-light); }
 .cv .edu-block .honors{ font-size: 8px; color: var(--cv-light); font-style: italic; }
 
-.cv .cert-item{ margin-bottom: 6px; }
+/* Licenses */
+.cv .cert-item{ margin-bottom: 10px; }
 .cv .cert-item h3{ font-size: 9px; font-weight: 600; margin:0; color: var(--cv-heading); }
 .cv .cert-item p{ font-size: 8px; margin:0; color: var(--cv-light); }
 
@@ -447,59 +477,60 @@ hr{
 }
 .cv .skill-list li, .cv .exp-bullets li{
   font-size: 8.5px;
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--cv-body);
   display:flex;
   align-items:flex-start;
   gap:7px;
-  margin-bottom: 4px;
+  margin-bottom: 6px; /* ✅ mer luft */
 }
 
-/* ✅ Auto-dots ONLY when the UL has class "auto-dots" */
+/* Auto dots only when default */
 .cv ul.auto-dots li::before{
   content:"";
-  margin-top: 5px;
+  margin-top: 6px;
   flex-shrink:0;
   width: var(--cv-dot-size);
   height: var(--cv-dot-size);
   border-radius: 50%;
   background: var(--cv-accent);
 }
-
-/* ✅ No-auto-dots: remove the pseudo dot and the flex gap "dot column" feel */
 .cv ul.no-auto-dots li::before{
   content: none !important;
   display: none !important;
 }
-.cv ul.no-auto-dots li{
-  gap: 0;
-}
+.cv ul.no-auto-dots li{ gap: 0; }
 
-.cv .exp-entry{ margin-bottom: 12px; }
-
-/* ✅ Mindre “stygg/tykk” jobbtittel: ikke ALL CAPS */
+/* Experience */
+.cv .exp-entry{ margin-bottom: 16px; } /* ✅ mer rom mellom jobber */
 .cv .exp-entry h3{
-  font-size: 9.4px;
+  font-size: 9.3px;
   font-weight: 600;
-  text-transform: none;     /* ✅ */
-  letter-spacing: 0.02em;   /* ✅ */
+  text-transform: uppercase;  /* referanse bruker caps her */
+  letter-spacing: 0.10em;
   margin:0;
   color: var(--cv-heading);
 }
-
 .cv .exp-entry .meta{
-  font-size: 8.5px;
+  font-size: 8.4px;
   color: var(--cv-light);
-  margin: 2px 0 4px;
+  margin: 4px 0 8px;
 }
 
+/* Volunteer */
 .cv .vol-header{
   display:flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 10px;
 }
-.cv .vol-header h3{ font-size: 9.5px; font-weight: 600; margin:0; color: var(--cv-heading); }
+.cv .vol-header h3{
+  font-size: 9.3px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  margin:0;
+  color: var(--cv-heading);
+}
 .cv .vol-header .date{
   margin-left: auto;
   font-size: 8px;
@@ -507,9 +538,9 @@ hr{
   white-space: nowrap;
   text-align: right;
 }
-.cv .vol-sub{ font-size: 8.5px; color: var(--cv-light); margin: 0 0 4px; }
+.cv .vol-sub{ font-size: 8.5px; color: var(--cv-light); margin: 0 0 6px; }
 
-.cv .lang-list p{ font-size: 8.5px; color: var(--cv-body); margin: 2px 0; }
+.cv .lang-list p{ font-size: 8.5px; color: var(--cv-body); margin: 3px 0; }
 
 /* ────────────────────────────────────────────── Print: only CV, full A4 ────────────────────────────────────────────── */
 @page { size: A4; margin: 0; }
