@@ -326,7 +326,7 @@ hr{
 
   /* MASTER KONTROLLER */
   --cv-divider-pos: 33%;     /* hvor linja står */
-  --cv-divider-safe: 55px;   /* “no-go” på begge sider */
+  --cv-divider-safe: 30px;   /* “no-go” på begge sider */
   --cv-divider-w: 1px;       /* linjebredde */
   --cv-body-pad-x: 54px;
   --cv-divider-top: 24px;    /* start for midtlinje + kolonne-innhold */
