@@ -444,12 +444,20 @@ hr{
 .cv .cv-body::before{
   content:"";
   position:absolute;
-  top: 6px;                  /* shorten from top */
+
+  top: 6px;
   bottom: 0;
-  left: calc(var(--cv-divider-x) + 54px);  /* 54px == L/R padding of cv-body */
-  width: 0.75px;
+
+  left: calc(
+    54px +
+    var(--cv-divider-x) -
+    (0.5px)
+  );
+
+  width: 1px;
   background: var(--cv-rule);
 }
+
 
 .cv .cv-left{
   width: var(--cv-divider-x);
