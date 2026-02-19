@@ -326,13 +326,13 @@ hr{
   --cv-rule-thin: rgba(0,0,0,0.14);
 
   /* MASTER CONTROLS */
-  --cv-divider-x: 30%;      /* venstre kolonne-bredde */
-  --cv-divider-gap: 30px;  /* 30px luft til begge kolonner */
-  --cv-divider-w: 1px;     /* tykkelse på midtlinja */
-  --cv-body-pad-x: 54px;   /* sidepadding i body */
-  --cv-divider-top: 44px;  /* start for linje + innhold */
+  --cv-divider-x: 30%;      /* venstre kolonne-bredde (30%) */
+  --cv-divider-gap: 24px;   /* ✅ 24px til begge sider */
+  --cv-divider-w: 1px;      /* midtlinje tykkelse */
+  --cv-body-pad-x: 54px;    /* sidepadding i body */
+  --cv-divider-top: 44px;   /* start for linje + innhold */
 
-  /* kontakt-streker (som referanse) */
+  /* kontakt-streker */
   --cv-contact-rule: rgba(0,0,0,0.20);
   --cv-contact-thickness: 2px;
 
@@ -370,7 +370,6 @@ hr{
   background: var(--cv-bg);
 }
 
-/* lighter bold in CV */
 .cv strong{
   font-weight: 500;
   color: #222;
@@ -382,7 +381,6 @@ hr{
   padding: 44px 54px 10px;
 }
 
-/* name/title */
 .cv .cv-name{
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-size: 30px;
@@ -401,7 +399,6 @@ hr{
   opacity: 0.95;
 }
 
-/* kontakt-raden får to tykkere streker */
 .cv .cv-contact{
   margin-top: 16px;
   padding: 10px 0;
@@ -446,8 +443,9 @@ hr{
 }
 
 /* ────────────────────────────── Two columns + divider (GRID) ────────────────────────────── */
+/* NB: Denne må ikke overstyres av en annen .cv-body senere i fila */
 .cv .cv-body{
-  display:grid;
+  display:grid !important;
   grid-template-columns:
     minmax(0, var(--cv-divider-x))  /* venstre */
     var(--cv-divider-gap)          /* gap */
@@ -456,14 +454,11 @@ hr{
     minmax(0, 1fr);                /* høyre */
 
   flex: 1;
-
-  /* mer luft før kolonnene begynner */
   padding: 36px var(--cv-body-pad-x) 26px;
-
   position: relative;
 }
 
-/* midtlinja ligger i sin egen grid-kolonne (overlapper aldri innhold) */
+/* midtlinja ligger i egen kolonne → kan ikke overlapper teksten */
 .cv .cv-body::before{
   content:"";
   grid-column: 3;
@@ -472,25 +467,20 @@ hr{
   width: var(--cv-divider-w);
   background: var(--cv-rule);
 
-  /* START UNDER heading-linjene */
   margin-top: var(--cv-divider-top);
-
   align-self: stretch;
 
   z-index: 3;
   pointer-events: none;
 }
 
-/* kolonner – starter samme sted som streken */
-.cv .cv-left,
-.cv .cv-right{
-  padding-top: var(--cv-divider-top);
-}
-
+/* kolonner – tving riktig plassering + start */
 .cv .cv-left{
   grid-column: 1;
-  width: auto;
-  padding-right: 0;
+  width: auto !important;
+  padding-right: 0 !important;
+
+  padding-top: var(--cv-divider-top);
 
   display:flex;
   flex-direction:column;
@@ -500,8 +490,10 @@ hr{
 }
 .cv .cv-right{
   grid-column: 5;
-  flex: initial;
-  padding-left: 0;
+  flex: initial !important;
+  padding-left: 0 !important;
+
+  padding-top: var(--cv-divider-top);
 
   display:flex;
   flex-direction:column;
@@ -510,7 +502,7 @@ hr{
   z-index: 1;
 }
 
-/* ────────────────────────────── Section titles + “linjene som ikke krysser midten” ────────────────────────────── */
+/* ────────────────────────────── Section titles ────────────────────────────── */
 .cv .section-title{
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: 11px;
@@ -523,10 +515,8 @@ hr{
   margin-bottom: 12px;
 
   position: relative;
-  border-bottom: none; /* vi tegner linja selv */
+  border-bottom: none;
 }
-
-/* standard linje */
 .cv .section-title::after{
   content:"";
   position:absolute;
@@ -537,7 +527,7 @@ hr{
   background: var(--cv-rule-thin);
 }
 
-/* TRIKSET: gi automatisk “stopp før midtlinja” med samme gap som kolonnene */
+/* ✅ Stopp før midtlinja med samme gap som kolonnene */
 .cv .cv-left  .section-title::after{ right: var(--cv-divider-gap); }
 .cv .cv-right .section-title::after{ left:  var(--cv-divider-gap); }
 
@@ -559,7 +549,6 @@ hr{
 .cv .cert-item h3{ font-size: 9px; font-weight: 600; margin:0; color: var(--cv-heading); }
 .cv .cert-item p{ font-size: 8px; margin:0; color: var(--cv-light); }
 
-/* lists */
 .cv .skill-list, .cv .exp-bullets{
   list-style:none;
   padding:0;
