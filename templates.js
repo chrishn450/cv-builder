@@ -347,28 +347,22 @@
       experience:
         "SENIOR REGISTERED NURSE – ICU\n" +
         "St. David's Medical Center, Austin, TX | January 2021 – Present\n" +
-        "Provide direct care for 4–6 critically ill patients per shift in a 32-bed ICU, including post-surgical, cardiac,\n" +
-        "and respiratory cases\n" +
-        "Reduced hospital-acquired infection rates by 18% through implementation of enhanced hygiene and\n" +
-        "monitoring protocols\n" +
-        "Mentor and precept 12+ new graduate nurses annually on unit protocols, charting standards, and clinical\n" +
-        "best practices\n" +
-        "Maintain 98% patient satisfaction scores consistently across quarterly Press Ganey surveys\n" +
-        "Collaborate with multidisciplinary teams including physicians, pharmacists, and respiratory therapists on\n" +
-        "individualized care plans\n\n" +
+        "• Provide direct care for 4–6 critically ill patients per shift in a 32-bed ICU, including post-surgical, cardiac, and respiratory cases\n" +
+        "• Reduced hospital-acquired infection rates by 18% through implementation of enhanced hygiene and monitoring protocols\n" +
+        "• Mentor and precept 12+ new graduate nurses annually on unit protocols, charting standards, and clinical best practices\n" +
+        "• Maintain 98% patient satisfaction scores consistently across quarterly Press Ganey surveys\n" +
+        "• Collaborate with multidisciplinary teams including physicians, pharmacists, and respiratory therapists on individualized care plans\n\n" +
         "REGISTERED NURSE – EMERGENCY DEPARTMENT\n" +
         "Seton Medical Center, Austin, TX | June 2018 – December 2020\n" +
-        "Triaged and assessed 30+ patients daily in a high-volume Level I trauma center serving 85,000+ annual visits\n" +
-        "Administered medications, IV therapy, and emergency interventions with zero medication errors over 2.5\n" +
-        "years\n" +
-        "Recognized as Employee of the Quarter (Q3 2019) for exceptional patient care and team collaboration\n" +
-        "Maintained accurate real-time documentation using Epic EHR system for all patient encounters\n\n" +
+        "• Triaged and assessed 30+ patients daily in a high-volume Level I trauma center serving 85,000+ annual visits\n" +
+        "• Administered medications, IV therapy, and emergency interventions with zero medication errors over 2.5 years\n" +
+        "• Recognized as Employee of the Quarter (Q3 2019) for exceptional patient care and team collaboration\n" +
+        "• Maintained accurate real-time documentation using Epic EHR system for all patient encounters\n\n" +
         "STAFF NURSE – MEDICAL-SURGICAL UNIT\n" +
         "Dell Children's Medical Center, Austin, TX | August 2016 – May 2018\n" +
-        "Delivered compassionate care to 20+ pediatric patients daily aged 2–17 across medical and surgical units\n" +
-        "Monitored and documented vital signs, lab results, and medication responses with 100% charting\n" +
-        "compliance\n" +
-        "Educated 500+ families on post-discharge care plans, medication schedules, and follow-up procedures",
+        "• Delivered compassionate care to 20+ pediatric patients daily aged 2–17 across medical and surgical units\n" +
+        "• Monitored and documented vital signs, lab results, and medication responses with 100% charting compliance\n" +
+        "• Educated 500+ families on post-discharge care plans, medication schedules, and follow-up procedures",
       achievements:
         "Spearheaded ICU sepsis screening protocol resulting in 22% faster identification and 15% reduction in mortality\n" +
         "Developed new-hire orientation program adopted hospital-wide, reducing onboarding time by 3 weeks\n" +
