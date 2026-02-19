@@ -299,8 +299,8 @@
       location: "Austin, TX 78701",
       linkedin: "linkedin.com/in/sarahjohnsonrn",
       summary:
-        "Compassionate and detail-oriented Registered Nurse with 7+ years of progressive experience in acute care, emergency, and critical care settings. Proven ability to manage" +
-        "4–6 critically ill patients per shift while maintaining 98% patient satisfaction scores. Skilled in patient assessment, evidence-based care planning, and interdisciplinary" +
+        "Compassionate and detail-oriented Registered Nurse with 7+ years of progressive experience in acute care, emergency, and critical care settings. Proven ability to manage " +
+        "4–6 critically ill patients per shift while maintaining 98% patient satisfaction scores. Skilled in patient assessment, evidence-based care planning, and interdisciplinary " +
         "collaboration. Committed to delivering measurable outcomes and continuous quality improvement in fast-paced hospital environments.",
       education:
         "Master of Science in Nursing\n" +
@@ -376,7 +376,7 @@
       custom2: ""
     };
 
-    // Track defaults
+    // Track which fields are default vs user-provided
     const isDefault = {};
     const d = {};
     for (const k in defaults) {
@@ -428,9 +428,10 @@
     if (contactCfg.show_linkedin && d.linkedin) contactParts.push(contactChip(ICONS.linkedin, d.linkedin));
 
     const contactHTML = contactParts.join("");
+
     const showTitle = contactCfg.show_title !== false;
 
-    // ✅ Summary flyttet til høyre kolonne (ikke lenger “over” kolonnene)
+    // ✅ Summary flyttes til høyre kolonne (som referansen)
     const summaryInRight = sections.summary?.enabled
       ? `
         <section>
@@ -496,7 +497,7 @@
     ].join("");
 
     const rightHTML = [
-      summaryInRight, // ✅ først i høyre kolonne
+      summaryInRight,
       sections.experience?.enabled
         ? renderExperienceSection(sectionTitle("experience"), d.experience, {
             mergeWrapped: isDefault.experience,
@@ -527,7 +528,10 @@
         <header class="cv-header">
           <h1 class="cv-name">${fmtInline(d.name)}</h1>
           ${showTitle ? `<p class="cv-title">${fmtInline(d.title)}</p>` : ``}
-          <div class="cv-contact">${contactHTML}</div>
+
+          <div class="cv-contact-wrap">
+            <div class="cv-contact">${contactHTML}</div>
+          </div>
         </header>
 
         <div class="cv-body">
