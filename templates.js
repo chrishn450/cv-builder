@@ -409,18 +409,26 @@
     };
 
     const contactCfg = sections.contact || defaultSections.contact;
-    const contactParts = [];
-    if (contactCfg.show_phone && d.phone) contactParts.push(d.phone);
-    if (contactCfg.show_email && d.email) contactParts.push(d.email);
-    if (contactCfg.show_location && d.location) contactParts.push(d.location);
-    if (contactCfg.show_linkedin && d.linkedin) contactParts.push(d.linkedin);
 
-    const contactHTML = contactParts
-      .map((p, i) => {
-        const sep = i < contactParts.length - 1 ? ' <span class="sep">|</span> ' : "";
-        return "<span>" + fmtInline(p) + "</span>" + sep;
-      })
-      .join("");
+    /* ✅ NYTT: ikon-chips (kun hvis felt finnes) */
+    const ICONS = {
+      phone: `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8c1.6 3.2 4.4 6 7.6 7.6l2.5-2.5c.3-.3.8-.4 1.2-.2 1 .3 2.1.5 3.2.5.7 0 1.2.5 1.2 1.2V21c0 .7-.5 1.2-1.2 1.2C10.4 22.2 1.8 13.6 1.8 3c0-.7.5-1.2 1.2-1.2h3.7c.7 0 1.2.5 1.2 1.2 0 1.1.2 2.2.5 3.2.1.4 0 .9-.3 1.2l-2.5 2.4z"/></svg>`,
+      email: `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>`,
+      location: `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2c-3.9 0-7 3.1-7 7 0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5c-1.4 0-2.5-1.1-2.5-2.5S10.6 6.5 12 6.5 14.5 7.6 14.5 9 13.4 11.5 12 11.5z"/></svg>`,
+      linkedin: `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1 4.98 2.12 4.98 3.5zM0.5 8.5H4.5V23H0.5V8.5zM8.5 8.5H12.3V10.4h.1c.5-1 1.9-2.1 3.9-2.1 4.2 0 5 2.8 5 6.4V23h-4v-7.3c0-1.7 0-3.9-2.4-3.9-2.4 0-2.8 1.9-2.8 3.8V23h-4V8.5z"/></svg>`
+    };
+
+    function contactChip(iconSvg, text) {
+      return `<span class="citem">${iconSvg}<span>${fmtInline(text)}</span></span>`;
+    }
+
+    const contactParts = [];
+    if (contactCfg.show_phone && d.phone) contactParts.push(contactChip(ICONS.phone, d.phone));
+    if (contactCfg.show_email && d.email) contactParts.push(contactChip(ICONS.email, d.email));
+    if (contactCfg.show_location && d.location) contactParts.push(contactChip(ICONS.location, d.location));
+    if (contactCfg.show_linkedin && d.linkedin) contactParts.push(contactChip(ICONS.linkedin, d.linkedin));
+
+    const contactHTML = contactParts.join("");
 
     const showTitle = contactCfg.show_title !== false;
 
