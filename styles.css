@@ -314,24 +314,20 @@ hr{
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ────────────────────────────────────────────── CV Theme Variables ────────────────────────────────────────────── */
-/* ✅ Lysere “papir” (hakket lysere enn sist) */
 :root{
-  --cv-bg: #fbfbfa;           /* ← template fargen */
+  /* paper */
+  --cv-bg: #f7f7f5;
   --cv-heading: #2b2b2b;
-  --cv-body: #363636;
-  --cv-light: #7c7c7c;
-
+  --cv-body: #343434;
+  --cv-light: #7b7b7b;
   --cv-accent: #c6b28e;
-  --cv-border: #efe7db;
+  --cv-border: #eadfcd;
+  --cv-rule: rgba(0,0,0,0.14);
 
-  /* linjer */
-  --cv-rule: rgba(0,0,0,0.18);
-  --cv-rule-thin: rgba(0,0,0,0.14);
-
+  /* MASTER CONTROLS */
+  --cv-divider-x: 30%;      /* flytt midtlinja */
+  --cv-divider-gap: 26px;   /* luft på begge sider av midtlinja */
   --cv-dot-size: 3.5px;
-
-  /* divider plasseres i “gap” */
-  --cv-divider-x: 27%; /* flytt midtlinja mot venstre: juster denne */
 }
 
 /* Bullet toggle button = SAME dot as CV */
@@ -355,28 +351,28 @@ hr{
   flex-direction: column;
   overflow: hidden;
   color: var(--cv-body);
-  font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: "Source Sans 3", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* ✅ tving lik bakgrunn overalt */
+/* force same paper tone everywhere (prevents “different strip” look) */
 .cv .cv-header,
+.cv .cv-summary,
 .cv .cv-body{
   background: var(--cv-bg);
 }
 
-/* ✅ “pen” bold (mindre klumpete) */
+/* lighter bold in CV (so **text** isn’t ugly/thick) */
 .cv strong{
-  font-weight: 550; /* ← her bestemmer du “feitheten” */
+  font-weight: 500;
   color: #222;
 }
 
-/* Header */
 .cv .cv-header{
   text-align:center;
-  padding: 44px 54px 10px;
+  padding: 44px 54px 18px;
+  border-bottom: 1.5px solid var(--cv-rule);
 }
 
-/* Navn */
 .cv .cv-name{
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-size: 30px;
@@ -386,7 +382,6 @@ hr{
   color: var(--cv-heading);
 }
 
-/* Tittel */
 .cv .cv-title{
   font-size: 9.4px;
   font-weight: 300;
@@ -397,38 +392,27 @@ hr{
   opacity: 0.95;
 }
 
-/* ✅ Kontakt-wrap med TYKKERE linjer over/under */
-.cv .cv-contact-wrap{
-  margin-top: 16px;
-  padding: 10px 0;
-  position: relative;
-}
-.cv .cv-contact-wrap::before,
-.cv .cv-contact-wrap::after{
-  content:"";
-  position:absolute;
-  left:0;
-  right:0;
-  height: 0;
-  border-top: 1.6px solid var(--cv-rule);   /* ← tykkere enn seksjonslinjer */
-}
-.cv .cv-contact-wrap::before{ top:0; }
-.cv .cv-contact-wrap::after{ bottom:0; }
-
-/* Kontakt-linje: ikoner + tekst (ingen pills) */
+/* contact row: icons + clean (no pills) */
 .cv .cv-contact{
   display:flex;
   align-items:center;
   justify-content:center;
   flex-wrap:wrap;
-  gap: 6px 18px;
+  gap: 6px 16px;
+  margin-top: 16px;
   font-size: 8.6px;
   color: var(--cv-body);
 }
+.cv .cv-contact .sep{ display:none; }
+
 .cv .cv-contact .citem{
   display:inline-flex;
   align-items:center;
   gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
 }
 .cv .cv-contact svg{
   width: 12px;
@@ -437,63 +421,66 @@ hr{
   color: var(--cv-body);
 }
 
-/* Body text */
+.cv .cv-summary{
+  padding: 18px 54px 12px;
+  margin-bottom: 14px;
+}
+
 .cv .body-text{
   font-size: 9.1px;
   line-height: 1.75;
   color: var(--cv-body);
 }
 
-/* ✅ mer spacing før kolonner begynner */
+/* ────────────────────────────── Two columns + auto divider system ────────────────────────────── */
 .cv .cv-body{
-  position: relative;
   display:flex;
   flex: 1;
-  padding: 24px 54px 26px;  /* ← økt topp-padding */
-  gap: 34px;                /* “luft” mellom kolonner (divider går her) */
+  padding: 22px 54px 26px;   /* TOP controls gap down to columns */
+  position: relative;
 }
 
-/* ✅ Midtlinje: starter litt lavere + ligger i gap (så linjer “krysser” ikke visuelt) */
+/* vertical divider controlled by --cv-divider-x */
 .cv .cv-body::before{
   content:"";
   position:absolute;
-  top: 30px;                /* ← liten gap før den nedover starter */
-  bottom: 24px;
-  left: calc(var(--cv-divider-x) + 54px); /* 54px = samme som padding venstre */
-  width: 1px;
-  background: rgba(0,0,0,0.20);
-  opacity: 0.9;
-  pointer-events:none;
+  top: 6px;                  /* shorten from top */
+  bottom: 0;
+  left: calc(var(--cv-divider-x) + 54px);  /* 54px == L/R padding of cv-body */
+  width: 0.75px;
+  background: var(--cv-rule);
 }
 
-/* Kolonner */
 .cv .cv-left{
   width: var(--cv-divider-x);
+  padding-right: var(--cv-divider-gap);
   display:flex;
   flex-direction:column;
   gap: 18px;
-  padding-right: 12px; /* sikrer at ingenting “treffer” divider visuelt */
-}
-.cv .cv-right{
-  flex: 1;
-  display:flex;
-  flex-direction:column;
-  gap: 18px;
-  padding-left: 36px;  /* sikrer at linjer stopper før divider */
 }
 
-/* ✅ Seksjonstitler: font/spacing som referanse */
+.cv .cv-right{
+  flex: 1;
+  padding-left: var(--cv-divider-gap);
+  display:flex;
+  flex-direction:column;
+  gap: 18px;
+}
+
+/* section headings */
 .cv .section-title{
-  font-family: "Cormorant Garamond", Georgia, serif; /* ← her endrer du overskrifts-font */
+  font-family: "Cormorant Garamond", Georgia, serif;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.32em;
   color: var(--cv-heading);
-  border-bottom: 0.75px solid var(--cv-rule-thin); /* ← her bestemmes tykkelsen på disse linjene */
+  border-bottom: 0.75px solid var(--cv-rule);
   padding-bottom: 6px;
   margin-bottom: 12px;
 }
+
+.cv section{ margin-bottom: 4px; }
 
 /* Education */
 .cv .edu-block{ margin-bottom: 10px; }
@@ -528,7 +515,7 @@ hr{
   margin-bottom: 6px;
 }
 
-/* Auto dots only when default */
+/* Auto dots only for default preview */
 .cv ul.auto-dots li::before{
   content:"";
   margin-top: 6px;
@@ -582,6 +569,7 @@ hr{
   text-align: right;
 }
 .cv .vol-sub{ font-size: 8.5px; color: var(--cv-light); margin: 0 0 6px; }
+
 .cv .lang-list p{ font-size: 8.5px; color: var(--cv-body); margin: 3px 0; }
 
 /* ────────────────────────────────────────────── Print: only CV, full A4 ────────────────────────────────────────────── */
