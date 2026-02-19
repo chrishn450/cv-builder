@@ -479,7 +479,7 @@ hr{
   display:flex;
   flex-direction:column;
   gap: 18px;
-  padding-left: 12px;  /* sikrer at linjer stopper før divider */
+  padding-left: 24px;  /* sikrer at linjer stopper før divider */
 }
 
 /* ✅ Seksjonstitler: font/spacing som referanse */
