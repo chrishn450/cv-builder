@@ -326,8 +326,15 @@ hr{
   --cv-rule-thin: rgba(0,0,0,0.14);
 
   /* MASTER CONTROLS */
-  --cv-divider-x: 30%;
-  --cv-divider-gap: 26px;
+  --cv-divider-x: 30%;      /* venstre kolonne-bredde */
+  --cv-divider-gap: 30px;  /* 30px luft til begge kolonner */
+  --cv-divider-w: 1px;     /* tykkelse på midtlinja */
+
+  /* body padding (brukes også i beregninger/lesbarhet) */
+  --cv-body-pad-x: 54px;
+
+  /* hvor langt ned midtlinja starter */
+  --cv-divider-top: 44px;
 
   /* kontakt-streker (som referanse) */
   --cv-contact-rule: rgba(0,0,0,0.20);
@@ -442,40 +449,48 @@ hr{
   color: var(--cv-body);
 }
 
-/* ────────────────────────────── Two columns + divider ────────────────────────────── */
+/* ────────────────────────────── Two columns + divider (GRID) ────────────────────────────── */
 .cv .cv-body{
-  display:flex;
+  display:grid;
+  grid-template-columns:
+    minmax(0, var(--cv-divider-x))  /* venstre */
+    var(--cv-divider-gap)          /* gap */
+    var(--cv-divider-w)            /* linje */
+    var(--cv-divider-gap)          /* gap */
+    minmax(0, 1fr);                /* høyre */
+
   flex: 1;
 
-  /* mer luft før kolonnene begynner (og hindrer divider fra å komme inn i headings) */
-  padding: 36px 54px 26px;
+  /* mer luft før kolonnene begynner */
+  padding: 36px var(--cv-body-pad-x) 26px;
 
   position: relative;
 }
 
-/* midtlinja */
+/* midtlinja ligger i sin egen grid-kolonne (overlapper aldri innhold) */
 .cv .cv-body::before{
   content:"";
-  position:absolute;
+  grid-column: 3;
+  grid-row: 1;
+
+  width: var(--cv-divider-w);
+  background: var(--cv-rule);
 
   /* START UNDER heading-linjene */
-  top: 44px;        /* ← øk/minsk hvis du vil */
-  bottom: 0;
+  margin-top: var(--cv-divider-top);
 
-  left: calc(54px + var(--cv-divider-x));
-  transform: translateX(-0.5px);
+  align-self: stretch;
 
-  width: 1px;
-  background: var(--cv-rule);
   z-index: 3;
   pointer-events: none;
 }
 
-
 /* kolonner */
 .cv .cv-left{
-  width: var(--cv-divider-x);
-  padding-right: var(--cv-divider-gap);
+  grid-column: 1;
+  width: auto;
+  padding-right: 0;
+
   display:flex;
   flex-direction:column;
   gap: 18px;
@@ -483,8 +498,10 @@ hr{
   z-index: 1;
 }
 .cv .cv-right{
-  flex: 1;
-  padding-left: var(--cv-divider-gap);
+  grid-column: 5;
+  flex: initial;
+  padding-left: 0;
+
   display:flex;
   flex-direction:column;
   gap: 18px;
