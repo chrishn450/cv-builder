@@ -325,12 +325,12 @@ hr{
   --cv-rule: rgba(0,0,0,0.18);
   --cv-rule-thin: rgba(0,0,0,0.14);
 
-  /* ====== MASTER KONTROLLER (du justerer bare disse) ====== */
+  /* ====== MASTER KONTROLLER ====== */
   --cv-divider-pos: 30%;     /* hvor den vertikale linja står (fra venstre av innholdsbredde) */
-  --cv-divider-safe: 24px;   /* “no-go” på begge sider av linja (tekst/linjer stopper her) */
+  --cv-divider-safe: 24px;   /* “no-go” på begge sider av linja */
   --cv-divider-w: 1px;       /* linjebredde */
-  --cv-divider-top: 24px;    /* avstand fra toppen av .cv-body ned til start av linje + kolonner */
-  --cv-body-pad-x: 54px;     /* venstre/høyre innvendig marg i CV-body */
+  --cv-divider-top: 24px;    /* avstand fra toppen av .cv-body til start av linje + kolonner */
+  --cv-body-pad-x: 54px;     /* venstre/høyre marg inni CV-body */
 
   /* seksjonslinjer stopper samme avstand fra midtlinja */
   --cv-title-stop-gap: var(--cv-divider-safe);
@@ -361,10 +361,7 @@ hr{
   margin: 10px auto 0;
   display: flex;
   flex-direction: column;
-
-  /* ikke klipp midtlinja */
-  overflow: visible;
-
+  overflow: visible; /* ikke klipp midtlinja */
   color: var(--cv-body);
   font-family: "Source Sans 3", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -443,7 +440,7 @@ hr{
 /* ────────────────────────────── Summary ────────────────────────────── */
 .cv .cv-summary{
   padding: 18px 54px 12px;
-  margin-bottom: 14px; /* Juster denne hvis du vil ha kolonnene nærmere kontakt */
+  margin-bottom: 14px; /* reduser hvis du vil ha kolonnene nærmere kontakt */
 }
 .cv .body-text{
   font-size: 9.1px;
@@ -452,7 +449,7 @@ hr{
 }
 
 /* ────────────────────────────── Two columns + divider (GRID) ────────────────────────────── */
-/* INGEN DOBBEL: cv-divider-top styrer alt (linje + kolonner) via padding-top her */
+/* INGEN DOBBEL: divider-top styrer all topp-luft via padding */
 .cv .cv-body{
   display:grid;
   grid-template-columns:
@@ -463,29 +460,28 @@ hr{
     minmax(0, 1fr);                   /* høyre innhold */
 
   flex: 1;
-  padding: var(--cv-divider-top) var(--cv-body-pad-x) 26px; /* ← viktig: ingen ekstra 36px */
+  padding: var(--cv-divider-top) var(--cv-body-pad-x) 26px;
   position: relative;
 }
 
-/* midtlinja – følger hele høyden av .cv-body (ingen margin-top her!) */
+/* midtlinja: ingen margin-top (ellers dobbel) */
 .cv .cv-body::before{
   content:"";
   grid-column: 3;
   grid-row: 1 / -1;
   width: var(--cv-divider-w);
   background: var(--cv-rule);
-  margin-top: 0;            /* ← viktig: ikke dobbel */
+  margin-top: 0;
   align-self: stretch;
   z-index: 3;
   pointer-events: none;
 }
 
-/* kolonner – INGEN padding-top her (ellers dobbel) */
+/* kolonner: ingen padding-top (ellers dobbel) */
 .cv .cv-left{
   grid-column: 1;
-  width: auto;
   margin: 0;
-  padding: 0;               /* ← viktig */
+  padding: 0;
   display:flex;
   flex-direction:column;
   gap: 18px;
@@ -494,14 +490,38 @@ hr{
 }
 .cv .cv-right{
   grid-column: 5;
-  width: auto;
   margin: 0;
-  padding: 0;               /* ← viktig */
+  padding: 0;
   display:flex;
   flex-direction:column;
   gap: 18px;
   position: relative;
   z-index: 1;
+}
+
+/* ────────────────────────────────────────────── HARD GUARANTEE: safe-gap respekteres ────────────────────────────────────────────── */
+/* Dette hindrer at innhold i høyre/venstre kolonne “dyttes” sidelengs av margin/padding fra p/ul/etc */
+.cv .cv-left,
+.cv .cv-right{
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+}
+
+/* null ut typiske innrykk i begge kolonner */
+.cv .cv-left p,  .cv .cv-right p,
+.cv .cv-left ul, .cv .cv-right ul,
+.cv .cv-left ol, .cv .cv-right ol{
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+/* lister skal ikke ha default innrykk */
+.cv .cv-left ul, .cv .cv-right ul{ list-style: none; }
+
+/* første element i kolonnen skal ikke ha “optisk hopp” */
+.cv .cv-left > *:first-child,
+.cv .cv-right > *:first-child{
+  margin-top: 0 !important;
 }
 
 /* ────────────────────────────── Section titles + “linjene som ikke krysser midten” ────────────────────────────── */
