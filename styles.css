@@ -378,7 +378,7 @@ hr{
 
 /* ✅ “bold” i CV blir penere og mindre klumpete */
 .cv strong{
-  font-weight: 550;
+  font-weight: 450;
   color: #222;
 }
 
