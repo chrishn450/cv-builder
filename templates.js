@@ -46,27 +46,33 @@
 
   // Merge wrapped lines into previous "bullet line" (only for DEFAULT text)
   function mergeWrappedLinesIntoBullets(rawLines) {
-    const out = [];
-    rawLines.forEach((ln) => {
-      const line = String(ln || "").trim();
-      if (!line) return;
+  const out = [];
+  rawLines.forEach((ln) => {
+    let line = String(ln || "").trim();
+    if (!line) return;
 
-      const isExplicitBullet = /^([•\-·]\s+)/.test(line);
-      if (isExplicitBullet) {
-        out.push(line);
-        return;
-      }
+    const m = line.match(/^([•\-·])\s+/);
+    const isExplicitBullet = !!m;
 
-      if (out.length > 0) {
-        out[out.length - 1] = (out[out.length - 1] + " " + line)
-          .replace(/\s+/g, " ")
-          .trim();
-      } else {
-        out.push(line);
-      }
-    });
-    return out;
-  }
+    if (isExplicitBullet) {
+      // ✅ fjern bullet-tegnet så du ikke får "dobbel bullet"
+      line = line.replace(/^([•\-·])\s+/, "");
+      out.push(line);
+      return;
+    }
+
+    // ellers: treat som wrapped continuation
+    if (out.length > 0) {
+      out[out.length - 1] = (out[out.length - 1] + " " + line)
+        .replace(/\s+/g, " ")
+        .trim();
+    } else {
+      out.push(line);
+    }
+  });
+  return out;
+}
+
 
   function parseExperience(s, { mergeWrapped = true } = {}) {
     return blocks(s).map((block) => {
