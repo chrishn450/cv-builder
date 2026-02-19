@@ -635,7 +635,7 @@ hr{
 .cv .exp-bullets li,
 .cv .lang-list p,
 .cv .edu-block p{
-  font-size: 12px !important;
+  font-size: 11px !important;
   line-height: 1.5 !important;
 }
 
@@ -650,7 +650,7 @@ hr{
 .cv .exp-entry h3,
 .cv .edu-block h3,
 .cv .cert-item h3{
-  font-size: 13px !important;
+  font-size: 12px !important;
 }
 
 
@@ -666,7 +666,7 @@ hr{
 .cv .edu-block .date,
 .cv .edu-block .honors,
 .cv .vol-header .date{
-  font-size: 10px !important;
+  font-size: 11px !important;
 }
 
 
