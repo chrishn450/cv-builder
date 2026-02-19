@@ -321,19 +321,15 @@ hr{
   --cv-accent: #c6b28e;
   --cv-border: #eadfcd;
 
-  /* linjer */
   --cv-rule: rgba(0,0,0,0.18);
   --cv-rule-thin: rgba(0,0,0,0.14);
 
-  /* ====== MASTER KONTROLLER ====== */
-  --cv-divider-pos: 30%;     /* hvor den vertikale linja står (fra venstre av innholdsbredde) */
-  --cv-divider-safe: 24px;   /* “no-go” på begge sider av linja */
+  /* MASTER KONTROLLER */
+  --cv-divider-pos: 30%;     /* hvor linja står */
+  --cv-divider-safe: 24px;   /* “no-go” på begge sider */
   --cv-divider-w: 1px;       /* linjebredde */
-  --cv-divider-top: 24px;    /* avstand fra toppen av .cv-body til start av linje + kolonner */
-  --cv-body-pad-x: 54px;     /* venstre/høyre marg inni CV-body */
-
-  /* seksjonslinjer stopper samme avstand fra midtlinja */
-  --cv-title-stop-gap: var(--cv-divider-safe);
+  --cv-body-pad-x: 54px;
+  --cv-divider-top: 24px;    /* start for midtlinje + kolonne-innhold */
 
   /* kontakt-streker */
   --cv-contact-rule: rgba(0,0,0,0.20);
@@ -361,7 +357,7 @@ hr{
   margin: 10px auto 0;
   display: flex;
   flex-direction: column;
-  overflow: visible; /* ikke klipp midtlinja */
+  overflow: visible;
   color: var(--cv-body);
   font-family: "Source Sans 3", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -437,10 +433,10 @@ hr{
   color: var(--cv-body);
 }
 
-/* ────────────────────────────── Summary ────────────────────────────── */
+/* ────────────────────────────── Summary (legacy class ok) ────────────────────────────── */
 .cv .cv-summary{
   padding: 18px 54px 12px;
-  margin-bottom: 14px; /* reduser hvis du vil ha kolonnene nærmere kontakt */
+  margin-bottom: 14px;
 }
 .cv .body-text{
   font-size: 9.1px;
@@ -449,39 +445,38 @@ hr{
 }
 
 /* ────────────────────────────── Two columns + divider (GRID) ────────────────────────────── */
-/* INGEN DOBBEL: divider-top styrer all topp-luft via padding */
+/* REN: 3 kolonner (venstre | linje | høyre) + SAFE via padding på kolonnene */
 .cv .cv-body{
   display:grid;
   grid-template-columns:
-    minmax(0, var(--cv-divider-pos))  /* venstre innhold til linje-pos */
-    var(--cv-divider-safe)            /* SAFE venstre for linja */
-    var(--cv-divider-w)               /* LINJA */
-    var(--cv-divider-safe)            /* SAFE høyre for linja */
-    minmax(0, 1fr);                   /* høyre innhold */
+    minmax(0, var(--cv-divider-pos))
+    var(--cv-divider-w)
+    minmax(0, 1fr);
 
   flex: 1;
   padding: var(--cv-divider-top) var(--cv-body-pad-x) 26px;
   position: relative;
 }
 
-/* midtlinja: ingen margin-top (ellers dobbel) */
+/* midtlinja – følger hele høyden av .cv-body */
 .cv .cv-body::before{
   content:"";
-  grid-column: 3;
+  grid-column: 2;
   grid-row: 1 / -1;
-  width: var(--cv-divider-w);
+  width: 100%;
   background: var(--cv-rule);
-  margin-top: 0;
   align-self: stretch;
   z-index: 3;
   pointer-events: none;
 }
 
-/* kolonner: ingen padding-top (ellers dobbel) */
+/* venstre/høyre kolonne – SAFE via padding */
 .cv .cv-left{
   grid-column: 1;
   margin: 0;
   padding: 0;
+  padding-right: var(--cv-divider-safe);
+
   display:flex;
   flex-direction:column;
   gap: 18px;
@@ -489,39 +484,16 @@ hr{
   z-index: 1;
 }
 .cv .cv-right{
-  grid-column: 5;
+  grid-column: 3;
   margin: 0;
   padding: 0;
+  padding-left: var(--cv-divider-safe);
+
   display:flex;
   flex-direction:column;
   gap: 18px;
   position: relative;
   z-index: 1;
-}
-
-/* ────────────────────────────────────────────── HARD GUARANTEE: safe-gap respekteres ────────────────────────────────────────────── */
-/* Dette hindrer at innhold i høyre/venstre kolonne “dyttes” sidelengs av margin/padding fra p/ul/etc */
-.cv .cv-left,
-.cv .cv-right{
-  padding-left: 0 !important;
-  margin-left: 0 !important;
-}
-
-/* null ut typiske innrykk i begge kolonner */
-.cv .cv-left p,  .cv .cv-right p,
-.cv .cv-left ul, .cv .cv-right ul,
-.cv .cv-left ol, .cv .cv-right ol{
-  margin-left: 0 !important;
-  padding-left: 0 !important;
-}
-
-/* lister skal ikke ha default innrykk */
-.cv .cv-left ul, .cv .cv-right ul{ list-style: none; }
-
-/* første element i kolonnen skal ikke ha “optisk hopp” */
-.cv .cv-left > *:first-child,
-.cv .cv-right > *:first-child{
-  margin-top: 0 !important;
 }
 
 /* ────────────────────────────── Section titles + “linjene som ikke krysser midten” ────────────────────────────── */
@@ -551,9 +523,9 @@ hr{
   background: var(--cv-rule-thin);
 }
 
-/* stoppe før midtlinja (samme safe-zone som tekst) */
-.cv .cv-left  .section-title::after{ right: var(--cv-title-stop-gap); }
-.cv .cv-right .section-title::after{ left:  var(--cv-title-stop-gap); }
+/* Ingen “stop-gap” nødvendig nå – safe-padding gjør jobben */
+.cv .cv-left  .section-title::after{ right: 0; }
+.cv .cv-right .section-title::after{ left:  0; }
 
 .cv section{ margin-bottom: 4px; }
 
@@ -645,3 +617,27 @@ hr{
 .cv .vol-sub{ font-size: 8.5px; color: var(--cv-light); margin: 0 0 6px; }
 
 .cv .lang-list p{ font-size: 8.5px; color: var(--cv-body); margin: 3px 0; }
+
+/* (Anbefalt) fjern default innrykk som kan lure øyet */
+.cv .cv-right p, .cv .cv-right ul, .cv .cv-right ol,
+.cv .cv-left  p, .cv .cv-left  ul, .cv .cv-left  ol{
+  margin-left: 0;
+  padding-left: 0;
+}
+
+/* ────────────────────────────────────────────── Print: only CV, full A4 ────────────────────────────────────────────── */
+@page { size: A4; margin: 0; }
+@media print{
+  html, body{ margin:0; padding:0; background:white !important; color:#111 !important; }
+  .topbar, #panel-editor, #panel-ai, .v-resizer, .panel-actions, .ai-chat, .ai-compose, .btn, button, a { display:none !important; }
+  #panel-preview, #preview, .cv { display:block !important; }
+  .cv{
+    width: 210mm !important;
+    height: 297mm !important;
+    margin:0 !important;
+    border: 1px solid var(--cv-border) !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .cv section, .cv .exp-entry, .cv li { break-inside: avoid; }
+}
