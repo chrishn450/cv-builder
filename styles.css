@@ -326,11 +326,11 @@ hr{
   --cv-rule-thin: rgba(0,0,0,0.14);
 
   /* MASTER CONTROLS */
-  --cv-divider-x: 30%;      /* venstre kolonne-bredde (30%) */
-  --cv-divider-gap: 24px;   /* ✅ 24px til begge sider */
-  --cv-divider-w: 1px;      /* midtlinje tykkelse */
-  --cv-body-pad-x: 54px;    /* sidepadding i body */
-  --cv-divider-top: 44px;   /* start for linje + innhold */
+  --cv-divider-x: 30%;
+  --cv-divider-gap: 14px;   /* ✅ mindre gap her (endre fritt) */
+  --cv-divider-w: 1px;
+  --cv-body-pad-x: 54px;
+  --cv-divider-top: 44px;
 
   /* kontakt-streker */
   --cv-contact-rule: rgba(0,0,0,0.20);
@@ -370,6 +370,7 @@ hr{
   background: var(--cv-bg);
 }
 
+/* lighter bold in CV */
 .cv strong{
   font-weight: 500;
   color: #222;
@@ -381,6 +382,7 @@ hr{
   padding: 44px 54px 10px;
 }
 
+/* name/title */
 .cv .cv-name{
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-size: 30px;
@@ -399,6 +401,7 @@ hr{
   opacity: 0.95;
 }
 
+/* kontakt-raden får to tykkere streker */
 .cv .cv-contact{
   margin-top: 16px;
   padding: 10px 0;
@@ -443,44 +446,46 @@ hr{
 }
 
 /* ────────────────────────────── Two columns + divider (GRID) ────────────────────────────── */
-/* NB: Denne må ikke overstyres av en annen .cv-body senere i fila */
 .cv .cv-body{
   display:grid !important;
   grid-template-columns:
-    minmax(0, var(--cv-divider-x))  /* venstre */
-    var(--cv-divider-gap)          /* gap */
-    var(--cv-divider-w)            /* linje */
-    var(--cv-divider-gap)          /* gap */
-    minmax(0, 1fr);                /* høyre */
+    minmax(0, var(--cv-divider-x))
+    var(--cv-divider-gap)
+    var(--cv-divider-w)
+    var(--cv-divider-gap)
+    minmax(0, 1fr);
 
   flex: 1;
   padding: 36px var(--cv-body-pad-x) 26px;
   position: relative;
 }
 
-/* midtlinja ligger i egen kolonne → kan ikke overlapper teksten */
+/* ✅ Hvis wrapper(e) finnes inni .cv-body, gjør dem layout-nøytrale */
+.cv .cv-body > :not(.cv-left):not(.cv-right){
+  display: contents;
+}
+
+/* midtlinja */
 .cv .cv-body::before{
   content:"";
   grid-column: 3;
   grid-row: 1;
-
   width: var(--cv-divider-w);
   background: var(--cv-rule);
-
   margin-top: var(--cv-divider-top);
   align-self: stretch;
-
   z-index: 3;
   pointer-events: none;
 }
 
-/* kolonner – tving riktig plassering + start */
+/* kolonner – tving plassering + start og fjern gammel padding */
 .cv .cv-left{
-  grid-column: 1;
+  grid-column: 1 !important;
   width: auto !important;
+  margin: 0 !important;
   padding-right: 0 !important;
 
-  padding-top: var(--cv-divider-top);
+  padding-top: var(--cv-divider-top) !important;
 
   display:flex;
   flex-direction:column;
@@ -489,11 +494,13 @@ hr{
   z-index: 1;
 }
 .cv .cv-right{
-  grid-column: 5;
+  grid-column: 5 !important;
   flex: initial !important;
+  width: auto !important;
+  margin: 0 !important;
   padding-left: 0 !important;
 
-  padding-top: var(--cv-divider-top);
+  padding-top: var(--cv-divider-top) !important;
 
   display:flex;
   flex-direction:column;
@@ -502,7 +509,7 @@ hr{
   z-index: 1;
 }
 
-/* ────────────────────────────── Section titles ────────────────────────────── */
+/* ────────────────────────────── Section titles + “linjene som ikke krysser midten” ────────────────────────────── */
 .cv .section-title{
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: 11px;
@@ -517,6 +524,8 @@ hr{
   position: relative;
   border-bottom: none;
 }
+
+/* standard linje */
 .cv .section-title::after{
   content:"";
   position:absolute;
@@ -527,7 +536,7 @@ hr{
   background: var(--cv-rule-thin);
 }
 
-/* ✅ Stopp før midtlinja med samme gap som kolonnene */
+/* stopp før midtlinja med samme gap */
 .cv .cv-left  .section-title::after{ right: var(--cv-divider-gap); }
 .cv .cv-right .section-title::after{ left:  var(--cv-divider-gap); }
 
@@ -549,6 +558,7 @@ hr{
 .cv .cert-item h3{ font-size: 9px; font-weight: 600; margin:0; color: var(--cv-heading); }
 .cv .cert-item p{ font-size: 8px; margin:0; color: var(--cv-light); }
 
+/* lists */
 .cv .skill-list, .cv .exp-bullets{
   list-style:none;
   padding:0;
