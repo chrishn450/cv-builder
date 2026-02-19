@@ -347,7 +347,7 @@ hr{
   flex-direction: column;
   overflow: hidden;
   color: var(--cv-body);
-  font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: "Source Sans 3", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 /* ✅ tving lik bakgrunn overalt (fjerner “annen tone” bak topplinje) */
