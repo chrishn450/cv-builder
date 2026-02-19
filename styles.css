@@ -321,19 +321,20 @@ hr{
   --cv-accent: #c6b28e;
   --cv-border: #eadfcd;
 
-  /* linjer */
   --cv-rule: rgba(0,0,0,0.18);
   --cv-rule-thin: rgba(0,0,0,0.14);
 
-  /* MASTER CONTROLS */
-  --cv-divider-x: 30%;      /* venstre kolonne bredde */
-  --cv-divider-gap: 24px;   /* ← SETT 24px her (likt på begge sider) */
-  --cv-divider-w: 1px;
-  --cv-body-pad-x: 54px;
-  --cv-divider-top: 44px;   /* start for midtlinje + kolonne-innhold */
-  --cv-title-stop-gap: 10px;/* mindre “gap” i overskriftslinjene */
+  /* ====== NYE MASTER KONTROLLER (du justerer bare disse) ====== */
+  --cv-divider-pos: 30%;     /* hvor linja står fra venstre (av tilgjengelig innholdsbredde) */
+  --cv-divider-safe: 24px;   /* “no-go” på begge sider av linja (tekst/linjer kan ikke gå nærmere) */
+  --cv-divider-w: 1px;       /* linjebredde */
 
-  /* kontakt-streker */
+  --cv-body-pad-x: 54px;
+  --cv-divider-top: 24px;
+
+  /* seksjonslinjer stopper samme avstand fra midtlinja */
+  --cv-title-stop-gap: var(--cv-divider-safe);
+
   --cv-contact-rule: rgba(0,0,0,0.20);
   --cv-contact-thickness: 2px;
 
@@ -453,16 +454,17 @@ hr{
 .cv .cv-body{
   display:grid;
   grid-template-columns:
-    minmax(0, var(--cv-divider-x))
-    var(--cv-divider-gap)
-    var(--cv-divider-w)
-    var(--cv-divider-gap)
-    minmax(0, 1fr);
+    minmax(0, var(--cv-divider-pos))  /* venstre innhold til linje-pos */
+    var(--cv-divider-safe)            /* SAFE venstre for linja */
+    var(--cv-divider-w)               /* LINJA */
+    var(--cv-divider-safe)            /* SAFE høyre for linja */
+    minmax(0, 1fr);                   /* høyre innhold */
 
   flex: 1;
   padding: 36px var(--cv-body-pad-x) 26px;
   position: relative;
 }
+
 
 /* midtlinja – følger hele høyden av .cv-body */
 .cv .cv-body::before{
