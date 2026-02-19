@@ -302,7 +302,6 @@ hr{
 .sugg-item .topic{ font-weight: 900; font-size: 12px; margin-bottom: 6px; }
 .sugg-buttons{ display:flex; gap:10px; margin-top: 10px; }
 
-/* thinking bubble */
 .thinking-row{ display:flex; gap:10px; align-items:center; font-size: 13px; color: rgba(233,238,252,0.85); }
 .spinner{
   width: 14px; height: 14px;
@@ -315,18 +314,25 @@ hr{
 
 /* ────────────────────────────────────────────── CV Theme Variables ────────────────────────────────────────────── */
 :root{
-  /* paper */
   --cv-bg: #f7f7f5;
   --cv-heading: #2b2b2b;
   --cv-body: #343434;
   --cv-light: #7b7b7b;
   --cv-accent: #c6b28e;
   --cv-border: #eadfcd;
-  --cv-rule: rgba(0,0,0,0.14);
+
+  /* linjer */
+  --cv-rule: rgba(0,0,0,0.18);
+  --cv-rule-thin: rgba(0,0,0,0.14);
 
   /* MASTER CONTROLS */
-  --cv-divider-x: 30%;      /* flytt midtlinja */
-  --cv-divider-gap: 26px;   /* luft på begge sider av midtlinja */
+  --cv-divider-x: 30%;
+  --cv-divider-gap: 26px;
+
+  /* kontakt-streker (som referanse) */
+  --cv-contact-rule: rgba(0,0,0,0.20);
+  --cv-contact-thickness: 2px;
+
   --cv-dot-size: 3.5px;
 }
 
@@ -354,25 +360,26 @@ hr{
   font-family: "Source Sans 3", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* force same paper tone everywhere (prevents “different strip” look) */
+/* force same paper tone everywhere */
 .cv .cv-header,
 .cv .cv-summary,
 .cv .cv-body{
   background: var(--cv-bg);
 }
 
-/* lighter bold in CV (so **text** isn’t ugly/thick) */
+/* lighter bold in CV */
 .cv strong{
   font-weight: 500;
   color: #222;
 }
 
+/* ────────────────────────────── Header ────────────────────────────── */
 .cv .cv-header{
   text-align:center;
-  padding: 44px 54px 18px;
-  border-bottom: 1.5px solid var(--cv-rule);
+  padding: 44px 54px 10px;
 }
 
+/* name/title */
 .cv .cv-name{
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-size: 30px;
@@ -381,7 +388,6 @@ hr{
   text-transform: uppercase;
   color: var(--cv-heading);
 }
-
 .cv .cv-title{
   font-size: 9.4px;
   font-weight: 300;
@@ -392,19 +398,23 @@ hr{
   opacity: 0.95;
 }
 
-/* contact row: icons + clean (no pills) */
+/* kontakt-raden får to tykkere streker */
 .cv .cv-contact{
+  margin-top: 16px;
+  padding: 10px 0;
+  border-top: var(--cv-contact-thickness) solid var(--cv-contact-rule);
+  border-bottom: var(--cv-contact-thickness) solid var(--cv-contact-rule);
+
   display:flex;
   align-items:center;
   justify-content:center;
   flex-wrap:wrap;
-  gap: 6px 16px;
-  margin-top: 16px;
+  gap: 6px 18px;
+
   font-size: 8.6px;
   color: var(--cv-body);
 }
 .cv .cv-contact .sep{ display:none; }
-
 .cv .cv-contact .citem{
   display:inline-flex;
   align-items:center;
@@ -421,61 +431,66 @@ hr{
   color: var(--cv-body);
 }
 
+/* ────────────────────────────── Summary ────────────────────────────── */
 .cv .cv-summary{
   padding: 18px 54px 12px;
   margin-bottom: 14px;
 }
-
 .cv .body-text{
   font-size: 9.1px;
   line-height: 1.75;
   color: var(--cv-body);
 }
 
-/* ────────────────────────────── Two columns + auto divider system ────────────────────────────── */
+/* ────────────────────────────── Two columns + divider ────────────────────────────── */
 .cv .cv-body{
   display:flex;
   flex: 1;
-  padding: 22px 54px 26px;   /* TOP controls gap down to columns */
+
+  /* dette styrer “avstand ned til kolonnene” */
+  padding: 26px 54px 26px;
+
   position: relative;
 }
 
-/* vertical divider controlled by --cv-divider-x */
+/* midtlinja (ligger OVER linjer/tekst så det aldri ser ut som ting krysser) */
 .cv .cv-body::before{
   content:"";
   position:absolute;
 
-  top: 6px;
+  top: 10px;
   bottom: 0;
 
-  left: calc(
-    54px +
-    var(--cv-divider-x) -
-    (0.5px)
-  );
+  left: calc(54px + var(--cv-divider-x));
+  transform: translateX(-0.5px);
 
   width: 1px;
   background: var(--cv-rule);
+  z-index: 3;              /* viktig */
+  pointer-events: none;
 }
 
-
+/* kolonner */
 .cv .cv-left{
   width: var(--cv-divider-x);
   padding-right: var(--cv-divider-gap);
   display:flex;
   flex-direction:column;
   gap: 18px;
+  position: relative;
+  z-index: 1;
 }
-
 .cv .cv-right{
   flex: 1;
   padding-left: var(--cv-divider-gap);
   display:flex;
   flex-direction:column;
   gap: 18px;
+  position: relative;
+  z-index: 1;
 }
 
-/* section headings */
+/* ────────────────────────────── Section titles + “linjene som ikke krysser midten” ────────────────────────────── */
 .cv .section-title{
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: 11px;
@@ -483,14 +498,32 @@ hr{
   text-transform: uppercase;
   letter-spacing: 0.32em;
   color: var(--cv-heading);
-  border-bottom: 0.75px solid var(--cv-rule);
+
   padding-bottom: 6px;
   margin-bottom: 12px;
+
+  position: relative;
+  border-bottom: none; /* vi tegner linja selv */
 }
+
+/* standard linje */
+.cv .section-title::after{
+  content:"";
+  position:absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--cv-rule-thin);
+}
+
+/* TRIKSET: gi automatisk “stopp før midtlinja” med samme gap som kolonnene */
+.cv .cv-left  .section-title::after{ right: var(--cv-divider-gap); }
+.cv .cv-right .section-title::after{ left:  var(--cv-divider-gap); }
 
 .cv section{ margin-bottom: 4px; }
 
-/* Education */
+/* ────────────────────────────── Blocks ────────────────────────────── */
 .cv .edu-block{ margin-bottom: 10px; }
 .cv .edu-block h3{
   font-size: 9.4px;
@@ -502,12 +535,11 @@ hr{
 .cv .edu-block .date{ font-size: 8px; color: var(--cv-light); }
 .cv .edu-block .honors{ font-size: 8px; color: var(--cv-light); font-style: italic; }
 
-/* Licenses */
 .cv .cert-item{ margin-bottom: 10px; }
 .cv .cert-item h3{ font-size: 9px; font-weight: 600; margin:0; color: var(--cv-heading); }
 .cv .cert-item p{ font-size: 8px; margin:0; color: var(--cv-light); }
 
-/* Lists */
+/* lists */
 .cv .skill-list, .cv .exp-bullets{
   list-style:none;
   padding:0;
@@ -523,7 +555,7 @@ hr{
   margin-bottom: 6px;
 }
 
-/* Auto dots only for default preview */
+/* dots */
 .cv ul.auto-dots li::before{
   content:"";
   margin-top: 6px;
@@ -539,7 +571,7 @@ hr{
 }
 .cv ul.no-auto-dots li{ gap: 0; }
 
-/* Experience */
+/* experience */
 .cv .exp-entry{ margin-bottom: 16px; }
 .cv .exp-entry h3{
   font-size: 9.3px;
@@ -555,7 +587,7 @@ hr{
   margin: 4px 0 8px;
 }
 
-/* Volunteer */
+/* volunteer */
 .cv .vol-header{
   display:flex;
   justify-content: space-between;
