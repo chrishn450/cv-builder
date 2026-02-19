@@ -626,6 +626,54 @@ hr{
   margin-left: 0;
   padding-left: 0;
 }
+/* ────────────────────────────────────────────── FINAL FONT FIX (LEGG HELT NEDERST) ────────────────────────────────────────────── */
+
+/* main paragraph text */
+.cv p,
+.cv .body-text,
+.cv .skill-list li,
+.cv .exp-bullets li,
+.cv .lang-list p,
+.cv .edu-block p{
+  font-size: 11px !important;
+  line-height: 1.55 !important;
+}
+
+
+/* section headers */
+.cv .section-title{
+  font-size: 11.5px !important;
+}
+
+
+/* job titles / education titles */
+.cv .exp-entry h3,
+.cv .edu-block h3,
+.cv .cert-item h3{
+  font-size: 11px !important;
+}
+
+
+/* contact + meta */
+.cv .cv-contact,
+.cv .exp-entry .meta,
+.cv .vol-sub{
+  font-size: 10px !important;
+}
+
+
+/* small meta text */
+.cv .edu-block .date,
+.cv .edu-block .honors,
+.cv .vol-header .date{
+  font-size: 9.2px !important;
+}
+
+
+/* ensure consistent spacing */
+.cv li{
+  margin-bottom: 6px;
+}
 
 /* ────────────────────────────────────────────── Print: only CV, full A4 ────────────────────────────────────────────── */
 @page { size: A4; margin: 0; }
