@@ -326,11 +326,12 @@ hr{
   --cv-rule-thin: rgba(0,0,0,0.14);
 
   /* MASTER CONTROLS */
-  --cv-divider-x: 30%;
-  --cv-divider-gap: 14px;   /* ✅ mindre gap her (endre fritt) */
+  --cv-divider-x: 30%;      /* venstre kolonne bredde */
+  --cv-divider-gap: 24px;   /* ← SETT 24px her (likt på begge sider) */
   --cv-divider-w: 1px;
   --cv-body-pad-x: 54px;
-  --cv-divider-top: 44px;
+  --cv-divider-top: 44px;   /* start for midtlinje + kolonne-innhold */
+  --cv-title-stop-gap: 10px;/* mindre “gap” i overskriftslinjene */
 
   /* kontakt-streker */
   --cv-contact-rule: rgba(0,0,0,0.20);
@@ -358,7 +359,10 @@ hr{
   margin: 10px auto 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+
+  /* VIKTIG: ikke klipp midtlinja */
+  overflow: visible;
+
   color: var(--cv-body);
   font-family: "Source Sans 3", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -434,7 +438,7 @@ hr{
   color: var(--cv-body);
 }
 
-/* ────────────────────────────── Summary ────────────────────────────── */
+/* ────────────────────────────── Summary (legacy class ok) ────────────────────────────── */
 .cv .cv-summary{
   padding: 18px 54px 12px;
   margin-bottom: 14px;
@@ -447,7 +451,7 @@ hr{
 
 /* ────────────────────────────── Two columns + divider (GRID) ────────────────────────────── */
 .cv .cv-body{
-  display:grid !important;
+  display:grid;
   grid-template-columns:
     minmax(0, var(--cv-divider-x))
     var(--cv-divider-gap)
@@ -460,16 +464,11 @@ hr{
   position: relative;
 }
 
-/* ✅ Hvis wrapper(e) finnes inni .cv-body, gjør dem layout-nøytrale */
-.cv .cv-body > :not(.cv-left):not(.cv-right){
-  display: contents;
-}
-
-/* midtlinja */
+/* midtlinja – følger hele høyden av .cv-body */
 .cv .cv-body::before{
   content:"";
   grid-column: 3;
-  grid-row: 1;
+  grid-row: 1 / -1;
   width: var(--cv-divider-w);
   background: var(--cv-rule);
   margin-top: var(--cv-divider-top);
@@ -478,14 +477,13 @@ hr{
   pointer-events: none;
 }
 
-/* kolonner – tving plassering + start og fjern gammel padding */
+/* kolonner – starter samme sted som linja */
 .cv .cv-left{
-  grid-column: 1 !important;
-  width: auto !important;
-  margin: 0 !important;
-  padding-right: 0 !important;
-
-  padding-top: var(--cv-divider-top) !important;
+  grid-column: 1;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  padding-top: var(--cv-divider-top);
 
   display:flex;
   flex-direction:column;
@@ -494,13 +492,11 @@ hr{
   z-index: 1;
 }
 .cv .cv-right{
-  grid-column: 5 !important;
-  flex: initial !important;
-  width: auto !important;
-  margin: 0 !important;
-  padding-left: 0 !important;
-
-  padding-top: var(--cv-divider-top) !important;
+  grid-column: 5;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  padding-top: var(--cv-divider-top);
 
   display:flex;
   flex-direction:column;
@@ -525,7 +521,7 @@ hr{
   border-bottom: none;
 }
 
-/* standard linje */
+/* standard underlinje */
 .cv .section-title::after{
   content:"";
   position:absolute;
@@ -536,9 +532,9 @@ hr{
   background: var(--cv-rule-thin);
 }
 
-/* stopp før midtlinja med samme gap */
-.cv .cv-left  .section-title::after{ right: var(--cv-divider-gap); }
-.cv .cv-right .section-title::after{ left:  var(--cv-divider-gap); }
+/* stoppe før midtlinja (kontrolleres av egen variabel) */
+.cv .cv-left  .section-title::after{ right: var(--cv-title-stop-gap); }
+.cv .cv-right .section-title::after{ left:  var(--cv-title-stop-gap); }
 
 .cv section{ margin-bottom: 4px; }
 
@@ -647,123 +643,3 @@ hr{
   }
   .cv section, .cv .exp-entry, .cv li { break-inside: avoid; }
 }
-/* ────────────────────────────── CV OVERRIDE (MÅ LIGGE HELT NEDERST) ────────────────────────────── */
-
-/* Kontroller */
-:root{
-  --cv-divider-x: 30%;
-  --cv-divider-gap: 14px;  /* <-- endre denne (prøv 0px / 80px for test) */
-  --cv-divider-w: 1px;
-  --cv-divider-top: 44px;
-  --cv-body-pad-x: 54px;
-}
-
-/* Tving .cv-body til grid uansett hva som finnes før */
-.cv .cv-body{
-  display: grid !important;
-  grid-template-columns:
-    minmax(0, var(--cv-divider-x))
-    var(--cv-divider-gap)
-    var(--cv-divider-w)
-    var(--cv-divider-gap)
-    minmax(0, 1fr) !important;
-
-  padding: 36px var(--cv-body-pad-x) 26px !important;
-  position: relative !important;
-}
-
-/* Hvis du har wrapper inni .cv-body, gjør den layout-nøytral */
-.cv .cv-body > :not(.cv-left):not(.cv-right){
-  display: contents !important;
-}
-
-/* Midtlinja i egen grid-kolonne */
-.cv .cv-body::before{
-  content: "" !important;
-  grid-column: 3 !important;
-  grid-row: 1 !important;
-  width: var(--cv-divider-w) !important;
-  background: var(--cv-rule) !important;
-  margin-top: var(--cv-divider-top) !important;
-  align-self: stretch !important;
-  z-index: 3 !important;
-  pointer-events: none !important;
-}
-
-/* Tving kolonnene til riktig grid-kolonne + null ut gammel padding/margin */
-.cv .cv-left{
-  grid-column: 1 !important;
-  width: auto !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  padding-top: var(--cv-divider-top) !important;
-}
-
-.cv .cv-right{
-  grid-column: 5 !important;
-  width: auto !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  padding-top: var(--cv-divider-top) !important;
-}
-
-/* Seksjon-linjene stopper før midtlinja med samme gap */
-.cv .cv-left  .section-title::after{ right: var(--cv-divider-gap) !important; }
-.cv .cv-right .section-title::after{ left:  var(--cv-divider-gap) !important; }
-/* ────────────────────────────── CV FINAL OVERRIDE (legg HELT nederst) ────────────────────────────── */
-:root{
-  --cv-divider-x: 30%;      /* venstre kolonne bredde */
-  --cv-divider-gap: 14px;   /* avstand fra midtlinja til begge kolonner */
-  --cv-divider-w: 1px;      /* midtlinje tykkelse */
-  --cv-divider-top: 44px;   /* start for innhold + midtlinje */
-
-  /* hvis du vil at underlinjene skal stoppe tettere enn kolonne-gapet */
-  --cv-title-stop-gap: 10px;  /* <- gjør denne mindre for mindre "gap her også" */
-}
-
-/* Grid-layout med fysisk "gap-kolonne" på begge sider av linja */
-.cv .cv-body{
-  display: grid !important;
-  grid-template-columns:
-    minmax(0, var(--cv-divider-x))
-    var(--cv-divider-gap)
-    var(--cv-divider-w)
-    var(--cv-divider-gap)
-    minmax(0, 1fr) !important;
-
-  padding: 36px 54px 26px !important;
-  position: relative !important;
-}
-
-/* Midtlinja */
-.cv .cv-body::before{
-  content:"" !important;
-  grid-column: 3 !important;
-  grid-row: 1 !important;
-  width: var(--cv-divider-w) !important;
-  background: var(--cv-rule) !important;
-  margin-top: var(--cv-divider-top) !important;
-  align-self: stretch !important;
-  z-index: 3 !important;
-  pointer-events: none !important;
-}
-
-/* Kolonner: tving inn i grid, null ut alt som kan “låse” dem */
-.cv .cv-left{
-  grid-column: 1 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  padding-top: var(--cv-divider-top) !important;
-}
-
-.cv .cv-right{
-  grid-column: 5 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  padding-top: var(--cv-divider-top) !important;
-}
-
-/* Underlinjer under SECTION TITLES: "mindre gap her også" */
-.cv .cv-left  .section-title::after{ right: var(--cv-title-stop-gap) !important; }
-.cv .cv-right .section-title::after{ left:  var(--cv-title-stop-gap) !important; }
-
