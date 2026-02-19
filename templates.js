@@ -44,7 +44,6 @@
       .filter(Boolean);
   }
 
-  // Merge wrapped lines into previous "bullet line" (only for DEFAULT text)
   function mergeWrappedLinesIntoBullets(rawLines) {
     const out = [];
     rawLines.forEach((ln) => {
@@ -100,14 +99,12 @@
       let volTitle = ls[0] || "";
       let volDate = "";
 
-      // Support "Title | Date"
       const m = volTitle.match(/^(.+?)\s*\|\s*(.+)$/);
       if (m) {
         volTitle = m[1];
         volDate = m[2];
       }
 
-      // Or "Title 2019 – Present"
       if (!volDate) {
         const pw = String(presentWord || "Present").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const re = new RegExp(`^(.*?)(\\b\\d{4}\\s*–\\s*(?:${pw}|\\d{4})\\b)$`);
@@ -127,7 +124,6 @@
     });
   }
 
-  // mode: "bullets" | "paragraph"
   function renderSimpleSection({ title, content, mode, boldFirstLine, autoDots }) {
     const items = lines(content);
     if (!items.length) return "";
@@ -284,7 +280,6 @@
     const raw = data || {};
     const lang = raw.lang || raw?.ui?.lang || "en";
 
-    // i18n hooks
     const CVI = window.CV_I18N || {};
     const getDefaultTitle = (key) => (CVI.getSectionDefaultTitle ? CVI.getSectionDefaultTitle(lang, key) : key);
 
@@ -376,7 +371,6 @@
       custom2: ""
     };
 
-    // ✅ Track which fields are default vs user-provided
     const isDefault = {};
     const d = {};
     for (const k in defaults) {
@@ -410,7 +404,6 @@
 
     const contactCfg = sections.contact || defaultSections.contact;
 
-    /* ✅ NYTT: ikon-chips (kun hvis felt finnes) */
     const ICONS = {
       phone: `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8c1.6 3.2 4.4 6 7.6 7.6l2.5-2.5c.3-.3.8-.4 1.2-.2 1 .3 2.1.5 3.2.5.7 0 1.2.5 1.2 1.2V21c0 .7-.5 1.2-1.2 1.2C10.4 22.2 1.8 13.6 1.8 3c0-.7.5-1.2 1.2-1.2h3.7c.7 0 1.2.5 1.2 1.2 0 1.1.2 2.2.5 3.2.1.4 0 .9-.3 1.2l-2.5 2.4z"/></svg>`,
       email: `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>`,
@@ -449,7 +442,7 @@
         content: d[key] || "",
         mode: cfg.mode || "bullets",
         boldFirstLine: !!cfg.boldFirstLine,
-        autoDots: isDefault[key] // ✅ default gets dots, user doesn't
+        autoDots: isDefault[key]
       });
     }
 
@@ -499,9 +492,7 @@
     const rightHTML = [
       sections.experience?.enabled
         ? renderExperienceSection(sectionTitle("experience"), d.experience, {
-            // ✅ merge only for default (so default preview stays pretty)
             mergeWrapped: isDefault.experience,
-            // ✅ dots only for default preview
             autoDots: isDefault.experience
           })
         : "",
@@ -517,9 +508,7 @@
       sections.volunteer?.enabled
         ? renderVolunteerSection(sectionTitle("volunteer"), d.volunteer, {
             presentWord,
-            // ✅ merge only for default
             mergeWrapped: isDefault.volunteer,
-            // ✅ dots only for default
             autoDots: isDefault.volunteer
           })
         : "",
