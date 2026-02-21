@@ -350,19 +350,25 @@ hr{
 /* ────────────────────────────────────────────── CV Template (scoped) ────────────────────────────────────────────── */
 .cv{
   width: 210mm;
+  height: 297mm;          /* ✅ låst A4-høyde */
   min-height: 297mm;
+  max-height: 297mm;      /* ✅ hindrer at preview “vokser” */
   max-width: 100%;
   background: var(--cv-bg);
   border: 1px solid var(--cv-border);
   margin: 10px auto 0;
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  overflow: hidden;       /* ✅ klipp på arket hvis tekst er for mye */
   color: var(--cv-body);
   font-family: "Source Sans 3", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 11px;        /* ← LEGG TIL DENNE */
+  font-size: 11px;
   line-height: 1.5;
 }
+
+/* ✅ preview-pane kan scroll’e uten at arket endrer høyde */
+#panel-preview{ overflow: auto; }
+#preview{ overflow: auto; max-height: calc(100vh - 140px); }
 
 /* force same paper tone everywhere */
 .cv .cv-header,
@@ -447,7 +453,6 @@ hr{
 }
 
 /* ────────────────────────────── Two columns + divider (GRID) ────────────────────────────── */
-/* REN: 3 kolonner (venstre | linje | høyre) + SAFE via padding på kolonnene */
 .cv .cv-body{
   display:grid;
   grid-template-columns:
@@ -498,7 +503,7 @@ hr{
   z-index: 1;
 }
 
-/* ────────────────────────────── Section titles + “linjene som ikke krysser midten” ────────────────────────────── */
+/* ────────────────────────────── Section titles + underlines ────────────────────────────── */
 .cv .section-title{
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: 11px;
@@ -513,8 +518,6 @@ hr{
   position: relative;
   border-bottom: none;
 }
-
-/* standard underlinje */
 .cv .section-title::after{
   content:"";
   position:absolute;
@@ -524,8 +527,6 @@ hr{
   height: 1px;
   background: var(--cv-rule-thin);
 }
-
-/* Ingen “stop-gap” nødvendig nå – safe-padding gjør jobben */
 .cv .cv-left  .section-title::after{ right: 0; }
 .cv .cv-right .section-title::after{ left:  0; }
 
@@ -626,6 +627,7 @@ hr{
   margin-left: 0;
   padding-left: 0;
 }
+
 /* ────────────────────────────────────────────── FINAL FONT FIX (LEGG HELT NEDERST) ────────────────────────────────────────────── */
 
 /* main paragraph text */
@@ -639,12 +641,10 @@ hr{
   line-height: 1.5 !important;
 }
 
-
 /* section headers */
 .cv .section-title{
   font-size: 14px !important;
 }
-
 
 /* job titles / education titles */
 .cv .exp-entry h3,
@@ -653,7 +653,6 @@ hr{
   font-size: 12px !important;
 }
 
-
 /* contact + meta */
 .cv .cv-contact,
 .cv .exp-entry .meta,
@@ -661,14 +660,12 @@ hr{
   font-size: 11px !important;
 }
 
-
 /* small meta text */
 .cv .edu-block .date,
 .cv .edu-block .honors,
 .cv .vol-header .date{
   font-size: 11px !important;
 }
-
 
 /* ensure consistent spacing */
 .cv li{
@@ -688,6 +685,7 @@ hr{
     border: 1px solid var(--cv-border) !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    overflow: visible !important; /* print skal ikke klippe */
   }
   .cv section, .cv .exp-entry, .cv li { break-inside: avoid; }
 }
