@@ -309,7 +309,9 @@
       linkedin: "linkedin.com/in/sarahjohnsonrn",
 
       summary:
-        "Compassionate and detail-oriented Registered Nurse with over 7 years of experience in acute care, emergency, and critical care settings. Proven ability to manage multiple high-acuity patients per shift while maintaining high standards of patient safety and care quality. Skilled in patient assessment, evidence-based care planning, and interdisciplinary collaboration. Dedicated to improving patient outcomes and contributing to efficient, high-performing healthcare teams in fast-paced hospital environments.",
+        "Compassionate and detail-oriented Registered Nurse with 7+ years of progressive experience in acute care, emergency, and critical care settings. Proven ability to manage " +
+        "4–6 critically ill patients per shift while maintaining 98% patient satisfaction scores. Skilled in patient assessment, evidence-based care planning, and interdisciplinary " +
+        "collaboration. Committed to delivering measurable outcomes and continuous quality improvement in fast-paced hospital environments.",
 
       education:
         "Master of Science in Nursing\n" +
@@ -334,14 +336,14 @@
 
       clinicalSkills:
         "Patient Assessment & Triage\n" +
-        "Critical Care Monitoring & Hemodynamic Assessment\n" +
         "IV Therapy & Venipuncture\n" +
-        "Medication Administration & Dosage Calculation\n" +
-        "Ventilator Management & Respiratory Support\n" +
-        "Cardiac Monitoring (ECG Interpretation)\n" +
+        "Wound Care & Dressing Changes\n" +
+        "Medication Administration\n" +
+        "Ventilator Management\n" +
+        "Hemodynamic Monitoring\n" +
         "Electronic Health Records (Epic)\n" +
-        "Care Plan Development & Patient Evaluation\n" +
-        "Infection Control & Clinical Safety Protocols",
+        "Care Plan Development\n" +
+        "Infection Control Protocols",
 
       coreCompetencies:
         "Team Leadership & Mentoring\n" +
@@ -355,22 +357,22 @@
       experience:
         "SENIOR REGISTERED NURSE – ICU\n" +
         "St. David's Medical Center, Austin, TX | January 2021 – Present\n" +
-        "• Provide direct care for 1–3 critically ill patients per shift in a 32-bed ICU, including post-surgical, cardiac, and respiratory cases\n" +
-        "• Monitor ventilated patients and manage advanced life-support equipment, including arterial lines and central venous catheters\n" +
-        "• Mentor and precept new graduate nurses on unit protocols, documentation standards, and clinical best practices\n" +
-        "• Collaborate with multidisciplinary teams including physicians, pharmacists, and respiratory therapists to develop and implement individualized care plans\n" +
-        "• Ensure accurate and timely documentation using Epic EHR while maintaining high standards of patient safety and care quality\n\n" +
+        "• Provide direct care for 4–6 critically ill patients per shift in a 32-bed ICU, including post-surgical, cardiac, and respiratory cases\n" +
+        "• Reduced hospital-acquired infection rates by 18% through implementation of enhanced hygiene and monitoring protocols\n" +
+        "• Mentor and precept 12+ new graduate nurses annually on unit protocols, charting standards, and clinical best practices\n" +
+        "• Maintain 98% patient satisfaction scores consistently across quarterly Press Ganey surveys\n" +
+        "• Collaborate with multidisciplinary teams including physicians, pharmacists, and respiratory therapists on individualized care plans\n\n" +
         "REGISTERED NURSE – EMERGENCY DEPARTMENT\n" +
         "Seton Medical Center, Austin, TX | June 2018 – December 2020\n" +
-        "• Triaged and assessed high-acuity patients in a fast-paced Level I trauma center with over 85,000 annual visits\n" +
-        "• Administered medications, IV therapy, and emergency interventions in accordance with hospital safety protocols\n" +
-        "• Recognized for strong clinical performance, teamwork, and patient-centered care\n" +
-        "• Maintained accurate real-time documentation using Epic EHR system\n\n" +
+        "• Triaged and assessed 30+ patients daily in a high-volume Level I trauma center serving 85,000+ annual visits\n" +
+        "• Administered medications, IV therapy, and emergency interventions with zero medication errors over 2.5 years\n" +
+        "• Recognized as Employee of the Quarter (Q3 2019) for exceptional patient care and team collaboration\n" +
+        "• Maintained accurate real-time documentation using Epic EHR system for all patient encounters\n\n" +
         "STAFF NURSE – MEDICAL-SURGICAL UNIT\n" +
         "Dell Children's Medical Center, Austin, TX | August 2016 – May 2018\n" +
-        "• Provided direct patient care in a pediatric medical-surgical unit, including medication administration and clinical monitoring\n" +
-        "• Monitored vital signs, laboratory results, and patient responses to treatment\n" +
-        "• Educated patients and families on discharge instructions, medications, and follow-up care",
+        "• Delivered compassionate care to 20+ pediatric patients daily aged 2–17 across medical and surgical units\n" +
+        "• Monitored and documented vital signs, lab results, and medication responses with 100% charting compliance\n" +
+        "• Educated 500+ families on post-discharge care plans, medication schedules, and follow-up procedures",
 
       achievements:
         "Spearheaded ICU sepsis screening protocol resulting in 22% faster identification and 15% reduction in mortality\n" +
