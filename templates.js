@@ -341,7 +341,7 @@
         "Cardiac Monitoring (ECG Interpretation)\n" +
         "Electronic Health Records (Epic)\n" +
         "Care Plan Development & Patient Evaluation\n" +
-        "Infection Control & Clinical Safety Protocols"
+        "Infection Control & Clinical Safety Protocols",
 
       coreCompetencies:
         "Team Leadership & Mentoring\n" +
