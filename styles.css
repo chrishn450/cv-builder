@@ -325,7 +325,7 @@ hr{
   --cv-rule-thin: rgba(0,0,0,0.14);
 
   /* MASTER KONTROLLER */
-  --cv-divider-pos: 35%;
+  --cv-divider-pos-pct: 35%;
   --cv-divider-safe: 30px;
   --cv-divider-w: 1px;
   --cv-body-pad-x: 54px;
@@ -482,7 +482,7 @@ hr{
 .cv .cv-body{
   display:grid;
   grid-template-columns:
-    minmax(0, var(--cv-divider-pos))
+    minmax(0, var(--cv-divider-pos-pct))
     var(--cv-divider-w)
     minmax(0, 1fr);
 
@@ -714,9 +714,8 @@ hr{
     border:0 !important;
     box-shadow:none !important;
 
-    /* ✅ remove scale to avoid white margins + mismatch */
+    /* ✅ sharp text, no scaling */
     transform: none !important;
-    transform-origin: unset !important;
 
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -726,43 +725,41 @@ hr{
   }
 
   /* ------------------------------------------------ */
-  /* CRITICAL FIX: divider in print WITHOUT px + % calc */
-  /* Use background gradient divider inside content-box */
+  /* CRITICAL FIX: grid → floats for Chrome print      */
+  /* + divider position computed correctly            */
   /* ------------------------------------------------ */
   .cv .cv-body{
     display:block !important;
     padding: var(--cv-divider-top) var(--cv-body-pad-x) 26px !important;
     position: relative !important;
-
-    background:
-      linear-gradient(to right,
-        transparent calc(var(--cv-divider-pos)),
-        var(--cv-rule) calc(var(--cv-divider-pos)),
-        var(--cv-rule) calc(var(--cv-divider-pos) + var(--cv-divider-w)),
-        transparent calc(var(--cv-divider-pos) + var(--cv-divider-w))
-      );
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
-    background-position: 0 0;
-    background-clip: content-box;
   }
 
-  /* disable pseudo divider to avoid double lines */
+  /* divider-linje i print */
   .cv .cv-body::before{
-    content:none !important;
-    display:none !important;
+    content:"";
+    position:absolute !important;
+    top: var(--cv-divider-top);
+    bottom: 26px;
+    left: calc(
+      var(--cv-body-pad-x) +
+      ((100% - (2 * var(--cv-body-pad-x))) * var(--cv-divider-pos-pct))
+    );
+    width: var(--cv-divider-w);
+    background: var(--cv-rule);
+    pointer-events:none;
+    z-index: 3;
   }
 
   .cv .cv-left{
     float:left !important;
-    width: var(--cv-divider-pos) !important;
+    width: var(--cv-divider-pos-pct) !important;
     padding-right: var(--cv-divider-safe) !important;
     box-sizing: border-box;
   }
 
   .cv .cv-right{
     float:right !important;
-    width: calc(100% - var(--cv-divider-pos)) !important;
+    width: calc(100% - var(--cv-divider-pos-pct)) !important;
     padding-left: var(--cv-divider-safe) !important;
     box-sizing: border-box;
   }
@@ -773,6 +770,7 @@ hr{
     clear:both;
   }
 
+  /* page-break regler */
   .cv section{
     break-inside:auto !important;
     page-break-inside:auto !important;
