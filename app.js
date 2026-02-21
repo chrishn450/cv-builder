@@ -811,13 +811,17 @@
   }
 
   // ---- Export helpers (PDF/print) ✅ popup-safe via hidden iframe
-  async function exportToPrintIframe({ autoPrint = true } = {}) {
-    const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
-    const cvHtml = preview ? preview.innerHTML : "";
+  // ---- Export helpers (PDF/print) ✅ popup-safe via hidden iframe
+async function exportToPrintIframe({ autoPrint = true } = {}) {
+  const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
+  const cvHtml = preview ? preview.innerHTML : "";
 
-    // ✅ isolate: NO app grid/cards in the print document; only the CV HTML.
-    const html = `<!doctype html>
-<html>
+  // ✅ isolate: NO app grid/cards in the print document; only the CV HTML.
+  // ✅ IMPORTANT FIX: do NOT wrap CV in #preview in the print document.
+  //    Your screen preview container (#preview) has layout styles that can
+  //    differ from print iframe. Printing only the .cv markup stabilizes 1:1.
+  const html = `<!doctype html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -830,101 +834,115 @@
 
   <style>${cssText}</style>
 
-  <!-- ✅ safety: ensure no browser default margins -->
+  <!-- ✅ Print hardening -->
   <style>
-    html, body { margin: 0; padding: 0; background: white; }
-    /* Ensure only the CV is present */
-    body { display:block; }
+    @page { size: A4; margin: 0; }
+
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: white !important;
+    }
+
+    /* ensure nothing tries to center/scale the CV */
+    body { display:block !important; }
+
+    /* keep colors in PDF */
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   </style>
 </head>
 <body>
-  <div id="preview">${cvHtml}</div>
+  ${cvHtml}
 </body>
 </html>`;
 
-    const old = document.getElementById("printFrame");
-    if (old) old.remove();
+  const old = document.getElementById("printFrame");
+  if (old) old.remove();
 
-    const iframe = document.createElement("iframe");
-    iframe.id = "printFrame";
-    iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
-    iframe.style.opacity = "0";
-    iframe.setAttribute("aria-hidden", "true");
-    document.body.appendChild(iframe);
+  const iframe = document.createElement("iframe");
+  iframe.id = "printFrame";
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  iframe.style.opacity = "0";
+  iframe.setAttribute("aria-hidden", "true");
+  document.body.appendChild(iframe);
 
-    const doc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!doc) return;
+  const doc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!doc) return;
 
-    doc.open();
-    doc.write(html);
-    doc.close();
+  doc.open();
+  doc.write(html);
+  doc.close();
 
-    // ✅ wait for iframe assets before printing (prevents shifting/layout bugs)
-    const waitForIframeReady = async () => {
-      try {
-        const w = iframe.contentWindow;
-        const d = iframe.contentDocument;
+  // ✅ wait for iframe assets before printing (prevents shifting/layout bugs)
+  const waitForIframeReady = async () => {
+    try {
+      const w = iframe.contentWindow;
+      const d = iframe.contentDocument;
 
-        // fonts
-        if (d?.fonts?.ready) await d.fonts.ready;
+      // fonts
+      if (d?.fonts?.ready) await d.fonts.ready;
 
-        // images (if any)
-        const imgs = Array.from(d?.images || []);
-        await Promise.all(
-          imgs.map(
-            (img) =>
-              new Promise((res) => {
-                if (img.complete) return res();
-                img.addEventListener("load", res, { once: true });
-                img.addEventListener("error", res, { once: true });
-              })
-          )
-        );
+      // images (if any)
+      const imgs = Array.from(d?.images || []);
+      await Promise.all(
+        imgs.map(
+          (img) =>
+            new Promise((res) => {
+              if (img.complete) return res();
+              img.addEventListener("load", res, { once: true });
+              img.addEventListener("error", res, { once: true });
+            })
+        )
+      );
 
-        // give layout a tick
-        await new Promise((r) => setTimeout(r, 80));
-        return w;
-      } catch {
-        return iframe.contentWindow;
-      }
-    };
+      // give layout a tick (helps Chrome finalize line breaks)
+      await new Promise((r) => setTimeout(r, 80));
 
-    iframe.onload = async () => {
-      if (!autoPrint) return;
-      const w = await waitForIframeReady();
-      setTimeout(() => {
-        try {
-          w?.focus();
-          w?.print();
-        } catch (e) {
-          console.error("Print failed:", e);
-        }
-      }, 50);
-    };
-  }
+      return w;
+    } catch {
+      return iframe.contentWindow;
+    }
+  };
 
-  // ✅ PDF button = open print dialog (user selects "Save as PDF")
-  if (downloadPdfBtn) {
-    downloadPdfBtn.addEventListener("click", async () => {
-      try {
-        await exportToPrintIframe({ autoPrint: true });
-      } catch (err) {
-        console.error("PDF/Print failed:", err);
-        alert("PDF/Print failed. Check console.");
-      }
-    });
-  }
+  iframe.onload = async () => {
+    if (!autoPrint) return;
 
-  // keep print button handling (if you still use it somewhere)
-  if (printBtn) {
-    const clone = printBtn.cloneNode(true);
-    printBtn.parentNode?.replaceChild(clone, printBtn);
-  }
+    const w = await waitForIframeReady();
+
+    // one more frame for safety
+    await new Promise((r) => requestAnimationFrame(r));
+
+    try {
+      w?.focus();
+      w?.print();
+    } catch (e) {
+      console.error("Print failed:", e);
+    }
+  };
+}
+
+// ✅ PDF button = open print dialog (user selects "Save as PDF")
+if (downloadPdfBtn) {
+  downloadPdfBtn.addEventListener("click", async () => {
+    try {
+      await exportToPrintIframe({ autoPrint: true });
+    } catch (err) {
+      console.error("PDF/Print failed:", err);
+      alert("PDF/Print failed. Check console.");
+    }
+  });
+}
+
+// keep print button handling (if you still use it somewhere)
+if (printBtn) {
+  const clone = printBtn.cloneNode(true);
+  printBtn.parentNode?.replaceChild(clone, printBtn);
+}
 
   if (downloadHtmlBtn) {
     downloadHtmlBtn.addEventListener("click", async () => {
