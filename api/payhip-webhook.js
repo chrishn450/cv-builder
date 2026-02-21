@@ -95,8 +95,7 @@ export default async function handler(req, res) {
     });
 
     const baseUrl = env("APP_BASE_URL");
-    const link = `${String(baseUrl).replace(/\/$/, "")}/magic.html?token=${token}`;
-
+    const link = `${String(baseUrl).replace(/\/$/, "")}/claim.html?token=${token}`;
     await sendEmail({
       to: email,
       subject: "Your CV Builder access",
