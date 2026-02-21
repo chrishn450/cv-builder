@@ -348,9 +348,7 @@ hr{
 }
 
 /* ────────────────────────────────────────────── Preview viewport (A4 paper) ────────────────────────────────────────────── */
-#panel-preview{
-  display: block;
-}
+#panel-preview{ display: block; }
 
 #preview{
   height: auto;
@@ -400,9 +398,7 @@ hr{
 /* force same paper tone everywhere */
 .cv .cv-header,
 .cv .cv-summary,
-.cv .cv-body{
-  background: var(--cv-bg);
-}
+.cv .cv-body{ background: var(--cv-bg); }
 
 /* lighter bold in CV */
 .cv strong{
@@ -662,19 +658,13 @@ hr{
 .cv .section-title{ font-size: 14px !important; }
 .cv .exp-entry h3,
 .cv .edu-block h3,
-.cv .cert-item h3{
-  font-size: 12px !important;
-}
+.cv .cert-item h3{ font-size: 12px !important; }
 .cv .cv-contact,
 .cv .exp-entry .meta,
-.cv .vol-sub{
-  font-size: 11px !important;
-}
+.cv .vol-sub{ font-size: 11px !important; }
 .cv .edu-block .date,
 .cv .edu-block .honors,
-.cv .vol-header .date{
-  font-size: 11px !important;
-}
+.cv .vol-header .date{ font-size: 11px !important; }
 .cv li{ margin-bottom: 6px; }
 
 /* ────────────────────────────────────────────── Print: full A4, no weird margins ────────────────────────────────────────────── */
@@ -693,9 +683,7 @@ hr{
     display:none !important;
   }
 
-  #panel-preview{
-    display:block !important;
-  }
+  #panel-preview{ display:block !important; }
 
   #preview{
     display:flex !important;
@@ -726,28 +714,34 @@ hr{
 
   /* ------------------------------------------------ */
   /* CRITICAL FIX: grid → floats for Chrome print      */
-  /* + divider position computed correctly            */
+  /* Divider as BACKGROUND (stable in PDF)             */
   /* ------------------------------------------------ */
   .cv .cv-body{
     display:block !important;
-    padding: var(--cv-divider-top) var(--cv-body-pad-x) 26px !important;
     position: relative !important;
+    padding: var(--cv-divider-top) var(--cv-body-pad-x) 26px !important;
+
+    /* divider-linje: stabil i PDF/print */
+    background-image: linear-gradient(var(--cv-rule), var(--cv-rule)) !important;
+    background-repeat: no-repeat !important;
+    background-position:
+      calc(
+        var(--cv-body-pad-x) +
+        ((100% - (2 * var(--cv-body-pad-x))) * var(--cv-divider-pos-pct)) -
+        (var(--cv-divider-w) / 2)
+      )
+      var(--cv-divider-top) !important;
+    background-size:
+      var(--cv-divider-w)
+      calc(100% - var(--cv-divider-top) - 26px) !important;
+
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
-  /* divider-linje i print */
+  /* slå AV pseudo-elementet i print, så det ikke kan “hoppe” */
   .cv .cv-body::before{
-    content:"";
-    position:absolute !important;
-    top: var(--cv-divider-top);
-    bottom: 26px;
-    left: calc(
-      var(--cv-body-pad-x) +
-      ((100% - (2 * var(--cv-body-pad-x))) * var(--cv-divider-pos-pct))
-    );
-    width: var(--cv-divider-w);
-    background: var(--cv-rule);
-    pointer-events:none;
-    z-index: 3;
+    content: none !important;
   }
 
   .cv .cv-left{
