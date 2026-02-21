@@ -380,8 +380,8 @@ hr{
   width: 210mm;
 
   /* ✅ FIXED A4 (exact one page) */
-  height: 297mm;        /* was: min-height: 297mm */
-  overflow: hidden;     /* prevents content from extending the page */
+  height: 297mm;
+  overflow: hidden;
 
   background: var(--cv-bg);
   border: 1px solid var(--cv-border);
@@ -393,6 +393,7 @@ hr{
   font-size: 11px;
   line-height: 1.5;
 
+  /* “paper look” i preview */
   box-shadow: 0 24px 70px rgba(0,0,0,0.45);
 }
 
@@ -708,37 +709,48 @@ hr{
 
   .cv{
     width:210mm !important;
-    height:297mm !important;      /* ✅ fixed A4 in print too */
+    height:297mm !important;
     margin:0 !important;
     border:0 !important;
     box-shadow:none !important;
-    transform: scale(0.97) !important;
-    transform-origin: top center !important;
+
+    /* ✅ remove scale to avoid white margins + mismatch */
+    transform: none !important;
+    transform-origin: unset !important;
 
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
 
     display:block !important;
-    overflow:hidden !important;   /* ✅ keep fixed */
+    overflow:hidden !important;
   }
 
-  /* grid → floats for Chrome print */
+  /* ------------------------------------------------ */
+  /* CRITICAL FIX: divider in print WITHOUT px + % calc */
+  /* Use background gradient divider inside content-box */
+  /* ------------------------------------------------ */
   .cv .cv-body{
     display:block !important;
     padding: var(--cv-divider-top) var(--cv-body-pad-x) 26px !important;
     position: relative !important;
+
+    background:
+      linear-gradient(to right,
+        transparent calc(var(--cv-divider-pos)),
+        var(--cv-rule) calc(var(--cv-divider-pos)),
+        var(--cv-rule) calc(var(--cv-divider-pos) + var(--cv-divider-w)),
+        transparent calc(var(--cv-divider-pos) + var(--cv-divider-w))
+      );
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    background-position: 0 0;
+    background-clip: content-box;
   }
 
+  /* disable pseudo divider to avoid double lines */
   .cv .cv-body::before{
-    content:"";
-    position:absolute !important;
-    top: var(--cv-divider-top);
-    bottom: 26px;
-    left: calc(var(--cv-body-pad-x) + var(--cv-divider-pos));
-    width: var(--cv-divider-w);
-    background: var(--cv-rule);
-    pointer-events:none;
-    z-index: 3;
+    content:none !important;
+    display:none !important;
   }
 
   .cv .cv-left{
