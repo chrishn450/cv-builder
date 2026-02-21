@@ -900,9 +900,18 @@ async function exportToPrintIframe({ autoPrint = true } = {}) {
         )
       );
 
-      // give layout a tick (helps Chrome finalize line breaks)
-      await new Promise((r) => setTimeout(r, 80));
 
+      // give layout time for fonts to fully apply
+      await new Promise((r) => setTimeout(r, 250));
+      
+      // ✅ force reflow to lock layout before print
+      if (d && d.body) {
+        void d.body.offsetHeight;
+      }
+      
+      // extra safety delay
+      await new Promise((r) => setTimeout(r, 150));
+      
       return w;
     } catch {
       return iframe.contentWindow;
