@@ -683,7 +683,9 @@ hr{
     display:none !important;
   }
 
-  #panel-preview{ display:block !important; }
+  #panel-preview{
+    display:block !important;
+  }
 
   #preview{
     display:flex !important;
@@ -703,7 +705,7 @@ hr{
     box-shadow:none !important;
 
     /* ✅ sharp text, no scaling */
-    transform: none !important;
+    transform:none !important;
 
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -714,50 +716,56 @@ hr{
 
   /* ------------------------------------------------ */
   /* CRITICAL FIX: grid → floats for Chrome print      */
-  /* Divider as BACKGROUND (stable in PDF)             */
+  /* Divider as BORDER (print-sikker, alltid med i PDF)*/
   /* ------------------------------------------------ */
   .cv .cv-body{
     display:block !important;
     position: relative !important;
     padding: var(--cv-divider-top) var(--cv-body-pad-x) 26px !important;
 
-    /* divider-linje: stabil i PDF/print */
-    background-image: linear-gradient(var(--cv-rule), var(--cv-rule)) !important;
-    background-repeat: no-repeat !important;
-    background-position:
-      calc(
-        var(--cv-body-pad-x) +
-        ((100% - (2 * var(--cv-body-pad-x))) * var(--cv-divider-pos-pct)) -
-        (var(--cv-divider-w) / 2)
-      )
-      var(--cv-divider-top) !important;
-    background-size:
-      var(--cv-divider-w)
-      calc(100% - var(--cv-divider-top) - 26px) !important;
+    /* slå av evt bakgrunnslinje i print */
+    background: none !important;
 
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* slå AV pseudo-elementet i print, så det ikke kan “hoppe” */
+  /* divider-linje i print (robust) */
   .cv .cv-body::before{
-    content: none !important;
+    content:"";
+    position:absolute !important;
+    top: var(--cv-divider-top);
+    bottom: 26px;
+
+    /* posisjon: pad + (innholdsbredde * pos-pct) */
+    left: calc(
+      var(--cv-body-pad-x) +
+      ((100% - (2 * var(--cv-body-pad-x))) * var(--cv-divider-pos-pct))
+    ) !important;
+
+    /* border er mer print-stabil enn background */
+    width: 0 !important;
+    border-left: var(--cv-divider-w) solid var(--cv-rule) !important;
+
+    pointer-events:none;
+    z-index: 3;
   }
 
   .cv .cv-left{
     float:left !important;
     width: var(--cv-divider-pos-pct) !important;
     padding-right: var(--cv-divider-safe) !important;
-    box-sizing: border-box;
+    box-sizing: border-box !important;
   }
 
   .cv .cv-right{
     float:right !important;
     width: calc(100% - var(--cv-divider-pos-pct)) !important;
     padding-left: var(--cv-divider-safe) !important;
-    box-sizing: border-box;
+    box-sizing: border-box !important;
   }
 
+  /* clear floats */
   .cv .cv-body::after{
     content:"";
     display:block;
