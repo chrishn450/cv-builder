@@ -52,12 +52,32 @@
     "show_linkedin",
   ];
 
+  function getTemplateDefaults(lang) {
+    // Tilpass dette til hva templates.js eksporterer hos deg:
+    // Prøv én av disse (du kan logge i console for å finne riktig):
+    return (
+      window.CV_DEFAULTS?.[lang] ||
+      window.CV_DEFAULTS?.en ||
+      window.TEMPLATES?.[lang] ||
+      window.TEMPLATES?.en ||
+      window.DEFAULT_TEMPLATE ||
+      {}
+    );
+  }
+  
   function render() {
     if (!preview || typeof window.renderCV !== "function") return;
+  
+    const lang = state.ui.lang || "en";
+    const defaults = getTemplateDefaults(lang);
+  
+    // defaults først, så overrides fra state.data
+    const merged = { ...(defaults || {}), ...(state.data || {}) };
+  
     preview.innerHTML = window.renderCV({
-      ...state.data,
+      ...merged,
       sections: state.sections,
-      lang: state.ui.lang || "en",
+      lang,
     });
   }
 
