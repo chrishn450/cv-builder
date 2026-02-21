@@ -91,39 +91,27 @@
     });
   }
 
+  // ✅ FIXED + CLEAN: init sections + default OFF only if no saved choice yet
   function initSectionsFromUI() {
+    const defaultOff = new Set(["coreCompetencies", "achievements", "volunteer"]);
+
     SECTION_KEYS.forEach((k) => {
       if (!state.sections[k]) state.sections[k] = {};
-  
+
       const en = qs(`sec_${k}_enabled`);
       const ti = qs(`sec_${k}_title`);
-  
-      // Default OFF for these sections (only if user hasn't saved a choice yet)
-      const defaultOff = new Set(["coreCompetencies", "achievements", "volunteer"]);
-  
+
       if (en) {
         if (state.sections[k].enabled == null) {
-          // no saved value yet → set default
           state.sections[k].enabled = defaultOff.has(k) ? false : !!en.checked;
         }
-        // always reflect state into checkbox
         en.checked = !!state.sections[k].enabled;
       }
-  
+
       if (ti) {
         if (state.sections?.[k]?.title) ti.value = state.sections[k].title;
       }
     });
-  
-    // contact show/hide defaults
-    ensureContactSection();
-    CONTACT_SHOW_IDS.forEach((id) => {
-      const el = qs(id);
-      if (!el) return;
-      state.sections.contact[id] = !!el.checked;
-    });
-  
-  }
 
     ensureContactSection();
     CONTACT_SHOW_IDS.forEach((id) => {
@@ -655,10 +643,9 @@
     });
   }
 
-  // ---- Volunteer (NY: title + date + sub + bullets)
+  // ---- Volunteer
   function normalizeVolunteerBlock(v) {
     const out = { title: "", date: "", sub: "", bullets: [] };
-
     const header = String(v?.header ?? v?.title ?? "").trim();
     const date = String(v?.date ?? "").trim();
 
@@ -858,10 +845,8 @@
     };
   }
 
-  // ✅ Only keep Download PDF + Download HTML
   if (downloadPdfBtn) downloadPdfBtn.addEventListener("click", () => exportToPrintIframe({ autoPrint: true }));
 
-  // Print button not needed: remove handler (and optional button in HTML separately)
   if (printBtn) {
     const clone = printBtn.cloneNode(true);
     printBtn.parentNode?.replaceChild(clone, printBtn);
@@ -1118,11 +1103,12 @@
     if (pill) pill.textContent = current ? current.name : "English";
   }
 
-  // ✅ FIXED: takes lang, uses window.CV_I18N, migrates old titles, saves + syncs UI + render
+  // ✅ Titles default + migration for old stored English titles
   function applyDefaultSectionTitlesForLanguage(lang) {
     const L = lang || state.ui.lang || "en";
     const CVI2 = window.CV_I18N || {};
-    const defs = (CVI2.SECTION_DEFAULTS && (CVI2.SECTION_DEFAULTS[L] || CVI2.SECTION_DEFAULTS.en)) || null;
+    const defs =
+      (CVI2.SECTION_DEFAULTS && (CVI2.SECTION_DEFAULTS[L] || CVI2.SECTION_DEFAULTS.en)) || null;
     if (!defs) return;
 
     if (!state.sections) state.sections = {};
@@ -1132,19 +1118,18 @@
 
       const current = state.sections[key].title;
 
-      // set default if empty
       if (!current || !String(current).trim()) {
         state.sections[key].title = defs[key];
         return;
       }
 
-      // MIGRATION: update old stored English titles
+      // MIGRATION: update old stored English titles (case-insensitive)
       if (L === "en") {
-        const cur = String(current).trim();
-        if (key === "clinicalSkills" && (cur === "Clinical Skills" || cur === "CLINICAL SKILLS")) {
+        const cur = String(current).trim().toLowerCase();
+        if (key === "clinicalSkills" && cur === "clinical skills") {
           state.sections[key].title = defs[key]; // Skills
         }
-        if (key === "achievements" && (cur === "Clinical Achievements" || cur === "CLINICAL ACHIEVEMENTS")) {
+        if (key === "achievements" && cur === "clinical achievements") {
           state.sections[key].title = defs[key]; // Achievements
         }
       }
@@ -1205,8 +1190,6 @@
           saveState();
 
           applyI18n();
-
-          // ✅ FIXED: pass selected language
           applyDefaultSectionTitlesForLanguage(code);
 
           // Re-render dynamic blocks so their labels update
@@ -1548,7 +1531,7 @@
   setupLanguageModal();
   applyI18n();
 
-  // ✅ FIXED: pass current lang
+  // ✅ apply defaults + migrations for current lang
   applyDefaultSectionTitlesForLanguage(state.ui.lang || "en");
 
   saveState();
