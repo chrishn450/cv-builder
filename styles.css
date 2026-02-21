@@ -678,7 +678,6 @@ hr{
     color:#111 !important;
   }
 
-  /* skjul app UI i print */
   .topbar, #panel-editor, #panel-ai, .v-resizer, .panel-actions,
   .ai-chat, .ai-compose, .btn, button, a{
     display:none !important;
@@ -711,29 +710,26 @@ hr{
     overflow:hidden !important;
   }
 
-  /* ------------------------------------------------ */
-  /* PRINT: floats, men vi fjerner padding fra body    */
-  /* og legger padding på kolonnene, så % matcher      */
-  /* ------------------------------------------------ */
+  /* PRINT: padding flyttes til kolonner */
   .cv .cv-body{
     display:block !important;
     position: relative !important;
-
-    /* KEY: ingen side-padding her i print */
     padding: var(--cv-divider-top) 0 26px !important;
     background:none !important;
+
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
-  /* divider-linje (alltid med i PDF) */
+  /* ✅ Divider-linje: enkel, print-sikker left (ingen %*%) */
   .cv .cv-body::before{
     content:"";
     position:absolute !important;
     top: var(--cv-divider-top);
     bottom: 26px;
 
-    /* KEY: nå er 100% = "content width", så vi kan bruke ren % */
-    left: calc(var(--cv-body-pad-x) + (var(--cv-divider-pos-pct))) !important; /* fallback hvis noen roter */
-    left: calc(var(--cv-body-pad-x) + ( (100% - (2 * var(--cv-body-pad-x))) * var(--cv-divider-pos-pct) )) !important;
+    /* pad-x + (body width * ratio) */
+    left: calc(var(--cv-body-pad-x) + (100% * var(--cv-divider-pos))) !important;
 
     width: 0 !important;
     border-left: var(--cv-divider-w) solid var(--cv-rule) !important;
@@ -741,27 +737,21 @@ hr{
     z-index: 3;
   }
 
-  /* venstre/høyre kolonne */
   .cv .cv-left{
     float:left !important;
+    width: calc(100% * var(--cv-divider-pos)) !important;
 
-    /* width er ren prosent av tilgjengelig område */
-    width: var(--cv-divider-pos-pct) !important;
-
-    /* vi legger tilbake side-padding her */
     padding-left: var(--cv-body-pad-x) !important;
     padding-right: var(--cv-divider-safe) !important;
-
     box-sizing: border-box !important;
   }
 
   .cv .cv-right{
     float:right !important;
-    width: calc(100% - var(--cv-divider-pos-pct)) !important;
+    width: calc(100% * (1 - var(--cv-divider-pos))) !important;
 
     padding-right: var(--cv-body-pad-x) !important;
     padding-left: var(--cv-divider-safe) !important;
-
     box-sizing: border-box !important;
   }
 
@@ -771,7 +761,6 @@ hr{
     clear:both;
   }
 
-  /* page-break regler */
   .cv section{
     break-inside:auto !important;
     page-break-inside:auto !important;
