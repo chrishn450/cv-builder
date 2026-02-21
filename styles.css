@@ -348,18 +348,24 @@ hr{
 }
 
 /* ────────────────────────────────────────────── Preview viewport (A4 paper) ────────────────────────────────────────────── */
-/* Preview-panelet skal være fast og scrolle */
+/* ✅ ENDRET: Preview-panelet skal IKKE ha egen scrollbar.
+   Siden (browseren) scroller i stedet, så preview matcher PDF/print. */
 #panel-preview{
-  display: flex;
-  flex-direction: column;
+  /* før: display:flex + column for å tvinge intern scroll.
+     nå: la den være normal blokk-layout */
+  display: block;
 }
-#panel-preview .panel-head{ flex: 0 0 auto; }
 
-/* SELVE preview-området scroller (ikke arket) */
+/* ✅ ENDRET: fjern fast height/overflow auto og gjør preview “hel” */
 #preview{
-  flex: 1 1 auto;
-  height: calc(100vh - 170px);
-  overflow: auto;
+  /* før:
+     flex: 1 1 auto;
+     height: calc(100vh - 170px);
+     overflow: auto;
+  */
+  height: auto;
+  overflow: visible;
+
   padding: 18px;
   background: rgba(255,255,255,0.02);
   border-radius: 12px;
@@ -369,9 +375,12 @@ hr{
   align-items:flex-start;
 
   -webkit-overflow-scrolling: touch;
+
+  /* ✅ viktig: gjør pseudo-elementet relativt til preview */
+  position: relative;
 }
 
-/* “papir”-wrapper: gjør at arket ser ut som et ark og ligger sentrert */
+/* “papir”-overlay (samme som før) */
 #preview::before{
   content:"";
   position: absolute;
