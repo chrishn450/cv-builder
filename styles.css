@@ -326,7 +326,7 @@ hr{
 
   /* MASTER KONTROLLER */
   --cv-divider-pos-pct: 35%;  /* preview/grid */
-  --cv-divider-pos: 0.35;     /* print (0..1)  */
+  --cv-divider-pos: 0.35;     /* print ratio (0..1) */
   --cv-divider-safe: 30px;
   --cv-divider-w: 1px;
   --cv-body-pad-x: 54px;
@@ -349,7 +349,9 @@ hr{
 }
 
 /* ────────────────────────────────────────────── Preview viewport (A4 paper) ────────────────────────────────────────────── */
-#panel-preview{ display: block; }
+#panel-preview{
+  display: block;
+}
 
 #preview{
   height: auto;
@@ -374,13 +376,26 @@ hr{
   pointer-events:none;
 }
 
+/* A4 “truthful” viewport: show cutoff at bottom (optional) */
+#preview::after{
+  content:"";
+  position:absolute;
+  left: 50%;
+  top: 18px;
+  width: 210mm;
+  height: 297mm;
+  transform: translateX(-50%);
+  pointer-events:none;
+  box-shadow: inset 0 -18px 0 rgba(255,0,0,0.07);
+}
+
 /* ────────────────────────────────────────────── CV Template (scoped) ────────────────────────────────────────────── */
 .cv{
   width: 210mm;
-
-  /* ✅ FIXED A4 (exact one page) */
   height: 297mm;
-  overflow: hidden;
+
+  /* preview should NOT hide overflow; print will */
+  overflow: visible;
 
   background: var(--cv-bg);
   border: 1px solid var(--cv-border);
@@ -392,14 +407,15 @@ hr{
   font-size: 11px;
   line-height: 1.5;
 
-  /* “paper look” i preview */
   box-shadow: 0 24px 70px rgba(0,0,0,0.45);
 }
 
 /* force same paper tone everywhere */
 .cv .cv-header,
 .cv .cv-summary,
-.cv .cv-body{ background: var(--cv-bg); }
+.cv .cv-body{
+  background: var(--cv-bg);
+}
 
 /* lighter bold in CV */
 .cv strong{
@@ -488,7 +504,7 @@ hr{
   position: relative;
 }
 
-/* midtlinja */
+/* midtlinja (preview) */
 .cv .cv-body::before{
   content:"";
   grid-column: 2;
@@ -690,7 +706,9 @@ hr{
     display:none !important;
   }
 
-  #panel-preview{ display:block !important; }
+  #panel-preview{
+    display:block !important;
+  }
 
   #preview{
     display:flex !important;
@@ -702,6 +720,9 @@ hr{
     background:white !important;
   }
 
+  /* hide the red cutoff overlay in print */
+  #preview::after{ content:none !important; }
+
   .cv{
     width:210mm !important;
     height:297mm !important;
@@ -710,17 +731,18 @@ hr{
     box-shadow:none !important;
     transform:none !important;
 
+    /* PRINT should clip to one page */
+    overflow:hidden !important;
+
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
 
     display:block !important;
-    overflow:hidden !important;
   }
 
   /* ------------------------------------------------ */
   /* CRITICAL FIX: grid → floats for Chrome print      */
-  /* Divider as BORDER (alltid med i PDF)             */
-  /* + følger slider via --cv-divider-pos (0..1)      */
+  /* Divider as BORDER (always prints)                */
   /* ------------------------------------------------ */
   .cv .cv-body{
     display:block !important;
@@ -732,13 +754,18 @@ hr{
     print-color-adjust: exact;
   }
 
+  /* turn off the preview/grid divider in print */
   .cv .cv-body::before{
+    content: none !important;
+  }
+
+  /* print divider line */
+  .cv .cv-body::after{
     content:"";
     position:absolute !important;
     top: var(--cv-divider-top);
     bottom: 26px;
 
-    /* pad-x + (contentWidth * ratio) */
     left: calc(
       var(--cv-body-pad-x) +
       ((100% - (2 * var(--cv-body-pad-x))) * var(--cv-divider-pos))
@@ -746,8 +773,6 @@ hr{
 
     width: 0 !important;
     border-left: var(--cv-divider-w) solid var(--cv-rule) !important;
-
-    /* litt mykere som de andre linjene */
     opacity: 0.75;
 
     pointer-events:none;
@@ -768,10 +793,12 @@ hr{
     box-sizing: border-box !important;
   }
 
-  .cv .cv-body::after{
-    content:"";
-    display:block;
-    clear:both;
+  /* clear floats (can't use ::after because it's divider) */
+  .cv .cv-body ._print-clear{
+    display:block !important;
+    clear:both !important;
+    height:0 !important;
+    overflow:hidden !important;
   }
 
   /* page-break regler */
