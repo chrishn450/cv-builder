@@ -880,58 +880,47 @@
   // ✅ PDF: fixed A4, 1-side capture, identical to preview (så lenge preview er fixed A4)
   async function exportToPdfExact() {
     const cvEl = document.querySelector("#preview .cv");
-    if (!cvEl) {
-      alert("CV element not found.");
-      return;
-    }
-    if (typeof window.html2pdf !== "function") {
-      alert("html2pdf is not loaded. Add html2pdf.bundle.min.js before app.js in index.html.");
-      return;
-    }
-
-    // 1) Wait for fonts (VERY important)
-    try {
-      if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready;
-      }
-    } catch {}
-
+    if (!cvEl) return alert("CV element not found.");
+    if (typeof window.html2pdf !== "function") return alert("html2pdf is not loaded.");
+  
+    try { if (document.fonts?.ready) await document.fonts.ready; } catch {}
+  
     // A4 @ 96dpi ≈ 794 x 1123 px
     const A4_W = 794;
     const A4_H = 1123;
-
-    // 2) Create a clean, invisible stage (NOT far offscreen -> avoids blank canvases)
+  
+    // ✅ Stage: IKKE opacity:0 (det gir blank PDF)
+    // Flytt den “litt” ut av view i stedet (trygt for html2canvas)
     const stage = document.createElement("div");
     stage.id = "pdfStage";
     stage.style.position = "fixed";
-    stage.style.left = "0";
+    stage.style.left = "-1200px";      // ikke -10000
     stage.style.top = "0";
     stage.style.width = A4_W + "px";
     stage.style.height = A4_H + "px";
-    stage.style.opacity = "0";
-    stage.style.zIndex = "-1";
     stage.style.pointerEvents = "none";
     stage.style.background = "#f7f7f5";
+    stage.style.zIndex = "999999";     // ok siden den er utenfor view
     document.body.appendChild(stage);
-
-    // 3) Clone CV into stage
+  
     const clone = cvEl.cloneNode(true);
     clone.style.boxShadow = "none";
     clone.style.transform = "none";
     clone.style.filter = "none";
     clone.style.margin = "0";
     clone.style.border = "0";
-
-    // Force exact A4 (fixed one-page)
+  
+    // fixed A4 én side
     clone.style.width = A4_W + "px";
     clone.style.height = A4_H + "px";
     clone.style.overflow = "hidden";
-
+    clone.style.background = "#f7f7f5";
+  
     stage.appendChild(clone);
-
-    // 4) Ensure a layout pass happens
+  
+    // layout pass
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-
+  
     const opt = {
       filename: "cv.pdf",
       margin: 0,
@@ -948,20 +937,14 @@
         width: A4_W,
         height: A4_H,
       },
-      jsPDF: {
-        unit: "mm",
-        format: "a4",
-        orientation: "portrait",
-        compress: true,
-      },
-      // Keep it simple for fixed A4
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
       pagebreak: { mode: ["css", "legacy"] },
     };
-
+  
     try {
       await window.html2pdf().set(opt).from(clone).save();
     } catch (err) {
-      console.error("PDF export failed:", err);
+      console.error(err);
       alert("PDF export failed. Check console.");
     } finally {
       stage.remove();
