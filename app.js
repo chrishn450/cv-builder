@@ -1,4 +1,4 @@
-// app.js (FULL) - i18n extracted to i18n.js
+// app.js (FULL) - PDF button uses print iframe (Save as PDF)
 (function () {
   const qs = (id) => document.getElementById(id);
 
@@ -53,8 +53,6 @@
   ];
 
   function getTemplateDefaults(lang) {
-    // Tilpass dette til hva templates.js eksporterer hos deg:
-    // Prøv én av disse (du kan logge i console for å finne riktig):
     return (
       window.CV_DEFAULTS?.[lang] ||
       window.CV_DEFAULTS?.en ||
@@ -70,8 +68,6 @@
 
     const lang = state.ui.lang || "en";
     const defaults = getTemplateDefaults(lang);
-
-    // defaults først, så overrides fra state.data
     const merged = { ...(defaults || {}), ...(state.data || {}) };
 
     preview.innerHTML = window.renderCV({
@@ -121,34 +117,27 @@
       const en = qs(`sec_${k}_enabled`);
       const ti = qs(`sec_${k}_title`);
 
-      // enabled
       if (en) {
-        // Hvis vi ikke har lagret enabled før -> sett default
         if (state.sections[k].enabled == null) {
           state.sections[k].enabled = defaultOff.has(k) ? false : !!en.checked;
         }
-        // Synk checkbox fra state (alltid)
         en.checked = !!state.sections[k].enabled;
       }
 
-      // title
       if (ti) {
         if (state.sections[k].title != null) ti.value = state.sections[k].title;
-        else ti.value = ti.value || ""; // la HTML default stå
+        else ti.value = ti.value || "";
       }
     });
 
-    // contact show toggles
     ensureContactSection();
     CONTACT_SHOW_IDS.forEach((id) => {
       const el = qs(id);
       if (!el) return;
 
-      // hvis ikke lagret før, bruk UI default
       if (state.sections.contact[id] == null) {
         state.sections.contact[id] = !!el.checked;
       }
-      // synk UI fra state
       el.checked = state.sections.contact[id] !== false;
     });
   }
@@ -826,18 +815,29 @@
     const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
     const cvHtml = preview ? preview.innerHTML : "";
 
+    // ✅ isolate: NO app grid/cards in the print document; only the CV HTML.
     const html = `<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CV</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <!-- ✅ MATCH CV FONTS -->
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+
   <style>${cssText}</style>
+
+  <!-- ✅ safety: ensure no browser default margins -->
+  <style>
+    html, body { margin: 0; padding: 0; background: white; }
+    /* Ensure only the CV is present */
+    body { display:block; }
+  </style>
 </head>
-<body style="margin:0; padding:0; background:white;">
+<body>
   <div id="preview">${cvHtml}</div>
 </body>
 </html>`;
@@ -864,88 +864,59 @@
     doc.write(html);
     doc.close();
 
-    iframe.onload = () => {
+    // ✅ wait for iframe assets before printing (prevents shifting/layout bugs)
+    const waitForIframeReady = async () => {
+      try {
+        const w = iframe.contentWindow;
+        const d = iframe.contentDocument;
+
+        // fonts
+        if (d?.fonts?.ready) await d.fonts.ready;
+
+        // images (if any)
+        const imgs = Array.from(d?.images || []);
+        await Promise.all(
+          imgs.map(
+            (img) =>
+              new Promise((res) => {
+                if (img.complete) return res();
+                img.addEventListener("load", res, { once: true });
+                img.addEventListener("error", res, { once: true });
+              })
+          )
+        );
+
+        // give layout a tick
+        await new Promise((r) => setTimeout(r, 80));
+        return w;
+      } catch {
+        return iframe.contentWindow;
+      }
+    };
+
+    iframe.onload = async () => {
       if (!autoPrint) return;
+      const w = await waitForIframeReady();
       setTimeout(() => {
         try {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
+          w?.focus();
+          w?.print();
         } catch (e) {
           console.error("Print failed:", e);
         }
-      }, 150);
+      }, 50);
     };
   }
 
-  // ✅ PDF: fixed A4, 1-side capture, identical to preview (så lenge preview er fixed A4)
-  async function exportToPdfExact() {
-    const cvEl = document.querySelector("#preview .cv");
-    if (!cvEl) return alert("CV element not found.");
-    if (typeof window.html2pdf !== "function") return alert("html2pdf is not loaded.");
-  
-    try { if (document.fonts?.ready) await document.fonts.ready; } catch {}
-  
-    // A4 @ 96dpi ≈ 794 x 1123 px
-    const A4_W = 794;
-    const A4_H = 1123;
-  
-    const opt = {
-      filename: "cv.pdf",
-      margin: 0,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#f7f7f5",
-        logging: false,
-  
-        // ✅ viktig: riktig scroll-capture
-        scrollX: 0,
-        scrollY: -window.scrollY,
-  
-        windowWidth: A4_W,
-        windowHeight: A4_H,
-  
-        // ✅ tvangsstørrelse
-        width: A4_W,
-        height: A4_H,
-  
-        // ✅ viktigst: patch i klonet DOM
-        onclone: (doc) => {
-          const el = doc.querySelector("#preview .cv") || doc.querySelector(".cv");
-          if (!el) return;
-  
-          el.style.width = A4_W + "px";
-          el.style.height = A4_H + "px";
-          el.style.overflow = "hidden";
-          el.style.boxShadow = "none";
-          el.style.transform = "none";
-          el.style.filter = "none";
-          el.style.margin = "0";
-          el.style.border = "0";
-          el.style.background = "#f7f7f5";
-        },
-      },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
-  
-      // fixed A4 = 1 side
-      pagebreak: { mode: ["css", "legacy"] },
-    };
-  
-    try {
-      await window.html2pdf().set(opt).from(cvEl).save();
-    } catch (err) {
-      console.error(err);
-      alert("PDF export failed. Check console.");
-    }
-  }
-  // ✅ Hook PDF button to exact export (fixed A4)
+  // ✅ PDF button = open print dialog (user selects "Save as PDF")
   if (downloadPdfBtn) {
-    downloadPdfBtn.addEventListener("click", () => {
-      exportToPdfExact().catch((err) => {
-        console.error("PDF export failed:", err);
-        alert("PDF export failed. Check console.");
-      });
+    downloadPdfBtn.addEventListener("click", async () => {
+      try {
+        await exportToPrintIframe({ autoPrint: true });
+      } catch (err) {
+        console.error("PDF/Print failed:", err);
+        alert("PDF/Print failed. Check console.");
+      }
     });
   }
 
@@ -967,7 +938,7 @@
   <title>CV</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
   <style>${cssText}</style>
 </head>
 <body style="margin:0; padding:0; background:white;">
@@ -1226,14 +1197,13 @@
         return;
       }
 
-      // MIGRATION: update old stored English titles (case-insensitive)
       if (L === "en") {
         const cur = String(current).trim().toLowerCase();
         if (key === "clinicalSkills" && cur === "clinical skills") {
-          state.sections[key].title = defs[key]; // Skills
+          state.sections[key].title = defs[key];
         }
         if (key === "achievements" && cur === "clinical achievements") {
-          state.sections[key].title = defs[key]; // Achievements
+          state.sections[key].title = defs[key];
         }
       }
     });
@@ -1295,7 +1265,6 @@
           applyI18n();
           applyDefaultSectionTitlesForLanguage(code);
 
-          // Re-render dynamic blocks so their labels update
           renderEducation();
           renderLicenses();
           renderExperience();
@@ -1621,20 +1590,20 @@
   renderExperience();
   renderVolunteer();
 
+  // Panels / resizers
   setupPanelButtons();
   restoreGridColumns();
   normalizeGridForVisibility();
   setupResizer("resizer-1", false);
   setupResizer("resizer-2", true);
 
+  // AI
   setupAIUI();
 
   // Language
   if (!state.ui.lang) state.ui.lang = "en";
   setupLanguageModal();
   applyI18n();
-
-  // ✅ apply defaults + migrations for current lang
   applyDefaultSectionTitlesForLanguage(state.ui.lang || "en");
 
   saveState();
