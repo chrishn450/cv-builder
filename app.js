@@ -1096,18 +1096,39 @@
     if (pill) pill.textContent = current ? current.name : "English";
   }
 
-  function applyDefaultSectionTitlesForLanguage() {
-    const lang = state.ui.lang || "en";
-    SECTION_KEYS.forEach((k) => {
-      if (!state.sections[k]) state.sections[k] = {};
-      if (!state.sections[k].title || String(state.sections[k].title).trim() === "") {
-        state.sections[k].title = CVI.getSectionDefaultTitle ? CVI.getSectionDefaultTitle(lang, k) : k;
+  function applyDefaultSectionTitlesForLanguage(lang) {
+    if (!window.CV_I18N || !CV_I18N.SECTION_DEFAULTS) return;
+  
+    const defs = CV_I18N.SECTION_DEFAULTS[lang] || CV_I18N.SECTION_DEFAULTS.en;
+  
+    if (!state.sections) state.sections = {};
+  
+    Object.keys(defs).forEach(key => {
+  
+      if (!state.sections[key]) state.sections[key] = {};
+  
+      const current = state.sections[key].title;
+  
+      // sett hvis tom
+      if (!current) {
+        state.sections[key].title = defs[key];
+        return;
       }
-      const ti = qs(`sec_${k}_title`);
-      if (ti) ti.value = state.sections[k].title;
+  
+      // MIGRATION: oppdater gamle engelske titler
+      if (lang === "en") {
+  
+        if (key === "clinicalSkills" && current === "Clinical Skills") {
+          state.sections[key].title = defs[key]; // Skills
+        }
+  
+        if (key === "achievements" && current === "Clinical Achievements") {
+          state.sections[key].title = defs[key]; // Achievements
+        }
+  
+      }
+  
     });
-    saveState();
-    render();
   }
 
   // language modal
