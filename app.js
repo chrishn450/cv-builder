@@ -94,11 +94,38 @@
   function initSectionsFromUI() {
     SECTION_KEYS.forEach((k) => {
       if (!state.sections[k]) state.sections[k] = {};
+  
       const en = qs(`sec_${k}_enabled`);
       const ti = qs(`sec_${k}_title`);
-      if (en) state.sections[k].enabled = !!en.checked;
-      if (ti) state.sections[k].title = ti.value;
+  
+      // Default OFF for some sections (only if user hasn't saved a choice yet)
+      const defaultOff = new Set(["coreCompetencies", "achievements", "volunteer"]);
+  
+      if (en) {
+        if (state.sections[k].enabled == null) {
+          if (defaultOff.has(k)) {
+            state.sections[k].enabled = false;
+            en.checked = false;
+          } else {
+            state.sections[k].enabled = !!en.checked;
+          }
+        } else {
+          en.checked = !!state.sections[k].enabled;
+        }
+      }
+  
+      if (ti && state.sections[k].title) {
+        ti.value = state.sections[k].title;
+      }
     });
+
+  ensureContactSection();
+  CONTACT_SHOW_IDS.forEach((id) => {
+    const el = qs(id);
+    if (!el) return;
+    state.sections.contact[id] = !!el.checked;
+  });
+}
 
     ensureContactSection();
     CONTACT_SHOW_IDS.forEach((id) => {
