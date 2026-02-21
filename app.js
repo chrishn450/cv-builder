@@ -571,7 +571,6 @@
           <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
         </div>
 
-        <!-- (FJERNET LABEL "Bullets (one per line)") -->
         <textarea class="textarea" rows="5" data-exp-bullets="${idx}"></textarea>
       `;
       expRoot.appendChild(wrap);
@@ -635,7 +634,6 @@
   function normalizeVolunteerBlock(v) {
     const out = { title: "", date: "", sub: "", bullets: [] };
 
-    // Backwards compat: old `header` could be "TITLE | DATE"
     const header = String(v?.header ?? v?.title ?? "").trim();
     const date = String(v?.date ?? "").trim();
 
@@ -715,7 +713,6 @@
           <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
         </div>
 
-        <!-- (FJERNET LABEL "Bullets (one per line)") -->
         <textarea class="textarea" rows="4" data-vol-bullets="${idx}"></textarea>
       `;
       volRoot.appendChild(wrap);
@@ -1096,39 +1093,41 @@
     if (pill) pill.textContent = current ? current.name : "English";
   }
 
+  // ✅ FIXED: takes lang, uses window.CV_I18N, migrates old titles, saves + syncs UI + render
   function applyDefaultSectionTitlesForLanguage(lang) {
-    if (!window.CV_I18N || !CV_I18N.SECTION_DEFAULTS) return;
-  
-    const defs = CV_I18N.SECTION_DEFAULTS[lang] || CV_I18N.SECTION_DEFAULTS.en;
-  
+    const L = lang || state.ui.lang || "en";
+    const CVI2 = window.CV_I18N || {};
+    const defs = (CVI2.SECTION_DEFAULTS && (CVI2.SECTION_DEFAULTS[L] || CVI2.SECTION_DEFAULTS.en)) || null;
+    if (!defs) return;
+
     if (!state.sections) state.sections = {};
-  
-    Object.keys(defs).forEach(key => {
-  
+
+    Object.keys(defs).forEach((key) => {
       if (!state.sections[key]) state.sections[key] = {};
-  
+
       const current = state.sections[key].title;
-  
-      // sett hvis tom
-      if (!current) {
+
+      // set default if empty
+      if (!current || !String(current).trim()) {
         state.sections[key].title = defs[key];
         return;
       }
-  
-      // MIGRATION: oppdater gamle engelske titler
-      if (lang === "en") {
-  
-        if (key === "clinicalSkills" && current === "Clinical Skills") {
+
+      // MIGRATION: update old stored English titles
+      if (L === "en") {
+        const cur = String(current).trim();
+        if (key === "clinicalSkills" && (cur === "Clinical Skills" || cur === "CLINICAL SKILLS")) {
           state.sections[key].title = defs[key]; // Skills
         }
-  
-        if (key === "achievements" && current === "Clinical Achievements") {
+        if (key === "achievements" && (cur === "Clinical Achievements" || cur === "CLINICAL ACHIEVEMENTS")) {
           state.sections[key].title = defs[key]; // Achievements
         }
-  
       }
-  
     });
+
+    saveState();
+    syncUIFromState();
+    render();
   }
 
   // language modal
@@ -1181,7 +1180,9 @@
           saveState();
 
           applyI18n();
-          applyDefaultSectionTitlesForLanguage();
+
+          // ✅ FIXED: pass selected language
+          applyDefaultSectionTitlesForLanguage(code);
 
           // Re-render dynamic blocks so their labels update
           renderEducation();
@@ -1521,7 +1522,9 @@
   if (!state.ui.lang) state.ui.lang = "en";
   setupLanguageModal();
   applyI18n();
-  applyDefaultSectionTitlesForLanguage();
+
+  // ✅ FIXED: pass current lang
+  applyDefaultSectionTitlesForLanguage(state.ui.lang || "en");
 
   saveState();
   render();
