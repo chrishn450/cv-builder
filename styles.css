@@ -678,6 +678,7 @@ hr{
     color:#111 !important;
   }
 
+  /* skjul app UI i print */
   .topbar, #panel-editor, #panel-ai, .v-resizer, .panel-actions,
   .ai-chat, .ai-compose, .btn, button, a{
     display:none !important;
@@ -710,47 +711,47 @@ hr{
     overflow:hidden !important;
   }
 
-  /* PRINT: padding flyttes til kolonner */
+  /* ------------------------------------------------ */
+  /* PRINT: grid -> floats (stabilt)                   */
+  /* ------------------------------------------------ */
   .cv .cv-body{
     display:block !important;
     position: relative !important;
-    padding: var(--cv-divider-top) 0 26px !important;
+    padding: var(--cv-divider-top) var(--cv-body-pad-x) 26px !important;
     background:none !important;
-
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
   }
 
-  /* ✅ Divider-linje: enkel, print-sikker left (ingen %*%) */
+  /* ✅ Divider-linje: border (ikke background) */
   .cv .cv-body::before{
     content:"";
     position:absolute !important;
     top: var(--cv-divider-top);
     bottom: 26px;
 
-    /* pad-x + (body width * ratio) */
-    left: calc(var(--cv-body-pad-x) + (100% * var(--cv-divider-pos))) !important;
+    /* ✅ viktig: finn X-posisjon med px + % uten %*% */
+    left: calc(
+      var(--cv-body-pad-x) +
+      ( (100% - (2 * var(--cv-body-pad-x))) * 0.35 )
+    ) !important;
 
-    width: 0 !important;
+    width:0 !important;
     border-left: var(--cv-divider-w) solid var(--cv-rule) !important;
+
     pointer-events:none;
     z-index: 3;
   }
 
+  /* ✅ Kolonner: kun "rene" prosenter (print-sikkert) */
   .cv .cv-left{
     float:left !important;
-    width: calc(100% * var(--cv-divider-pos)) !important;
-
-    padding-left: var(--cv-body-pad-x) !important;
+    width: 35% !important;
     padding-right: var(--cv-divider-safe) !important;
     box-sizing: border-box !important;
   }
 
   .cv .cv-right{
     float:right !important;
-    width: calc(100% * (1 - var(--cv-divider-pos))) !important;
-
-    padding-right: var(--cv-body-pad-x) !important;
+    width: 65% !important;
     padding-left: var(--cv-divider-safe) !important;
     box-sizing: border-box !important;
   }
@@ -761,6 +762,7 @@ hr{
     clear:both;
   }
 
+  /* page-break regler */
   .cv section{
     break-inside:auto !important;
     page-break-inside:auto !important;
