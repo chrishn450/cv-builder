@@ -720,11 +720,24 @@ hr{
     width: 210mm !important;
     min-height: 297mm !important;
     margin:0 !important;
-    border: 0 !important;          /* ✅ fjern border i PDF for å unngå “ramme/kanter” */
-    box-shadow:none !important;    /* ✅ fjern shadow i PDF */
+    border: 0 !important;          /* fjern border i PDF */
+    box-shadow:none !important;    /* fjern shadow i PDF */
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  .cv section, .cv .exp-entry, .cv li { break-inside: avoid; }
+  /* ✅ FIX: Ikke lås hele sections til én side */
+  .cv section{
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  /* ✅ Unngå splitting av mindre blokker */
+  .cv .exp-entry,
+  .cv .edu-block,
+  .cv .cert-item,
+  .cv li{
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 }
