@@ -374,7 +374,6 @@
                 <button class="pbtn" type="button" data-action="fullscreen" data-target="preview" data-i18n="common.fullscreen">Fullscreen</button>
               </div>
             </div>
-            <!-- ✅ viktig: ikke class="cv" her -->
             <div id="preview"></div>
           </div>
 
@@ -412,6 +411,10 @@
 
     <script src="/templates.js"></script>
     <script src="/i18n.js"></script>
+
+    <!-- ✅ NEW: HTML → PDF (makes PDF identical to preview) -->
+    <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+
     <script src="/app.js"></script>
   </body>
 </html>
