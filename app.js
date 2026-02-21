@@ -92,38 +92,38 @@
   }
 
   function initSectionsFromUI() {
-  SECTION_KEYS.forEach((k) => {
-    if (!state.sections[k]) state.sections[k] = {};
-
-    const en = qs(`sec_${k}_enabled`);
-    const ti = qs(`sec_${k}_title`);
-
-    // Default OFF for these sections (only if user hasn't saved a choice yet)
-    const defaultOff = new Set(["coreCompetencies", "achievements", "volunteer"]);
-
-    if (en) {
-      if (state.sections[k].enabled == null) {
-        // no saved value yet → set default
-        state.sections[k].enabled = defaultOff.has(k) ? false : !!en.checked;
+    SECTION_KEYS.forEach((k) => {
+      if (!state.sections[k]) state.sections[k] = {};
+  
+      const en = qs(`sec_${k}_enabled`);
+      const ti = qs(`sec_${k}_title`);
+  
+      // Default OFF for these sections (only if user hasn't saved a choice yet)
+      const defaultOff = new Set(["coreCompetencies", "achievements", "volunteer"]);
+  
+      if (en) {
+        if (state.sections[k].enabled == null) {
+          // no saved value yet → set default
+          state.sections[k].enabled = defaultOff.has(k) ? false : !!en.checked;
+        }
+        // always reflect state into checkbox
+        en.checked = !!state.sections[k].enabled;
       }
-      // always reflect state into checkbox
-      en.checked = !!state.sections[k].enabled;
-    }
-
-    if (ti) {
-      if (state.sections?.[k]?.title) ti.value = state.sections[k].title;
-    }
-  });
-
-  // contact show/hide defaults
-  ensureContactSection();
-  CONTACT_SHOW_IDS.forEach((id) => {
-    const el = qs(id);
-    if (!el) return;
-    state.sections.contact[id] = !!el.checked;
-  });
-
-}
+  
+      if (ti) {
+        if (state.sections?.[k]?.title) ti.value = state.sections[k].title;
+      }
+    });
+  
+    // contact show/hide defaults
+    ensureContactSection();
+    CONTACT_SHOW_IDS.forEach((id) => {
+      const el = qs(id);
+      if (!el) return;
+      state.sections.contact[id] = !!el.checked;
+    });
+  
+  }
 
     ensureContactSection();
     CONTACT_SHOW_IDS.forEach((id) => {
