@@ -395,6 +395,9 @@ hr{
   line-height: 1.5;
 
   box-shadow: 0 24px 70px rgba(0,0,0,0.45);
+
+  /* ✅ stabiliserer fysisk størrelse */
+  box-sizing: border-box;
 }
 
 /* force same paper tone everywhere */
@@ -502,15 +505,16 @@ hr{
   z-index: 3;
 }
 
+/* ✅ FIX: IKKE flex+gap inne i floats (print kan endre gap) */
 .cv .cv-left{
   float:left;
   width: calc(100% * var(--cv-divider-pos));
   padding-right: var(--cv-divider-safe);
   box-sizing: border-box;
 
-  display:flex;
-  flex-direction:column;
-  gap: 18px;
+  display:block;            /* ✅ vekk fra flex */
+  gap: 0 !important;        /* ✅ ingen gap i print */
+
   position: relative;
   z-index: 1;
 }
@@ -520,9 +524,9 @@ hr{
   padding-left: var(--cv-divider-safe);
   box-sizing: border-box;
 
-  display:flex;
-  flex-direction:column;
-  gap: 18px;
+  display:block;            /* ✅ vekk fra flex */
+  gap: 0 !important;        /* ✅ ingen gap i print */
+
   position: relative;
   z-index: 1;
 }
@@ -532,6 +536,13 @@ hr{
   content:"";
   display:block;
   clear:both;
+}
+
+/* ✅ FIX: spacing mellom seksjoner via margin (stabil i print/PDF) */
+.cv section{ margin-bottom: 0; }
+.cv .cv-left > section + section,
+.cv .cv-right > section + section{
+  margin-top: 18px;
 }
 
 /* ────────────────────────────── Section titles ────────────────────────────── */
@@ -558,7 +569,6 @@ hr{
   height: 1px;
   background: var(--cv-rule-thin);
 }
-.cv section{ margin-bottom: 4px; }
 
 /* ────────────────────────────── Blocks ────────────────────────────── */
 .cv .edu-block{ margin-bottom: 10px; }
@@ -716,6 +726,9 @@ hr{
     print-color-adjust: exact;
 
     display: block !important;
+
+    /* ✅ stabiliser */
+    box-sizing: border-box !important;
   }
 
   /* behold floats + midtlinje identisk */
@@ -749,6 +762,8 @@ hr{
     width: calc(100% * var(--cv-divider-pos)) !important;
     padding-right: var(--cv-divider-safe) !important;
     box-sizing: border-box !important;
+
+    display: block !important;   /* ✅ */
   }
 
   .cv .cv-right{
@@ -756,12 +771,21 @@ hr{
     width: calc(100% * (1 - var(--cv-divider-pos))) !important;
     padding-left: var(--cv-divider-safe) !important;
     box-sizing: border-box !important;
+
+    display: block !important;   /* ✅ */
   }
 
   .cv .cv-body::after{
     content:"" !important;
     display:block !important;
     clear:both !important;
+  }
+
+  /* ✅ behold samme spacing-regel i print */
+  .cv section{ margin-bottom: 0 !important; }
+  .cv .cv-left > section + section,
+  .cv .cv-right > section + section{
+    margin-top: 18px !important;
   }
 
   /* page-break regler (1 side uansett, men hindrer rare kutt i Chrome) */
