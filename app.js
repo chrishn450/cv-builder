@@ -858,42 +858,85 @@
   }
 
   // ✅ PDF: generate a true A4 PDF identical to preview (no browser print)
-  async function exportToPdfExact() {
-    const cvEl = document.querySelector("#preview .cv");
-    if (!cvEl) {
-      alert("CV element not found.");
-      return;
-    }
-
-    if (typeof window.html2pdf !== "function") {
-      alert("html2pdf is not loaded. Add html2pdf.bundle.min.js before app.js in index.html.");
-      return;
-    }
-
-    const opt = {
-      filename: "cv.pdf",
-      margin: [0, 0, 0, 0], // no white borders
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#f7f7f5",
-        logging: false,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: cvEl.scrollWidth,
-      },
-      jsPDF: {
-        unit: "mm",
-        format: "a4",
-        orientation: "portrait",
-        compress: true,
-      },
-      pagebreak: { mode: ["css", "legacy"] },
-    };
-
-    await window.html2pdf().set(opt).from(cvEl).save();
+  // ✅ PDF: robust export that avoids blank canvas by cloning into a clean stage
+async function exportToPdfExact() {
+  const cvEl = document.querySelector("#preview .cv");
+  if (!cvEl) {
+    alert("CV element not found.");
+    return;
   }
+  if (typeof window.html2pdf !== "function") {
+    alert("html2pdf is not loaded. Add html2pdf.bundle.min.js before app.js in index.html.");
+    return;
+  }
+
+  // 1) Wait for fonts (VERY important to avoid blank/unstyled render)
+  try {
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+  } catch {}
+
+  // 2) Create a clean, offscreen stage
+  const stage = document.createElement("div");
+  stage.id = "pdfStage";
+  stage.style.position = "fixed";
+  stage.style.left = "-10000px";
+  stage.style.top = "0";
+  stage.style.width = "210mm";
+  stage.style.background = "#f7f7f5";
+  stage.style.zIndex = "-1";
+  stage.style.pointerEvents = "none";
+
+  // 3) Clone CV into stage and remove things that can break html2canvas
+  const clone = cvEl.cloneNode(true);
+  clone.style.boxShadow = "none";
+  clone.style.transform = "none";
+  clone.style.filter = "none";
+  clone.style.margin = "0";
+  clone.style.border = "0";
+
+  // IMPORTANT: Force exact A4 size on clone (html2canvas likes px more than mm)
+  // A4 at 96dpi ≈ 794 x 1123 px
+  clone.style.width = "794px";
+  clone.style.minHeight = "1123px";
+
+  stage.appendChild(clone);
+  document.body.appendChild(stage);
+
+  // 4) Ensure a layout pass happens
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+  const opt = {
+    filename: "cv.pdf",
+    margin: 0,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#f7f7f5",
+      logging: false,
+      // These help prevent "blank" captures in scroll/flex contexts
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: clone.scrollWidth,
+      windowHeight: clone.scrollHeight,
+    },
+    jsPDF: {
+      unit: "mm",
+      format: "a4",
+      orientation: "portrait",
+      compress: true,
+    },
+    pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+  };
+
+  try {
+    await window.html2pdf().set(opt).from(clone).save();
+  } finally {
+    stage.remove();
+  }
+}
 
   // ✅ Hook PDF button to exact export (instead of browser print)
   if (downloadPdfBtn) {
