@@ -385,7 +385,7 @@ hr{
   width: 210mm;
 
   /* ✅ preview cut now matches PDF */
-  height: calc(297mm - var(--cv-print-safe));
+  height: calc(297mm - 0);
 
   overflow: hidden;
 
@@ -715,7 +715,7 @@ hr{
   /* ✅ PDF får samme "kutt" som preview */
   .cv{
     width: 210mm !important;
-    height: calc(297mm - var(--cv-print-safe)) !important;
+    height: calc(297mm - 0) !important;
 
     margin: 0 auto !important;
     border: 0 !important;
