@@ -703,44 +703,104 @@ hr{
 
 /* ────────────────────────────────────────────── Print: full A4, no weird margins ────────────────────────────────────────────── */
 @page { size: A4; margin: 0; }
+
 @media print{
   html, body{
-    margin:0 !important;
-    padding:0 !important;
-    background:white !important;
-    color:#111 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    color: #111 !important;
   }
 
-  /* skjul app UI i print */
+  /* Skjul app UI i print (gjelder når du printer fra hoveddokumentet) */
   .topbar, #panel-editor, #panel-ai, .v-resizer, .panel-actions,
-  .ai-chat, .ai-compose, .btn, button, a{
-    display:none !important;
+  .ai-chat, .ai-compose, .btn, button, a,
+  .container, .grid3, .card, .panel,
+  #locked, #app{
+    display: none !important;
   }
 
-  #panel-preview{ display:block !important; }
-
-  #preview{
-    display:flex !important;
-    justify-content:center !important;
-    align-items:flex-start !important;
-    height:auto !important;
-    overflow:visible !important;
-    padding:0 !important;
-    background:white !important;
+  /* ✅ Når du printer via iframe: bare CV markup finnes, så dette er nok */
+  body{
+    display: block !important;
   }
 
+  /* A4-arket */
   .cv{
-    width:210mm !important;
-    height:297mm !important;
-    margin:0 !important;
-    border:0 !important;
-    box-shadow:none !important;
-    transform:none !important;
-    overflow:hidden !important;
+    width: 210mm !important;
+    height: 297mm !important;
+
+    margin: 0 auto !important;   /* sentrer på arket */
+    border: 0 !important;
+    box-shadow: none !important;
+
+    overflow: hidden !important;
+    transform: none !important;
 
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
 
-    display:block !important;
+    display: block !important;
+  }
+
+  /* ✅ Viktig for divider/kolonner i print: behold floats (samme som preview) */
+  .cv .cv-body{
+    display: block !important;
+    position: relative !important;
+    padding: var(--cv-divider-top) var(--cv-body-pad-x) var(--cv-body-pad-bot) !important;
+  }
+
+  /* midtlinja (print) — stopper før bunn-klipp */
+  .cv .cv-body::before{
+    content:"" !important;
+    position: absolute !important;
+    top: var(--cv-divider-top) !important;
+    bottom: calc(var(--cv-body-pad-bot) + var(--cv-divider-bottom-safe)) !important;
+
+    left: calc(
+      var(--cv-body-pad-x) +
+      ((100% - (2 * var(--cv-body-pad-x))) * var(--cv-divider-pos))
+    ) !important;
+
+    width: 0 !important;
+    border-left: var(--cv-divider-w) solid var(--cv-rule) !important;
+    opacity: 0.75 !important;
+
+    pointer-events: none !important;
+    z-index: 3 !important;
+  }
+
+  .cv .cv-left{
+    float: left !important;
+    width: calc(100% * var(--cv-divider-pos)) !important;
+    padding-right: var(--cv-divider-safe) !important;
+    box-sizing: border-box !important;
+  }
+
+  .cv .cv-right{
+    float: right !important;
+    width: calc(100% * (1 - var(--cv-divider-pos))) !important;
+    padding-left: var(--cv-divider-safe) !important;
+    box-sizing: border-box !important;
+  }
+
+  .cv .cv-body::after{
+    content:"" !important;
+    display: block !important;
+    clear: both !important;
+  }
+
+  /* page-break regler (mest relevant hvis noe prøver å dytte til side 2) */
+  .cv section{
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .cv .exp-entry,
+  .cv .edu-block,
+  .cv .cert-item,
+  .cv li{
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 }
