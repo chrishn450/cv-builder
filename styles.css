@@ -325,11 +325,11 @@ hr{
   --cv-rule-thin: rgba(0,0,0,0.14);
 
   /* MASTER KONTROLLER */
-  --cv-divider-pos: 35%;     /* hvor linja står */
-  --cv-divider-safe: 30px;   /* “no-go” på begge sider */
-  --cv-divider-w: 1px;       /* linjebredde */
+  --cv-divider-pos: 35%;
+  --cv-divider-safe: 30px;
+  --cv-divider-w: 1px;
   --cv-body-pad-x: 54px;
-  --cv-divider-top: 24px;    /* start for midtlinje + kolonne-innhold */
+  --cv-divider-top: 24px;
 
   /* kontakt-streker */
   --cv-contact-rule: rgba(0,0,0,0.20);
@@ -347,21 +347,55 @@ hr{
   background: var(--cv-accent);
 }
 
+/* ────────────────────────────────────────────── Preview viewport (A4 paper) ────────────────────────────────────────────── */
+/* Preview-panelet skal være fast og scrolle */
+#panel-preview{
+  display: flex;
+  flex-direction: column;
+}
+#panel-preview .panel-head{ flex: 0 0 auto; }
+
+/* SELVE preview-området scroller (ikke arket) */
+#preview{
+  flex: 1 1 auto;
+  height: calc(100vh - 170px);
+  overflow: auto;
+  padding: 18px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 12px;
+
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+
+  -webkit-overflow-scrolling: touch;
+}
+
+/* “papir”-wrapper: gjør at arket ser ut som et ark og ligger sentrert */
+#preview::before{
+  content:"";
+  position: absolute;
+  inset: 0;
+  pointer-events:none;
+}
+
 /* ────────────────────────────────────────────── CV Template (scoped) ────────────────────────────────────────────── */
 .cv{
   width: 210mm;
-  min-height: 297mm;
-  max-width: 100%;
+  min-height: 297mm;              /* ✅ viktig: ikke lås height, la den vokse hvis innholdet blir lengre */
   background: var(--cv-bg);
   border: 1px solid var(--cv-border);
-  margin: 10px auto 0;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   overflow: visible;
   color: var(--cv-body);
   font-family: "Source Sans 3", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 11px;        /* ← LEGG TIL DENNE */
+  font-size: 11px;
   line-height: 1.5;
+
+  /* “paper look” i preview */
+  box-shadow: 0 24px 70px rgba(0,0,0,0.45);
 }
 
 /* force same paper tone everywhere */
@@ -383,7 +417,6 @@ hr{
   padding: 44px 54px 10px;
 }
 
-/* name/title */
 .cv .cv-name{
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-size: 30px;
@@ -447,7 +480,6 @@ hr{
 }
 
 /* ────────────────────────────── Two columns + divider (GRID) ────────────────────────────── */
-/* REN: 3 kolonner (venstre | linje | høyre) + SAFE via padding på kolonnene */
 .cv .cv-body{
   display:grid;
   grid-template-columns:
@@ -460,7 +492,7 @@ hr{
   position: relative;
 }
 
-/* midtlinja – følger hele høyden av .cv-body */
+/* midtlinja */
 .cv .cv-body::before{
   content:"";
   grid-column: 2;
@@ -498,7 +530,7 @@ hr{
   z-index: 1;
 }
 
-/* ────────────────────────────── Section titles + “linjene som ikke krysser midten” ────────────────────────────── */
+/* ────────────────────────────── Section titles ────────────────────────────── */
 .cv .section-title{
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: 11px;
@@ -513,8 +545,6 @@ hr{
   position: relative;
   border-bottom: none;
 }
-
-/* standard underlinje */
 .cv .section-title::after{
   content:"";
   position:absolute;
@@ -524,11 +554,6 @@ hr{
   height: 1px;
   background: var(--cv-rule-thin);
 }
-
-/* Ingen “stop-gap” nødvendig nå – safe-padding gjør jobben */
-.cv .cv-left  .section-title::after{ right: 0; }
-.cv .cv-right .section-title::after{ left:  0; }
-
 .cv section{ margin-bottom: 4px; }
 
 /* ────────────────────────────── Blocks ────────────────────────────── */
@@ -617,18 +642,15 @@ hr{
   text-align: right;
 }
 .cv .vol-sub{ font-size: 8.5px; color: var(--cv-light); margin: 0 0 6px; }
-
 .cv .lang-list p{ font-size: 8.5px; color: var(--cv-body); margin: 3px 0; }
 
-/* (Anbefalt) fjern default innrykk som kan lure øyet */
 .cv .cv-right p, .cv .cv-right ul, .cv .cv-right ol,
 .cv .cv-left  p, .cv .cv-left  ul, .cv .cv-left  ol{
   margin-left: 0;
   padding-left: 0;
 }
-/* ────────────────────────────────────────────── FINAL FONT FIX (LEGG HELT NEDERST) ────────────────────────────────────────────── */
 
-/* main paragraph text */
+/* ────────────────────────────────────────────── FINAL FONT FIX ────────────────────────────────────────────── */
 .cv p,
 .cv .body-text,
 .cv .skill-list li,
@@ -638,91 +660,62 @@ hr{
   font-size: 11px !important;
   line-height: 1.5 !important;
 }
-
-
-/* section headers */
-.cv .section-title{
-  font-size: 14px !important;
-}
-
-
-/* job titles / education titles */
+.cv .section-title{ font-size: 14px !important; }
 .cv .exp-entry h3,
 .cv .edu-block h3,
 .cv .cert-item h3{
   font-size: 12px !important;
 }
-
-
-/* contact + meta */
 .cv .cv-contact,
 .cv .exp-entry .meta,
 .cv .vol-sub{
   font-size: 11px !important;
 }
-
-
-/* small meta text */
 .cv .edu-block .date,
 .cv .edu-block .honors,
 .cv .vol-header .date{
   font-size: 11px !important;
 }
+.cv li{ margin-bottom: 6px; }
 
-
-/* ensure consistent spacing */
-.cv li{
-  margin-bottom: 6px;
-}
-
-/* ────────────────────────────────────────────── Print: only CV, full A4 ────────────────────────────────────────────── */
+/* ────────────────────────────────────────────── Print: full A4, no weird margins ────────────────────────────────────────────── */
 @page { size: A4; margin: 0; }
+
 @media print{
-  html, body{ margin:0; padding:0; background:white !important; color:#111 !important; }
-  .topbar, #panel-editor, #panel-ai, .v-resizer, .panel-actions, .ai-chat, .ai-compose, .btn, button, a { display:none !important; }
-  #panel-preview, #preview, .cv { display:block !important; }
+  html, body{
+    margin:0 !important;
+    padding:0 !important;
+    background:white !important;
+    color:#111 !important;
+  }
+
+  /* skjul app UI i print */
+  .topbar, #panel-editor, #panel-ai, .v-resizer, .panel-actions,
+  .ai-chat, .ai-compose, .btn, button, a{
+    display:none !important;
+  }
+
+  /* sørg for at kun CV vises */
+  #panel-preview, #preview, .cv{
+    display:block !important;
+  }
+
+  #preview{
+    height:auto !important;
+    overflow:visible !important;
+    padding:0 !important;
+    background:white !important;
+  }
+
   .cv{
     width: 210mm !important;
-    height: 297mm !important;
+    min-height: 297mm !important;
     margin:0 !important;
-    border: 1px solid var(--cv-border) !important;
+    border: 0 !important;          /* ✅ fjern border i PDF for å unngå “ramme/kanter” */
+    box-shadow:none !important;    /* ✅ fjern shadow i PDF */
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+
   .cv section, .cv .exp-entry, .cv li { break-inside: avoid; }
-}
-/* ───────── Fixed A4 preview viewport (no resizing while typing) ───────── */
-
-/* Preview-panelet skal være en fast "visning" med scroll */
-#panel-preview{
-  display: flex;
-  flex-direction: column;
-}
-
-/* Head beholder høyden sin, innholdet tar resten */
-#panel-preview .panel-head{
-  flex: 0 0 auto;
-}
-
-/* Selve preview-området får fast høyde (tilpass gjerne) og scroll */
-#preview{
-  flex: 1 1 auto;
-  height: calc(100vh - 170px);   /* <-- juster om du vil */
-  overflow: auto;
-  padding: 12px;
-  background: rgba(255,255,255,0.02);
-  border-radius: 12px;
-}
-
-/* CV-arket har ALLTID A4 størrelse i preview */
-#preview .cv{
-  width: 210mm !important;
-  height: 297mm !important;     /* <-- dette låser høyden */
-  margin: 0 auto !important;
-  overflow: hidden;             /* skjul overflow på selve arket */
-}
-
-/* (valgfritt) litt bedre scrolling-opplevelse */
-#preview{
-  -webkit-overflow-scrolling: touch;
 }
