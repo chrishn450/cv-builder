@@ -669,6 +669,7 @@ hr{
 
 /* ────────────────────────────────────────────── Print: full A4, no weird margins ────────────────────────────────────────────── */
 @page { size: A4; margin: 0; }
+
 @media print{
   html, body{
     margin:0 !important;
@@ -683,9 +684,7 @@ hr{
     display:none !important;
   }
 
-  #panel-preview{
-    display:block !important;
-  }
+  #panel-preview{ display:block !important; }
 
   #preview{
     display:flex !important;
@@ -703,8 +702,6 @@ hr{
     margin:0 !important;
     border:0 !important;
     box-shadow:none !important;
-
-    /* ✅ sharp text, no scaling */
     transform:none !important;
 
     -webkit-print-color-adjust: exact;
@@ -715,35 +712,29 @@ hr{
   }
 
   /* ------------------------------------------------ */
-  /* CRITICAL FIX: grid → floats for Chrome print      */
-  /* Divider as BORDER (print-sikker, alltid med i PDF)*/
+  /* PRINT LAYOUT: floats + divider i korrekt posisjon */
   /* ------------------------------------------------ */
   .cv .cv-body{
     display:block !important;
     position: relative !important;
     padding: var(--cv-divider-top) var(--cv-body-pad-x) 26px !important;
-
-    /* slå av evt bakgrunnslinje i print */
     background: none !important;
 
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* divider-linje i print (robust) */
+  /* Divider-linje: posisjon i "content area" */
   .cv .cv-body::before{
     content:"";
     position:absolute !important;
     top: var(--cv-divider-top);
     bottom: 26px;
-
-    /* posisjon: pad + (innholdsbredde * pos-pct) */
     left: calc(
       var(--cv-body-pad-x) +
       ((100% - (2 * var(--cv-body-pad-x))) * var(--cv-divider-pos-pct))
     ) !important;
 
-    /* border er mer print-stabil enn background */
     width: 0 !important;
     border-left: var(--cv-divider-w) solid var(--cv-rule) !important;
 
@@ -751,16 +742,23 @@ hr{
     z-index: 3;
   }
 
+  /* ✅ Viktig: width beregnes også i "content area" (uten padding) */
   .cv .cv-left{
     float:left !important;
-    width: var(--cv-divider-pos-pct) !important;
+    width: calc(
+      (100% - (2 * var(--cv-body-pad-x))) * var(--cv-divider-pos-pct)
+    ) !important;
+
     padding-right: var(--cv-divider-safe) !important;
     box-sizing: border-box !important;
   }
 
   .cv .cv-right{
     float:right !important;
-    width: calc(100% - var(--cv-divider-pos-pct)) !important;
+    width: calc(
+      (100% - (2 * var(--cv-body-pad-x))) * (1 - var(--cv-divider-pos-pct))
+    ) !important;
+
     padding-left: var(--cv-divider-safe) !important;
     box-sizing: border-box !important;
   }
