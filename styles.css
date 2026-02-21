@@ -691,3 +691,38 @@ hr{
   }
   .cv section, .cv .exp-entry, .cv li { break-inside: avoid; }
 }
+/* ───────── Fixed A4 preview viewport (no resizing while typing) ───────── */
+
+/* Preview-panelet skal være en fast "visning" med scroll */
+#panel-preview{
+  display: flex;
+  flex-direction: column;
+}
+
+/* Head beholder høyden sin, innholdet tar resten */
+#panel-preview .panel-head{
+  flex: 0 0 auto;
+}
+
+/* Selve preview-området får fast høyde (tilpass gjerne) og scroll */
+#preview{
+  flex: 1 1 auto;
+  height: calc(100vh - 170px);   /* <-- juster om du vil */
+  overflow: auto;
+  padding: 12px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 12px;
+}
+
+/* CV-arket har ALLTID A4 størrelse i preview */
+#preview .cv{
+  width: 210mm !important;
+  height: 297mm !important;     /* <-- dette låser høyden */
+  margin: 0 auto !important;
+  overflow: hidden;             /* skjul overflow på selve arket */
+}
+
+/* (valgfritt) litt bedre scrolling-opplevelse */
+#preview{
+  -webkit-overflow-scrolling: touch;
+}
