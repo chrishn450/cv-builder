@@ -94,33 +94,44 @@
   // ✅ FIXED + CLEAN: init sections + default OFF only if no saved choice yet
   function initSectionsFromUI() {
     const defaultOff = new Set(["coreCompetencies", "achievements", "volunteer"]);
-
+  
     SECTION_KEYS.forEach((k) => {
       if (!state.sections[k]) state.sections[k] = {};
-
+  
       const en = qs(`sec_${k}_enabled`);
       const ti = qs(`sec_${k}_title`);
-
+  
+      // enabled
       if (en) {
+        // Hvis vi ikke har lagret enabled før -> sett default
         if (state.sections[k].enabled == null) {
           state.sections[k].enabled = defaultOff.has(k) ? false : !!en.checked;
         }
+        // Synk checkbox fra state (alltid)
         en.checked = !!state.sections[k].enabled;
       }
-
+  
+      // title
       if (ti) {
-        if (state.sections?.[k]?.title) ti.value = state.sections[k].title;
+        if (state.sections[k].title != null) ti.value = state.sections[k].title;
+        else ti.value = ti.value || ""; // la HTML default stå
       }
     });
-
+  
+    // contact show toggles
     ensureContactSection();
     CONTACT_SHOW_IDS.forEach((id) => {
       const el = qs(id);
       if (!el) return;
-      state.sections.contact[id] = !!el.checked;
+  
+      // hvis ikke lagret før, bruk UI default
+      if (state.sections.contact[id] == null) {
+        state.sections.contact[id] = !!el.checked;
+      }
+      // synk UI fra state
+      el.checked = state.sections.contact[id] !== false;
     });
   }
-
   function syncUIFromState() {
     FIELD_IDS.forEach((id) => {
       const el = qs(id);
