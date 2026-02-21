@@ -60,7 +60,7 @@
       "sec.summary.label": "Summary",
       "sec.education.label": "Education",
       "sec.licenses.label": "Licenses",
-      "sec.clinicalSkills.label": "Clinical Skills",
+      "sec.clinicalSkills.label": "Skills", // ✅ CHANGED
       "sec.coreCompetencies.label": "Core Competencies",
       "sec.languages.label": "Languages",
       "sec.experience.label": "Experience",
@@ -160,7 +160,7 @@
       "sec.summary.label": "Oppsummering",
       "sec.education.label": "Utdanning",
       "sec.licenses.label": "Lisenser",
-      "sec.clinicalSkills.label": "Kliniske ferdigheter",
+      "sec.clinicalSkills.label": "Ferdigheter", // ✅ CHANGED
       "sec.coreCompetencies.label": "Kjernekompetanse",
       "sec.languages.label": "Språk",
       "sec.experience.label": "Erfaring",
@@ -248,7 +248,7 @@
       "sec.summary.label": "Profil",
       "sec.education.label": "Ausbildung",
       "sec.licenses.label": "Lizenzen",
-      "sec.clinicalSkills.label": "Fähigkeiten",
+      "sec.clinicalSkills.label": "Skills", // ✅ CHANGED (was Fähigkeiten)
       "sec.coreCompetencies.label": "Kernkompetenzen",
       "sec.languages.label": "Sprachen",
       "sec.experience.label": "Berufserfahrung",
@@ -336,7 +336,7 @@
       "sec.summary.label": "Resumen",
       "sec.education.label": "Educación",
       "sec.licenses.label": "Licencias",
-      "sec.clinicalSkills.label": "Habilidades clínicas",
+      "sec.clinicalSkills.label": "Skills", // ✅ CHANGED
       "sec.coreCompetencies.label": "Competencias clave",
       "sec.languages.label": "Idiomas",
       "sec.experience.label": "Experiencia",
@@ -424,7 +424,7 @@
       "sec.summary.label": "Résumé",
       "sec.education.label": "Formation",
       "sec.licenses.label": "Licences",
-      "sec.clinicalSkills.label": "Compétences cliniques",
+      "sec.clinicalSkills.label": "Skills", // ✅ CHANGED
       "sec.coreCompetencies.label": "Compétences clés",
       "sec.languages.label": "Langues",
       "sec.experience.label": "Expérience",
@@ -478,11 +478,11 @@
       summary: "Professional Summary",
       education: "Education",
       licenses: "Licenses & Certifications",
-      clinicalSkills: "Clinical Skills",
+      clinicalSkills: "Skills", // ✅ CHANGED
       coreCompetencies: "Core Competencies",
       languages: "Languages",
       experience: "Professional Experience",
-      achievements: "Clinical Achievements",
+      achievements: "Achievements", // ✅ CHANGED (was Clinical Achievements)
       volunteer: "Volunteer Experience",
       custom1: "Custom Section 1",
       custom2: "Custom Section 2"
@@ -491,11 +491,11 @@
       summary: "Profesjonell oppsummering",
       education: "Utdanning",
       licenses: "Lisenser og sertifiseringer",
-      clinicalSkills: "Kliniske ferdigheter",
+      clinicalSkills: "Ferdigheter", // ✅ CHANGED
       coreCompetencies: "Kjernekompetanse",
       languages: "Språk",
       experience: "Arbeidserfaring",
-      achievements: "Resultater / Utmerkelser",
+      achievements: "Prestasjoner", // ✅ CHANGED (was Resultater / Utmerkelser)
       volunteer: "Frivillig erfaring",
       custom1: "Egendefinert seksjon 1",
       custom2: "Egendefinert seksjon 2"
@@ -504,7 +504,7 @@
       summary: "Profil",
       education: "Ausbildung",
       licenses: "Lizenzen & Zertifikate",
-      clinicalSkills: "Fachliche Fähigkeiten",
+      clinicalSkills: "Skills", // ✅ CHANGED
       coreCompetencies: "Kernkompetenzen",
       languages: "Sprachen",
       experience: "Berufserfahrung",
@@ -517,7 +517,7 @@
       summary: "Resumen profesional",
       education: "Educación",
       licenses: "Licencias y certificaciones",
-      clinicalSkills: "Habilidades clínicas",
+      clinicalSkills: "Skills", // ✅ CHANGED
       coreCompetencies: "Competencias clave",
       languages: "Idiomas",
       experience: "Experiencia profesional",
@@ -530,7 +530,7 @@
       summary: "Résumé professionnel",
       education: "Formation",
       licenses: "Licences & certifications",
-      clinicalSkills: "Compétences cliniques",
+      clinicalSkills: "Skills", // ✅ CHANGED
       coreCompetencies: "Compétences clés",
       languages: "Langues",
       experience: "Expérience professionnelle",
