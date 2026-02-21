@@ -325,18 +325,15 @@ hr{
   --cv-rule-thin: rgba(0,0,0,0.14);
 
   /* MASTER KONTROLLER */
-  --cv-divider-pos-pct: 35%;   /* for UI */
-  --cv-divider-pos: 0.35;      /* 0..1 (preview + print) */
+  --cv-divider-pos-pct: 35%;   /* (UI) */
+  --cv-divider-pos: 0.35;      /* 0..1 (layout) */
   --cv-divider-safe: 30px;
   --cv-divider-w: 1px;
   --cv-body-pad-x: 54px;
   --cv-divider-top: 24px;
 
-  --cv-body-pad-bot: 26px;         /* unified bottom padding */
-  --cv-divider-bottom-safe: 24px;  /* stops line before bottom clip */
-
-  /* ✅ NEW: forces preview cut to match PDF cut */
-  --cv-print-safe: 8mm;
+  --cv-body-pad-bot: 26px;         /* bottom padding */
+  --cv-divider-bottom-safe: 24px;  /* stop line before very bottom */
 
   /* kontakt-streker */
   --cv-contact-rule: rgba(0,0,0,0.20);
@@ -383,10 +380,7 @@ hr{
 /* ────────────────────────────────────────────── CV Template (scoped) ────────────────────────────────────────────── */
 .cv{
   width: 210mm;
-
-  /* ✅ preview cut now matches PDF */
-  height: calc(297mm - 0);
-
+  height: 297mm;               /* ✅ TRUE A4 */
   overflow: hidden;
 
   background: var(--cv-bg);
@@ -402,9 +396,6 @@ hr{
 
   box-shadow: 0 24px 70px rgba(0,0,0,0.45);
 }
-
-/* prevent flex growth artifacts */
-.cv .cv-body{ flex: none; }
 
 /* force same paper tone everywhere */
 .cv .cv-header,
@@ -702,7 +693,7 @@ hr{
     color: #111 !important;
   }
 
-  /* Skjul app UI i print (gjelder om du printer fra hoveddokumentet) */
+  /* Hvis du printer fra hoveddokument (ikke iframe), skjul UI */
   .topbar, #panel-editor, #panel-ai, .v-resizer, .panel-actions,
   .ai-chat, .ai-compose, .btn, button, a,
   .container, .grid3, .card, .panel,
@@ -712,15 +703,12 @@ hr{
 
   body{ display:block !important; }
 
-  /* ✅ PDF får samme "kutt" som preview */
   .cv{
     width: 210mm !important;
-    height: calc(297mm - 0) !important;
-
+    height: 297mm !important;      /* ✅ TRUE A4 */
     margin: 0 auto !important;
     border: 0 !important;
     box-shadow: none !important;
-
     overflow: hidden !important;
     transform: none !important;
 
@@ -776,11 +764,8 @@ hr{
     clear:both !important;
   }
 
-  /* page-break regler */
-  .cv section{
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
+  /* page-break regler (1 side uansett, men hindrer rare kutt i Chrome) */
+  .cv section,
   .cv .exp-entry,
   .cv .edu-block,
   .cv .cert-item,
