@@ -348,21 +348,11 @@ hr{
 }
 
 /* ────────────────────────────────────────────── Preview viewport (A4 paper) ────────────────────────────────────────────── */
-/* ✅ ENDRET: Preview-panelet skal IKKE ha egen scrollbar.
-   Siden (browseren) scroller i stedet, så preview matcher PDF/print. */
 #panel-preview{
-  /* før: display:flex + column for å tvinge intern scroll.
-     nå: la den være normal blokk-layout */
   display: block;
 }
 
-/* ✅ ENDRET: fjern fast height/overflow auto og gjør preview “hel” */
 #preview{
-  /* før:
-     flex: 1 1 auto;
-     height: calc(100vh - 170px);
-     overflow: auto;
-  */
   height: auto;
   overflow: visible;
 
@@ -375,12 +365,9 @@ hr{
   align-items:flex-start;
 
   -webkit-overflow-scrolling: touch;
-
-  /* ✅ viktig: gjør pseudo-elementet relativt til preview */
   position: relative;
 }
 
-/* “papir”-overlay (samme som før) */
 #preview::before{
   content:"";
   position: absolute;
@@ -391,19 +378,21 @@ hr{
 /* ────────────────────────────────────────────── CV Template (scoped) ────────────────────────────────────────────── */
 .cv{
   width: 210mm;
-  min-height: 297mm;              /* ✅ viktig: ikke lås height, la den vokse hvis innholdet blir lengre */
+
+  /* ✅ FIXED A4 (exact one page) */
+  height: 297mm;        /* was: min-height: 297mm */
+  overflow: hidden;     /* prevents content from extending the page */
+
   background: var(--cv-bg);
   border: 1px solid var(--cv-border);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  overflow: visible;
   color: var(--cv-body);
   font-family: "Source Sans 3", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 11px;
   line-height: 1.5;
 
-  /* “paper look” i preview */
   box-shadow: 0 24px 70px rgba(0,0,0,0.45);
 }
 
@@ -703,14 +692,13 @@ hr{
     display:none !important;
   }
 
-  /* print-viewport: sentrer innholdet */
   #panel-preview{
     display:block !important;
   }
 
   #preview{
     display:flex !important;
-    justify-content:center !important;   /* ✅ sentrer horisontalt */
+    justify-content:center !important;
     align-items:flex-start !important;
     height:auto !important;
     overflow:visible !important;
@@ -718,15 +706,12 @@ hr{
     background:white !important;
   }
 
-  /* CV arket */
   .cv{
     width:210mm !important;
-    min-height:auto !important;
+    height:297mm !important;      /* ✅ fixed A4 in print too */
     margin:0 !important;
     border:0 !important;
     box-shadow:none !important;
-
-    /* ✅ skaler litt ned for å unngå at body dyttes til side 2 pga browser-margins */
     transform: scale(0.97) !important;
     transform-origin: top center !important;
 
@@ -734,19 +719,16 @@ hr{
     print-color-adjust: exact;
 
     display:block !important;
+    overflow:hidden !important;   /* ✅ keep fixed */
   }
 
-  /* ------------------------------------------------ */
-  /* CRITICAL FIX: grid → floats for Chrome print      */
-  /* (grid kan bli “unbreakable” og flyttes til side 2) */
-  /* ------------------------------------------------ */
+  /* grid → floats for Chrome print */
   .cv .cv-body{
-    display:block !important; /* ikke grid i print */
+    display:block !important;
     padding: var(--cv-divider-top) var(--cv-body-pad-x) 26px !important;
     position: relative !important;
   }
 
-  /* divider-linje */
   .cv .cv-body::before{
     content:"";
     position:absolute !important;
@@ -779,9 +761,6 @@ hr{
     clear:both;
   }
 
-  /* ------------------------------------------------ */
-  /* page-break regler                               */
-  /* ------------------------------------------------ */
   .cv section{
     break-inside:auto !important;
     page-break-inside:auto !important;
