@@ -94,13 +94,13 @@
   // ✅ FIXED + CLEAN: init sections + default OFF only if no saved choice yet
   function initSectionsFromUI() {
     const defaultOff = new Set(["coreCompetencies", "achievements", "volunteer"]);
-  
+
     SECTION_KEYS.forEach((k) => {
       if (!state.sections[k]) state.sections[k] = {};
-  
+
       const en = qs(`sec_${k}_enabled`);
       const ti = qs(`sec_${k}_title`);
-  
+
       // enabled
       if (en) {
         // Hvis vi ikke har lagret enabled før -> sett default
@@ -110,20 +110,20 @@
         // Synk checkbox fra state (alltid)
         en.checked = !!state.sections[k].enabled;
       }
-  
+
       // title
       if (ti) {
         if (state.sections[k].title != null) ti.value = state.sections[k].title;
         else ti.value = ti.value || ""; // la HTML default stå
       }
     });
-  
+
     // contact show toggles
     ensureContactSection();
     CONTACT_SHOW_IDS.forEach((id) => {
       const el = qs(id);
       if (!el) return;
-  
+
       // hvis ikke lagret før, bruk UI default
       if (state.sections.contact[id] == null) {
         state.sections.contact[id] = !!el.checked;
@@ -132,6 +132,7 @@
       el.checked = state.sections.contact[id] !== false;
     });
   }
+
   function syncUIFromState() {
     FIELD_IDS.forEach((id) => {
       const el = qs(id);
@@ -856,8 +857,55 @@
     };
   }
 
-  if (downloadPdfBtn) downloadPdfBtn.addEventListener("click", () => exportToPrintIframe({ autoPrint: true }));
+  // ✅ PDF: generate a true A4 PDF identical to preview (no browser print)
+  async function exportToPdfExact() {
+    const cvEl = document.querySelector("#preview .cv");
+    if (!cvEl) {
+      alert("CV element not found.");
+      return;
+    }
 
+    if (typeof window.html2pdf !== "function") {
+      alert("html2pdf is not loaded. Add html2pdf.bundle.min.js before app.js in index.html.");
+      return;
+    }
+
+    const opt = {
+      filename: "cv.pdf",
+      margin: [0, 0, 0, 0], // no white borders
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#f7f7f5",
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: cvEl.scrollWidth,
+      },
+      jsPDF: {
+        unit: "mm",
+        format: "a4",
+        orientation: "portrait",
+        compress: true,
+      },
+      pagebreak: { mode: ["css", "legacy"] },
+    };
+
+    await window.html2pdf().set(opt).from(cvEl).save();
+  }
+
+  // ✅ Hook PDF button to exact export (instead of browser print)
+  if (downloadPdfBtn) {
+    downloadPdfBtn.addEventListener("click", () => {
+      exportToPdfExact().catch((err) => {
+        console.error("PDF export failed:", err);
+        alert("PDF export failed. Check console.");
+      });
+    });
+  }
+
+  // keep print button handling (if you still use it somewhere)
   if (printBtn) {
     const clone = printBtn.cloneNode(true);
     printBtn.parentNode?.replaceChild(clone, printBtn);
