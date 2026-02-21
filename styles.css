@@ -325,7 +325,8 @@ hr{
   --cv-rule-thin: rgba(0,0,0,0.14);
 
   /* MASTER KONTROLLER */
-  --cv-divider-pos-pct: 35%;
+  --cv-divider-pos-pct: 35%;  /* preview/grid */
+  --cv-divider-pos: 0.35;     /* print (0..1)  */
   --cv-divider-safe: 30px;
   --cv-divider-w: 1px;
   --cv-body-pad-x: 54px;
@@ -658,18 +659,23 @@ hr{
 .cv .section-title{ font-size: 14px !important; }
 .cv .exp-entry h3,
 .cv .edu-block h3,
-.cv .cert-item h3{ font-size: 12px !important; }
+.cv .cert-item h3{
+  font-size: 12px !important;
+}
 .cv .cv-contact,
 .cv .exp-entry .meta,
-.cv .vol-sub{ font-size: 11px !important; }
+.cv .vol-sub{
+  font-size: 11px !important;
+}
 .cv .edu-block .date,
 .cv .edu-block .honors,
-.cv .vol-header .date{ font-size: 11px !important; }
+.cv .vol-header .date{
+  font-size: 11px !important;
+}
 .cv li{ margin-bottom: 6px; }
 
 /* ────────────────────────────────────────────── Print: full A4, no weird margins ────────────────────────────────────────────── */
 @page { size: A4; margin: 0; }
-
 @media print{
   html, body{
     margin:0 !important;
@@ -712,46 +718,52 @@ hr{
   }
 
   /* ------------------------------------------------ */
-  /* PRINT: grid -> floats (stabilt)                   */
+  /* CRITICAL FIX: grid → floats for Chrome print      */
+  /* Divider as BORDER (alltid med i PDF)             */
+  /* + følger slider via --cv-divider-pos (0..1)      */
   /* ------------------------------------------------ */
   .cv .cv-body{
     display:block !important;
     position: relative !important;
     padding: var(--cv-divider-top) var(--cv-body-pad-x) 26px !important;
-    background:none !important;
+    background: none !important;
+
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
-  /* ✅ Divider-linje: border (ikke background) */
   .cv .cv-body::before{
     content:"";
     position:absolute !important;
     top: var(--cv-divider-top);
     bottom: 26px;
 
-    /* ✅ viktig: finn X-posisjon med px + % uten %*% */
+    /* pad-x + (contentWidth * ratio) */
     left: calc(
       var(--cv-body-pad-x) +
-      ( (100% - (2 * var(--cv-body-pad-x))) * 0.35 )
+      ((100% - (2 * var(--cv-body-pad-x))) * var(--cv-divider-pos))
     ) !important;
 
-    width:0 !important;
+    width: 0 !important;
     border-left: var(--cv-divider-w) solid var(--cv-rule) !important;
+
+    /* litt mykere som de andre linjene */
+    opacity: 0.75;
 
     pointer-events:none;
     z-index: 3;
   }
 
-  /* ✅ Kolonner: kun "rene" prosenter (print-sikkert) */
   .cv .cv-left{
     float:left !important;
-    width: 35% !important;
+    width: calc(100% * var(--cv-divider-pos)) !important;
     padding-right: var(--cv-divider-safe) !important;
     box-sizing: border-box !important;
   }
 
   .cv .cv-right{
     float:right !important;
-    width: 65% !important;
+    width: calc(100% * (1 - var(--cv-divider-pos))) !important;
     padding-left: var(--cv-divider-safe) !important;
     box-sizing: border-box !important;
   }
