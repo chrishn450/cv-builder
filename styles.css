@@ -398,6 +398,19 @@ hr{
   box-shadow: 0 24px 70px rgba(0,0,0,0.45);
 }
 
+/* ────────────────────────────── Print-preview mode (screen = print) ────────────────────────────── */
+/* Legg class="cv is-print-preview" for 1:1 med PDF */
+@media screen{
+  .cv.is-print-preview{
+    width: 210mm;
+    height: 297mm;
+    overflow: hidden;
+    transform: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
 /* force same paper tone everywhere */
 .cv .cv-header,
 .cv .cv-summary,
