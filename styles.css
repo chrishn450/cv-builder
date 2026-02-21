@@ -690,13 +690,7 @@ hr{
 /* ────────────────────────────────────────────── Print: full A4, no weird margins ────────────────────────────────────────────── */
 @page { size: A4; margin: 0; }
 
-@page {
-  size: A4;
-  margin: 0;
-}
-
 @media print{
-
   html, body{
     margin:0 !important;
     padding:0 !important;
@@ -704,141 +698,60 @@ hr{
     color:#111 !important;
   }
 
-  /* skjul hele app UI */
-  .topbar,
-  #panel-editor,
-  #panel-ai,
-  .v-resizer,
-  .panel-actions,
-  .ai-chat,
-  .ai-compose,
-  .btn,
-  button,
-  a{
+  /* skjul app UI i print */
+  .topbar, #panel-editor, #panel-ai, .v-resizer, .panel-actions,
+  .ai-chat, .ai-compose, .btn, button, a{
     display:none !important;
   }
 
-  /* vis kun CV */
-  #panel-preview,
-  #preview{
+  /* sørg for at kun CV vises */
+  #panel-preview, #preview, .cv{
     display:block !important;
+  }
+
+  #preview{
     height:auto !important;
     overflow:visible !important;
     padding:0 !important;
     background:white !important;
   }
 
+  /* ✅ Viktig: gjør CV litt mindre i PRINT så den ikke blir dyttet til side 2
+     (Chrome/Edge margins/scale kan ikke tvinges fra CSS) */
   .cv{
-    width:210mm !important;
-    min-height:auto !important;
+    width: 210mm !important;
     margin:0 !important;
-    border:0 !important;
+    border: 0 !important;
     box-shadow:none !important;
-
-    display:block !important; /* viktig: ikke flex i print */
+    min-height: auto !important;
 
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+
+    /* CHROME/EDGE: zoom funker bra */
+    zoom: 0.97;
   }
 
-  /* ------------------------------------------------ */
-  /* CRITICAL FIX: grid → floats for Chrome print    */
-  /* ------------------------------------------------ */
-
-  .cv .cv-body{
-
-    display:block !important; /* ikke grid */
-
-    padding:
-      var(--cv-divider-top)
-      var(--cv-body-pad-x)
-      26px !important;
-
-    position:relative !important;
+  /* FIREFOX fallback (zoom støttes ikke alltid) */
+  @supports not (zoom: 1){
+    .cv{
+      transform: scale(0.97);
+      transform-origin: top left;
+    }
   }
 
-  /* vertical divider */
-  .cv .cv-body::before{
-
-    content:"";
-
-    position:absolute !important;
-
-    top:var(--cv-divider-top);
-
-    bottom:26px;
-
-    left:calc(
-      var(--cv-body-pad-x)
-      + var(--cv-divider-pos)
-    );
-
-    width:var(--cv-divider-w);
-
-    background:var(--cv-rule);
-
-    z-index:3;
-
-    pointer-events:none;
-  }
-
-  /* LEFT COLUMN */
-  .cv .cv-left{
-
-    float:left !important;
-
-    width:var(--cv-divider-pos) !important;
-
-    padding-right:var(--cv-divider-safe) !important;
-
-    box-sizing:border-box;
-  }
-
-  /* RIGHT COLUMN */
-  .cv .cv-right{
-
-    float:right !important;
-
-    width:calc(
-      100% - var(--cv-divider-pos)
-    ) !important;
-
-    padding-left:var(--cv-divider-safe) !important;
-
-    box-sizing:border-box;
-  }
-
-  /* CLEAR FLOAT */
-  .cv .cv-body::after{
-
-    content:"";
-
-    display:block;
-
-    clear:both;
-  }
-
-  /* ------------------------------------------------ */
-  /* allow page breaks naturally                     */
-  /* ------------------------------------------------ */
-
+  /* ✅ Ikke “låse” store blokker til én side */
   .cv section{
-
     break-inside:auto !important;
-
     page-break-inside:auto !important;
   }
 
-  /* avoid splitting smaller logical blocks */
-
+  /* ✅ Unngå splitting av små blokker */
   .cv .exp-entry,
   .cv .edu-block,
   .cv .cert-item,
   .cv li{
-
     break-inside:avoid !important;
-
     page-break-inside:avoid !important;
   }
-
 }
