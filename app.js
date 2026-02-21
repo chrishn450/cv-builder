@@ -64,16 +64,16 @@
       {}
     );
   }
-  
+
   function render() {
     if (!preview || typeof window.renderCV !== "function") return;
-  
+
     const lang = state.ui.lang || "en";
     const defaults = getTemplateDefaults(lang);
-  
+
     // defaults først, så overrides fra state.data
     const merged = { ...(defaults || {}), ...(state.data || {}) };
-  
+
     preview.innerHTML = window.renderCV({
       ...merged,
       sections: state.sections,
@@ -877,88 +877,98 @@
     };
   }
 
-  // ✅ PDF: generate a true A4 PDF identical to preview (no browser print)
-  // ✅ PDF: robust export that avoids blank canvas by cloning into a clean stage
-async function exportToPdfExact() {
-  const cvEl = document.querySelector("#preview .cv");
-  if (!cvEl) {
-    alert("CV element not found.");
-    return;
-  }
-  if (typeof window.html2pdf !== "function") {
-    alert("html2pdf is not loaded. Add html2pdf.bundle.min.js before app.js in index.html.");
-    return;
-  }
-
-  // 1) Wait for fonts (VERY important to avoid blank/unstyled render)
-  try {
-    if (document.fonts && document.fonts.ready) {
-      await document.fonts.ready;
+  // ✅ PDF: fixed A4, 1-side capture, identical to preview (så lenge preview er fixed A4)
+  async function exportToPdfExact() {
+    const cvEl = document.querySelector("#preview .cv");
+    if (!cvEl) {
+      alert("CV element not found.");
+      return;
     }
-  } catch {}
+    if (typeof window.html2pdf !== "function") {
+      alert("html2pdf is not loaded. Add html2pdf.bundle.min.js before app.js in index.html.");
+      return;
+    }
 
-  // 2) Create a clean, offscreen stage
-  const stage = document.createElement("div");
-  stage.id = "pdfStage";
-  stage.style.position = "fixed";
-  stage.style.left = "-10000px";
-  stage.style.top = "0";
-  stage.style.width = "210mm";
-  stage.style.background = "#f7f7f5";
-  stage.style.zIndex = "-1";
-  stage.style.pointerEvents = "none";
+    // 1) Wait for fonts (VERY important)
+    try {
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+    } catch {}
 
-  // 3) Clone CV into stage and remove things that can break html2canvas
-  const clone = cvEl.cloneNode(true);
-  clone.style.boxShadow = "none";
-  clone.style.transform = "none";
-  clone.style.filter = "none";
-  clone.style.margin = "0";
-  clone.style.border = "0";
+    // A4 @ 96dpi ≈ 794 x 1123 px
+    const A4_W = 794;
+    const A4_H = 1123;
 
-  // IMPORTANT: Force exact A4 size on clone (html2canvas likes px more than mm)
-  // A4 at 96dpi ≈ 794 x 1123 px
-  clone.style.width = "794px";
-  clone.style.minHeight = "1123px";
+    // 2) Create a clean, invisible stage (NOT far offscreen -> avoids blank canvases)
+    const stage = document.createElement("div");
+    stage.id = "pdfStage";
+    stage.style.position = "fixed";
+    stage.style.left = "0";
+    stage.style.top = "0";
+    stage.style.width = A4_W + "px";
+    stage.style.height = A4_H + "px";
+    stage.style.opacity = "0";
+    stage.style.zIndex = "-1";
+    stage.style.pointerEvents = "none";
+    stage.style.background = "#f7f7f5";
+    document.body.appendChild(stage);
 
-  stage.appendChild(clone);
-  document.body.appendChild(stage);
+    // 3) Clone CV into stage
+    const clone = cvEl.cloneNode(true);
+    clone.style.boxShadow = "none";
+    clone.style.transform = "none";
+    clone.style.filter = "none";
+    clone.style.margin = "0";
+    clone.style.border = "0";
 
-  // 4) Ensure a layout pass happens
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    // Force exact A4 (fixed one-page)
+    clone.style.width = A4_W + "px";
+    clone.style.height = A4_H + "px";
+    clone.style.overflow = "hidden";
 
-  const opt = {
-    filename: "cv.pdf",
-    margin: 0,
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#f7f7f5",
-      logging: false,
-      // These help prevent "blank" captures in scroll/flex contexts
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: clone.scrollWidth,
-      windowHeight: clone.scrollHeight,
-    },
-    jsPDF: {
-      unit: "mm",
-      format: "a4",
-      orientation: "portrait",
-      compress: true,
-    },
-    pagebreak: { mode: ["avoid-all", "css", "legacy"] },
-  };
+    stage.appendChild(clone);
 
-  try {
-    await window.html2pdf().set(opt).from(clone).save();
-  } finally {
-    stage.remove();
+    // 4) Ensure a layout pass happens
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    const opt = {
+      filename: "cv.pdf",
+      margin: 0,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#f7f7f5",
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: A4_W,
+        windowHeight: A4_H,
+        width: A4_W,
+        height: A4_H,
+      },
+      jsPDF: {
+        unit: "mm",
+        format: "a4",
+        orientation: "portrait",
+        compress: true,
+      },
+      // Keep it simple for fixed A4
+      pagebreak: { mode: ["css", "legacy"] },
+    };
+
+    try {
+      await window.html2pdf().set(opt).from(clone).save();
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      alert("PDF export failed. Check console.");
+    } finally {
+      stage.remove();
+    }
   }
-}
 
-  // ✅ Hook PDF button to exact export (instead of browser print)
+  // ✅ Hook PDF button to exact export (fixed A4)
   if (downloadPdfBtn) {
     downloadPdfBtn.addEventListener("click", () => {
       exportToPdfExact().catch((err) => {
