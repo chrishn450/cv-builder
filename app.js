@@ -889,38 +889,6 @@
     const A4_W = 794;
     const A4_H = 1123;
   
-    // ✅ Stage: IKKE opacity:0 (det gir blank PDF)
-    // Flytt den “litt” ut av view i stedet (trygt for html2canvas)
-    const stage = document.createElement("div");
-    stage.id = "pdfStage";
-    stage.style.position = "fixed";
-    stage.style.left = "-1200px";      // ikke -10000
-    stage.style.top = "0";
-    stage.style.width = A4_W + "px";
-    stage.style.height = A4_H + "px";
-    stage.style.pointerEvents = "none";
-    stage.style.background = "#f7f7f5";
-    stage.style.zIndex = "999999";     // ok siden den er utenfor view
-    document.body.appendChild(stage);
-  
-    const clone = cvEl.cloneNode(true);
-    clone.style.boxShadow = "none";
-    clone.style.transform = "none";
-    clone.style.filter = "none";
-    clone.style.margin = "0";
-    clone.style.border = "0";
-  
-    // fixed A4 én side
-    clone.style.width = A4_W + "px";
-    clone.style.height = A4_H + "px";
-    clone.style.overflow = "hidden";
-    clone.style.background = "#f7f7f5";
-  
-    stage.appendChild(clone);
-  
-    // layout pass
-    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-  
     const opt = {
       filename: "cv.pdf",
       margin: 0,
@@ -930,27 +898,47 @@
         useCORS: true,
         backgroundColor: "#f7f7f5",
         logging: false,
+  
+        // ✅ viktig: riktig scroll-capture
         scrollX: 0,
-        scrollY: 0,
+        scrollY: -window.scrollY,
+  
         windowWidth: A4_W,
         windowHeight: A4_H,
+  
+        // ✅ tvangsstørrelse
         width: A4_W,
         height: A4_H,
+  
+        // ✅ viktigst: patch i klonet DOM
+        onclone: (doc) => {
+          const el = doc.querySelector("#preview .cv") || doc.querySelector(".cv");
+          if (!el) return;
+  
+          el.style.width = A4_W + "px";
+          el.style.height = A4_H + "px";
+          el.style.overflow = "hidden";
+          el.style.boxShadow = "none";
+          el.style.transform = "none";
+          el.style.filter = "none";
+          el.style.margin = "0";
+          el.style.border = "0";
+          el.style.background = "#f7f7f5";
+        },
       },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
+  
+      // fixed A4 = 1 side
       pagebreak: { mode: ["css", "legacy"] },
     };
   
     try {
-      await window.html2pdf().set(opt).from(clone).save();
+      await window.html2pdf().set(opt).from(cvEl).save();
     } catch (err) {
       console.error(err);
       alert("PDF export failed. Check console.");
-    } finally {
-      stage.remove();
     }
   }
-
   // ✅ Hook PDF button to exact export (fixed A4)
   if (downloadPdfBtn) {
     downloadPdfBtn.addEventListener("click", () => {
