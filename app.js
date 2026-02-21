@@ -51,14 +51,43 @@
     "show_location",
     "show_linkedin",
   ];
+  // --- PREVIEW autoscale helpers (A4 fit, no scroll) ---
+function updatePreviewScale() {
+  const preview = document.getElementById("preview");
+  if (!preview) return;
+
+  // A4 px (match CSS --a4w/--a4h)
+  const A4W = 794;
+  const A4H = 1123;
+
+  // Available space inside preview (minus padding)
+  const cs = getComputedStyle(preview);
+  const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+
+  const availW = Math.max(100, preview.clientWidth - padX);
+  const availH = Math.max(100, preview.clientHeight - padY);
+
+  // scale so full page fits (never exceed 1)
+  const s = Math.min(1, availW / A4W, availH / A4H);
+
+  document.documentElement.style.setProperty("--preview-scale", String(s));
+}
 
   function render() {
     if (!preview || typeof window.renderCV !== "function") return;
-    preview.innerHTML = window.renderCV({
+  
+    const html = window.renderCV({
       ...state.data,
       sections: state.sections,
       lang: state.ui.lang || "en",
     });
+  
+    // ✅ Wrap in preview-stage so CSS can scale it
+    preview.innerHTML = `<div class="preview-stage">${html}</div>`;
+  
+    // ✅ recalc scale after DOM update
+    requestAnimationFrame(updatePreviewScale);
   }
 
   const STORAGE_KEY = "cv_builder_user_overrides_structured_v3";
