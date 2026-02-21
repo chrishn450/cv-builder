@@ -335,6 +335,9 @@ hr{
   --cv-body-pad-bot: 26px;         /* unified bottom padding */
   --cv-divider-bottom-safe: 24px;  /* stops line before bottom clip */
 
+  /* ✅ NEW: forces preview cut to match PDF cut */
+  --cv-print-safe: 8mm;
+
   /* kontakt-streker */
   --cv-contact-rule: rgba(0,0,0,0.20);
   --cv-contact-thickness: 2px;
@@ -380,15 +383,16 @@ hr{
 /* ────────────────────────────────────────────── CV Template (scoped) ────────────────────────────────────────────── */
 .cv{
   width: 210mm;
-  height: 297mm;
 
-  overflow: hidden; /* preview = same clip as pdf */
+  /* ✅ preview cut now matches PDF */
+  height: calc(297mm - var(--cv-print-safe));
+
+  overflow: hidden;
 
   background: var(--cv-bg);
   border: 1px solid var(--cv-border);
   margin: 0 auto;
 
-  /* CRITICAL: do NOT use flex with floats */
   display: block;
 
   color: var(--cv-body);
@@ -401,19 +405,6 @@ hr{
 
 /* prevent flex growth artifacts */
 .cv .cv-body{ flex: none; }
-
-/* ────────────────────────────── Print-preview mode (screen = print) ────────────────────────────── */
-/* Legg class="cv is-print-preview" for 1:1 med PDF */
-@media screen{
-  .cv.is-print-preview{
-    width: 210mm;
-    height: 297mm;
-    overflow: hidden;
-    transform: none;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-}
 
 /* force same paper tone everywhere */
 .cv .cv-header,
@@ -483,7 +474,7 @@ hr{
   color: var(--cv-body);
 }
 
-/* ────────────────────────────── Summary (legacy class ok) ────────────────────────────── */
+/* ────────────────────────────── Summary ────────────────────────────── */
 .cv .cv-summary{
   padding: 18px 54px 12px;
   margin-bottom: 14px;
@@ -498,7 +489,6 @@ hr{
 .cv .cv-body{
   display:block;
   position: relative;
-
   padding: var(--cv-divider-top) var(--cv-body-pad-x) var(--cv-body-pad-bot);
 }
 
@@ -701,7 +691,7 @@ hr{
 }
 .cv li{ margin-bottom: 6px; }
 
-/* ────────────────────────────────────────────── Print: full A4, no weird margins ────────────────────────────────────────────── */
+/* ────────────────────────────────────────────── Print: full A4 ────────────────────────────────────────────── */
 @page { size: A4; margin: 0; }
 
 @media print{
@@ -712,7 +702,7 @@ hr{
     color: #111 !important;
   }
 
-  /* Skjul app UI i print (gjelder når du printer fra hoveddokumentet) */
+  /* Skjul app UI i print (gjelder om du printer fra hoveddokumentet) */
   .topbar, #panel-editor, #panel-ai, .v-resizer, .panel-actions,
   .ai-chat, .ai-compose, .btn, button, a,
   .container, .grid3, .card, .panel,
@@ -720,17 +710,14 @@ hr{
     display: none !important;
   }
 
-  /* ✅ Når du printer via iframe: bare CV markup finnes, så dette er nok */
-  body{
-    display: block !important;
-  }
+  body{ display:block !important; }
 
-  /* A4-arket */
+  /* ✅ PDF får samme "kutt" som preview */
   .cv{
     width: 210mm !important;
-    height: 297mm !important;
+    height: calc(297mm - var(--cv-print-safe)) !important;
 
-    margin: 0 auto !important;   /* sentrer på arket */
+    margin: 0 auto !important;
     border: 0 !important;
     box-shadow: none !important;
 
@@ -743,14 +730,13 @@ hr{
     display: block !important;
   }
 
-  /* ✅ Viktig for divider/kolonner i print: behold floats (samme som preview) */
+  /* behold floats + midtlinje identisk */
   .cv .cv-body{
     display: block !important;
     position: relative !important;
     padding: var(--cv-divider-top) var(--cv-body-pad-x) var(--cv-body-pad-bot) !important;
   }
 
-  /* midtlinja (print) — stopper før bunn-klipp */
   .cv .cv-body::before{
     content:"" !important;
     position: absolute !important;
@@ -786,16 +772,15 @@ hr{
 
   .cv .cv-body::after{
     content:"" !important;
-    display: block !important;
-    clear: both !important;
+    display:block !important;
+    clear:both !important;
   }
 
-  /* page-break regler (mest relevant hvis noe prøver å dytte til side 2) */
+  /* page-break regler */
   .cv section{
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
-
   .cv .exp-entry,
   .cv .edu-block,
   .cv .cert-item,
