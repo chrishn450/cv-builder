@@ -1,5 +1,52 @@
-// app.js (FULL) - PDF button uses print iframe (Save as PDF)
-(function () {
+// app.js (FULL) - gated behind /api/me so CV Builder won't work for others
+
+// --- ACCESS GUARD (must run before anything else) ---
+const lockedEl = document.getElementById("locked");
+const appEl = document.getElementById("app");
+const logoutBtn = document.getElementById("logoutBtn");
+
+function showLocked() {
+  if (appEl) appEl.style.display = "none";
+  if (lockedEl) lockedEl.style.display = "block";
+  if (logoutBtn) logoutBtn.style.display = "none";
+}
+
+function showApp() {
+  if (lockedEl) lockedEl.style.display = "none";
+  if (appEl) appEl.style.display = "block";
+  if (logoutBtn) logoutBtn.style.display = "inline-flex";
+}
+
+async function requireAccessOrLock() {
+  // hide all while checking
+  if (lockedEl) lockedEl.style.display = "none";
+  if (appEl) appEl.style.display = "none";
+
+  try {
+    const r = await fetch("/api/me", { credentials: "include" });
+    if (!r.ok) return false;
+    const me = await r.json().catch(() => null);
+    return !!me?.ok;
+  } catch {
+    return false;
+  }
+}
+
+(async function boot() {
+  const ok = await requireAccessOrLock();
+  if (!ok) {
+    showLocked();
+    return; // IMPORTANT: stop here (do not init app)
+  }
+
+  showApp();
+  startApp(); // init app only for authenticated users
+})();
+
+// ---------------------------
+// APP (runs only when access is valid)
+// ---------------------------
+function startApp() {
   const qs = (id) => document.getElementById(id);
 
   const state = { data: {}, sections: {}, ui: { lang: "en" } };
@@ -811,16 +858,11 @@
   }
 
   // ---- Export helpers (PDF/print) ✅ popup-safe via hidden iframe
-  // ---- Export helpers (PDF/print) ✅ popup-safe via hidden iframe
-async function exportToPrintIframe({ autoPrint = true } = {}) {
-  const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
-  const cvHtml = preview ? preview.innerHTML : "";
+  async function exportToPrintIframe({ autoPrint = true } = {}) {
+    const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
+    const cvHtml = preview ? preview.innerHTML : "";
 
-  // ✅ isolate: NO app grid/cards in the print document; only the CV HTML.
-  // ✅ IMPORTANT FIX: do NOT wrap CV in #preview in the print document.
-  //    Your screen preview container (#preview) has layout styles that can
-  //    differ from print iframe. Printing only the .cv markup stabilizes 1:1.
-  const html = `<!doctype html>
+    const html = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -829,25 +871,18 @@ async function exportToPrintIframe({ autoPrint = true } = {}) {
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- ✅ MATCH CV FONTS -->
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
 
   <style>${cssText}</style>
 
-  <!-- ✅ Print hardening -->
   <style>
     @page { size: A4; margin: 0; }
-
     html, body {
       margin: 0 !important;
       padding: 0 !important;
       background: white !important;
     }
-
-    /* ensure nothing tries to center/scale the CV */
     body { display:block !important; }
-
-    /* keep colors in PDF */
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   </style>
 </head>
@@ -856,102 +891,88 @@ async function exportToPrintIframe({ autoPrint = true } = {}) {
 </body>
 </html>`;
 
-  const old = document.getElementById("printFrame");
-  if (old) old.remove();
+    const old = document.getElementById("printFrame");
+    if (old) old.remove();
 
-  const iframe = document.createElement("iframe");
-  iframe.id = "printFrame";
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  iframe.style.opacity = "0";
-  iframe.setAttribute("aria-hidden", "true");
-  document.body.appendChild(iframe);
+    const iframe = document.createElement("iframe");
+    iframe.id = "printFrame";
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.opacity = "0";
+    iframe.setAttribute("aria-hidden", "true");
+    document.body.appendChild(iframe);
 
-  const doc = iframe.contentDocument || iframe.contentWindow?.document;
-  if (!doc) return;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
 
-  doc.open();
-  doc.write(html);
-  doc.close();
+    doc.open();
+    doc.write(html);
+    doc.close();
 
-  // ✅ wait for iframe assets before printing (prevents shifting/layout bugs)
-  const waitForIframeReady = async () => {
-    try {
-      const w = iframe.contentWindow;
-      const d = iframe.contentDocument;
+    const waitForIframeReady = async () => {
+      try {
+        const w = iframe.contentWindow;
+        const d = iframe.contentDocument;
 
-      // fonts
-      if (d?.fonts?.ready) await d.fonts.ready;
+        if (d?.fonts?.ready) await d.fonts.ready;
 
-      // images (if any)
-      const imgs = Array.from(d?.images || []);
-      await Promise.all(
-        imgs.map(
-          (img) =>
-            new Promise((res) => {
-              if (img.complete) return res();
-              img.addEventListener("load", res, { once: true });
-              img.addEventListener("error", res, { once: true });
-            })
-        )
-      );
+        const imgs = Array.from(d?.images || []);
+        await Promise.all(
+          imgs.map(
+            (img) =>
+              new Promise((res) => {
+                if (img.complete) return res();
+                img.addEventListener("load", res, { once: true });
+                img.addEventListener("error", res, { once: true });
+              })
+          )
+        );
 
-
-      // give layout time for fonts to fully apply
-      await new Promise((r) => setTimeout(r, 250));
-      
-      // ✅ force reflow to lock layout before print
-      if (d && d.body) {
-        void d.body.offsetHeight;
+        await new Promise((r) => setTimeout(r, 250));
+        if (d && d.body) void d.body.offsetHeight;
+        await new Promise((r) => setTimeout(r, 150));
+        return w;
+      } catch {
+        return iframe.contentWindow;
       }
-      
-      // extra safety delay
-      await new Promise((r) => setTimeout(r, 150));
-      
-      return w;
-    } catch {
-      return iframe.contentWindow;
-    }
-  };
+    };
 
-  iframe.onload = async () => {
-    if (!autoPrint) return;
+    iframe.onload = async () => {
+      if (!autoPrint) return;
 
-    const w = await waitForIframeReady();
+      const w = await waitForIframeReady();
+      await new Promise((r) => requestAnimationFrame(r));
 
-    // one more frame for safety
-    await new Promise((r) => requestAnimationFrame(r));
+      try {
+        w?.focus();
+        w?.print();
+      } catch (e) {
+        console.error("Print failed:", e);
+      }
+    };
+  }
 
-    try {
-      w?.focus();
-      w?.print();
-    } catch (e) {
-      console.error("Print failed:", e);
-    }
-  };
-}
+  // ✅ PDF button = open print dialog (user selects "Save as PDF")
+  if (downloadPdfBtn) {
+    downloadPdfBtn.addEventListener("click", async () => {
+      try {
+        await exportToPrintIframe({ autoPrint: true });
+      } catch (err) {
+        console.error("PDF/Print failed:", err);
+        alert("PDF/Print failed. Check console.");
+      }
+    });
+  }
 
-// ✅ PDF button = open print dialog (user selects "Save as PDF")
-if (downloadPdfBtn) {
-  downloadPdfBtn.addEventListener("click", async () => {
-    try {
-      await exportToPrintIframe({ autoPrint: true });
-    } catch (err) {
-      console.error("PDF/Print failed:", err);
-      alert("PDF/Print failed. Check console.");
-    }
-  });
-}
-
-// keep print button handling (if you still use it somewhere)
-if (printBtn) {
-  const clone = printBtn.cloneNode(true);
-  printBtn.parentNode?.replaceChild(clone, printBtn);
-}
+  // keep print button handling (if you still use it somewhere)
+  if (printBtn) {
+    const clone = printBtn.cloneNode(true);
+    printBtn.parentNode?.replaceChild(clone, printBtn);
+  }
 
   if (downloadHtmlBtn) {
     downloadHtmlBtn.addEventListener("click", async () => {
@@ -1598,14 +1619,8 @@ if (printBtn) {
   }
 
   // ---------------------------
-  // INIT show app
+  // BOOT (no forced "show app" here — guard handles it)
   // ---------------------------
-  const app = qs("app");
-  const locked = qs("locked");
-  if (app) app.style.display = "block";
-  if (locked) locked.style.display = "none";
-
-  // Boot
   loadState();
   initSectionsFromUI();
   syncUIFromState();
@@ -1635,4 +1650,4 @@ if (printBtn) {
 
   saveState();
   render();
-})();
+}
