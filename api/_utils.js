@@ -200,3 +200,38 @@ export function nowIso() {
 export function addHoursIso(hours) {
   return new Date(Date.now() + hours * 3600 * 1000).toISOString();
 }
+export async function etsyFetch(path, { method = "GET", headers = {}, body } = {}) {
+  const keystring = env("ETSY_API_KEYSTRING");
+  const shared = env("ETSY_SHARED_SECRET");
+  const userId = env("ETSY_USER_ID");         // kommer senere
+  const accessToken = env("ETSY_ACCESS_TOKEN"); // kommer senere
+
+  const url = path.startsWith("http")
+    ? path
+    : `https://api.etsy.com${path.startsWith("/") ? "" : "/"}${path}`;
+
+  const res = await fetch(url, {
+    method,
+    headers: {
+      "x-api-key": `${keystring}:${shared}`,
+      "authorization": `Bearer ${userId}.${accessToken}`,
+      "content-type": "application/json",
+      ...headers,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : null; } catch { data = null; }
+
+  if (!res.ok) {
+    const msg = data?.error || data?.message || text || `Etsy error ${res.status}`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+export function addDaysIso(days) {
+  return new Date(Date.now() + days * 24 * 3600 * 1000).toISOString();
+}
