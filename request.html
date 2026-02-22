@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Activate Access</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 520px; margin: 40px auto; padding: 0 16px; }
+    input { width: 100%; padding: 10px; margin: 8px 0; }
+    button { padding: 10px 14px; cursor: pointer; }
+    .box { border: 1px solid #ddd; border-radius: 12px; padding: 16px; border-radius: 12px; }
+    .muted { color:#666; }
+    .error { color:#b00020; }
+  </style>
+</head>
+<body>
+  <h1>Activate your access</h1>
+  <div class="box">
+    <p class="muted">Enter your Etsy order number and the email used at checkout.</p>
+
+    <input id="order" placeholder="Order number" inputmode="numeric" />
+    <input id="email" type="email" placeholder="Email" />
+
+    <button id="btn">Continue</button>
+
+    <p id="status" class="muted"></p>
+    <p id="err" class="error"></p>
+  </div>
+
+  <script>
+    async function post(url, body) {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body || {})
+      });
+      const data = await res.json().catch(()=> ({}));
+      return { res, data };
+    }
+
+    document.getElementById("btn").addEventListener("click", async () => {
+      document.getElementById("err").textContent = "";
+      document.getElementById("status").textContent = "Checking…";
+
+      const orderNumber = document.getElementById("order").value.trim();
+      const email = document.getElementById("email").value.trim();
+
+      const { res, data } = await post("/api/request-access", { orderNumber, email });
+
+      if (!res.ok) {
+        document.getElementById("status").textContent = "";
+        document.getElementById("err").textContent = data.error || "Failed.";
+        return;
+      }
+
+      location.href = data.claimUrl;
+    });
+  </script>
+</body>
+</html>
