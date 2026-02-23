@@ -17,7 +17,8 @@
     <link rel="stylesheet" href="/styles.css?v=1" />
 
     <!-- ✅ Template styles (ONLY the CV / A4 design) -->
-    <link rel="stylesheet" href="/templates/nurse/template.css?v=1" />
+    <!-- App.js setter href automatisk basert på valgt template -->
+    <link id="templateCss" rel="stylesheet" href="" />
   </head>
 
   <body>
@@ -27,9 +28,16 @@
         <button id="langBtn" class="btn ghost" type="button" title="Language">
           <span class="lang-pill" id="langPill">English</span>
         </button>
+
+        <!-- ✅ NY: template velger -->
+        <select id="templateSelect" class="btn ghost" title="Template" style="height:36px;">
+          <!-- fylles av app.js fra /templates/manifest.js -->
+        </select>
+
         <button id="showPanelsBtn" class="btn ghost" type="button" data-i18n="topbar.panels">
           Panels
         </button>
+
         <button
           id="logoutBtn"
           class="btn ghost"
@@ -503,8 +511,8 @@
       </section>
     </main>
 
-    <!-- ✅ Template renderer (replaces old /templates.js) -->
-    <script src="/templates/nurse/render.js?v=1"></script>
+    <!-- ✅ Manifest (liste over templates) -->
+    <script src="/templates/manifest.js?v=1"></script>
 
     <!-- i18n + app -->
     <script src="/i18n.js?v=1"></script>
@@ -512,6 +520,8 @@
     <!-- html2pdf (optional, you can keep it if you still use it) -->
     <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 
+    <!-- ✅ app laster riktig template render.js dynamisk -->
+    <!-- (så denne skal IKKE lenger peke på /templates/nurse/render.js) -->
     <script src="/app.js?v=1"></script>
   </body>
 </html>
