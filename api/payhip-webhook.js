@@ -90,6 +90,8 @@ export default async function handler(req, res) {
 
     // 2) lagre purchase
     const providerProductId = extractPayhipProductId(payload); // "AeoVP" (forventet)
+    console.log("PAYHIP payload.items:", payload.items);
+    console.log("Extracted providerProductId:", providerProductId);
     await supabaseFetch("/rest/v1/purchases", {
       method: "POST",
       body: {
