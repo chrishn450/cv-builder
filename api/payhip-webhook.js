@@ -1,5 +1,5 @@
-// api/payhip-webhook.js  (erstatt filen din med denne)
-// Krever: PAYHIP_API_KEY, APP_BASE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, JWT_SECRET, RESEND_API_KEY, EMAIL_FROM (optional)
+// api/payhip-webhook.js
+// Krever: PAYHIP_API_KEY, APP_BASE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY (og evt EMAIL_FROM)
 
 import crypto from "crypto";
 import {
@@ -17,20 +17,24 @@ function normalizeEmail(v) {
   return String(v || "").trim().toLowerCase();
 }
 
-// Payhip kan sende product-id i flere felt. Vi prøver flere.
-function extractPayhipProductId(payload) {
+// ✅ Viktig: Vi vil ha Payhip "product_key" (AeoVP) – ikke product_id (7024679)
+function extractPayhipProductKey(payload) {
   const items = Array.isArray(payload?.items) ? payload.items : [];
   const first = items[0] || {};
 
-  // typiske kandidater
+  // Payhip sender ofte dette:
+  // first.product_key: "AeoVP"
+  // first.product_permalink: "https://payhip.com/b/AeoVP"
   const candidates = [
+    first.product_key,
+    payload.product_key,
+
+    first.product_permalink,
+    payload.product_permalink,
+
+    // fallback
     first.product_id,
-    first.productId,
-    first.product,
     payload.product_id,
-    payload.productId,
-    payload.product,
-    payload.product_identifier,
   ];
 
   let raw = candidates.find((x) => x != null && String(x).trim() !== "");
@@ -38,12 +42,12 @@ function extractPayhipProductId(payload) {
 
   raw = String(raw).trim();
 
-  // hvis vi får "/b/AeoVP" eller "b/AeoVP" -> behold kun "AeoVP"
-  raw = raw.replace(/^https?:\/\/payhip\.com\//i, ""); // hvis hele URL
-  raw = raw.replace(/^\/?b\//i, "");
-  raw = raw.replace(/^b\//i, "");
+  // Hvis det er en URL eller "b/AeoVP" eller "/b/AeoVP", normaliser til "AeoVP"
+  raw = raw.replace(/^https?:\/\/payhip\.com\//i, ""); // fjerner domene hvis URL
+  raw = raw.replace(/^\/?b\//i, "");                  // fjerner "b/" eller "/b/"
+  raw = raw.trim();
 
-  return raw.trim() || null; // "AeoVP"
+  return raw || null;
 }
 
 export default async function handler(req, res) {
@@ -71,7 +75,7 @@ export default async function handler(req, res) {
     const transactionId = String(payload.id || payload.transaction_id || "").trim();
     if (!transactionId) return json(res, 400, { error: "Missing transaction id" });
 
-    // Idempotency: ikke prosesser samme transaksjon to ganger
+    // Idempotency
     const existing = await supabaseFetch(
       `/rest/v1/purchases?payhip_transaction_id=eq.${encodeURIComponent(transactionId)}&select=id`,
       { method: "GET" }
@@ -89,21 +93,22 @@ export default async function handler(req, res) {
     });
 
     // 2) lagre purchase
-    const providerProductId = extractPayhipProductId(payload); // "AeoVP" (forventet)
+    const providerProductId = extractPayhipProductKey(payload); // ✅ forventet "AeoVP"
     console.log("PAYHIP payload.items:", payload.items);
     console.log("Extracted providerProductId:", providerProductId);
+
     await supabaseFetch("/rest/v1/purchases", {
       method: "POST",
       body: {
         payhip_transaction_id: transactionId,
         customer_email: email,
-        product_id: providerProductId, // lagre normalized id her
+        product_id: providerProductId, // vi lagrer "AeoVP" her (mer nyttig for deg)
       },
     });
 
     // 3) map product -> template_key i supabase, og grant entitlement
     if (providerProductId) {
-      // OBS: ilike gjør match case-insensitive
+      // Bruk ilike for case-insensitive match mot "AeoVP"
       const mapRows = await supabaseFetch(
         `/rest/v1/product_templates?provider=eq.payhip&provider_product_id=ilike.${encodeURIComponent(
           providerProductId
@@ -111,8 +116,12 @@ export default async function handler(req, res) {
         { method: "GET" }
       );
 
+      console.log("Mapping rows:", mapRows);
+
       const mapping = Array.isArray(mapRows) ? mapRows[0] : null;
-      const templateKey = String(mapping?.template_key || "").trim().toLowerCase();
+      const templateKey = String(mapping?.template_key || "").trim();
+
+      console.log("Resolved templateKey:", templateKey);
 
       if (templateKey) {
         await supabaseFetch("/rest/v1/customer_templates?on_conflict=email,template_key", {
@@ -121,7 +130,6 @@ export default async function handler(req, res) {
           body: { email, template_key: templateKey },
         });
       } else {
-        // Ikke kræsje kjøp, men logg så du ser det i Vercel logs
         console.warn("No product_templates mapping found for:", providerProductId);
       }
     } else {
