@@ -858,11 +858,19 @@ function startApp() {
   }
 
   // ---- Export helpers (PDF/print) ✅ popup-safe via hidden iframe
-  async function exportToPrintIframe({ autoPrint = true } = {}) {
-    const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
-    const cvHtml = preview ? preview.innerHTML : "";
+  // ---- Export helpers (PDF/print) ✅ popup-safe via hidden iframe
+async function exportToPrintIframe({ autoPrint = true } = {}) {
+  // ✅ Hent både global UI-styles og template-styles
+  // Tips: hvis du hoster på subpath (GitHub Pages), bruk "styles.css" uten leading slash.
+  const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
 
-    const html = `<!doctype html>
+  const templateCss = await fetch("/templates/nurse/template.css", { cache: "no-store" }).then((r) =>
+    r.text()
+  );
+
+  const cvHtml = preview ? preview.innerHTML : "";
+
+  const html = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -873,8 +881,10 @@ function startApp() {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
 
-  <style>${cssText}</style>
+  <!-- ✅ Viktig: inkluder BOTH -->
+  <style>${cssText}\n\n${templateCss}</style>
 
+  <!-- Print hardening -->
   <style>
     @page { size: A4; margin: 0; }
     html, body {
@@ -891,70 +901,76 @@ function startApp() {
 </body>
 </html>`;
 
-    const old = document.getElementById("printFrame");
-    if (old) old.remove();
+  // Fjern gammel iframe hvis den finnes
+  const old = document.getElementById("printFrame");
+  if (old) old.remove();
 
-    const iframe = document.createElement("iframe");
-    iframe.id = "printFrame";
-    iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
-    iframe.style.opacity = "0";
-    iframe.setAttribute("aria-hidden", "true");
-    document.body.appendChild(iframe);
+  // Lag ny hidden iframe (popup-safe)
+  const iframe = document.createElement("iframe");
+  iframe.id = "printFrame";
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  iframe.style.opacity = "0";
+  iframe.setAttribute("aria-hidden", "true");
+  document.body.appendChild(iframe);
 
-    const doc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!doc) return;
+  const doc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!doc) return;
 
-    doc.open();
-    doc.write(html);
-    doc.close();
+  doc.open();
+  doc.write(html);
+  doc.close();
 
-    const waitForIframeReady = async () => {
-      try {
-        const w = iframe.contentWindow;
-        const d = iframe.contentDocument;
+  // Vent på fonts/images + litt layout
+  const waitForIframeReady = async () => {
+    try {
+      const w = iframe.contentWindow;
+      const d = iframe.contentDocument;
 
-        if (d?.fonts?.ready) await d.fonts.ready;
+      // fonts
+      if (d?.fonts?.ready) await d.fonts.ready;
 
-        const imgs = Array.from(d?.images || []);
-        await Promise.all(
-          imgs.map(
-            (img) =>
-              new Promise((res) => {
-                if (img.complete) return res();
-                img.addEventListener("load", res, { once: true });
-                img.addEventListener("error", res, { once: true });
-              })
-          )
-        );
+      // images (hvis noen finnes)
+      const imgs = Array.from(d?.images || []);
+      await Promise.all(
+        imgs.map(
+          (img) =>
+            new Promise((res) => {
+              if (img.complete) return res();
+              img.addEventListener("load", res, { once: true });
+              img.addEventListener("error", res, { once: true });
+            })
+        )
+      );
 
-        await new Promise((r) => setTimeout(r, 250));
-        if (d && d.body) void d.body.offsetHeight;
-        await new Promise((r) => setTimeout(r, 150));
-        return w;
-      } catch {
-        return iframe.contentWindow;
-      }
-    };
+      // liten delay for stabil layout
+      await new Promise((r) => setTimeout(r, 250));
+      if (d && d.body) void d.body.offsetHeight;
+      await new Promise((r) => setTimeout(r, 150));
+      return w;
+    } catch {
+      return iframe.contentWindow;
+    }
+  };
 
-    iframe.onload = async () => {
-      if (!autoPrint) return;
+  iframe.onload = async () => {
+    if (!autoPrint) return;
 
-      const w = await waitForIframeReady();
-      await new Promise((r) => requestAnimationFrame(r));
+    const w = await waitForIframeReady();
+    await new Promise((r) => requestAnimationFrame(r));
 
-      try {
-        w?.focus();
-        w?.print();
-      } catch (e) {
-        console.error("Print failed:", e);
-      }
-    };
-  }
+    try {
+      w?.focus();
+      w?.print();
+    } catch (e) {
+      console.error("Print failed:", e);
+    }
+  };
+}
 
   // ✅ PDF button = open print dialog (user selects "Save as PDF")
   if (downloadPdfBtn) {
@@ -978,21 +994,30 @@ function startApp() {
     downloadHtmlBtn.addEventListener("click", async () => {
       try {
         const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
+  
+        // ✅ NY
+        const templateCss = await fetch("/templates/nurse/template.css", { cache: "no-store" }).then((r) =>
+          r.text()
+        );
+  
         const html = `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CV</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
-  <style>${cssText}</style>
-</head>
-<body style="margin:0; padding:0; background:white;">
-  ${preview ? preview.innerHTML : ""}
-</body>
-</html>`;
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CV</title>
+  
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+  
+    <style>${cssText}\n\n${templateCss}</style>
+  </head>
+  <body style="margin:0; padding:0; background:white;">
+    ${preview ? preview.innerHTML : ""}
+  </body>
+  </html>`;
+  
         const blob = new Blob([html], { type: "text/html;charset=utf-8" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -1008,7 +1033,6 @@ function startApp() {
       }
     });
   }
-
   // ---------------------------
   // Layout controls: hide + fullscreen + resizers
   // ---------------------------
