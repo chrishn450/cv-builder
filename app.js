@@ -49,7 +49,7 @@ async function requireAccessOrLock() {
 function startApp() {
   const qs = (id) => document.getElementById(id);
 
-  const state = { data: {}, sections: {}, ui: { lang: "en" } };
+  const state = { data: {}, sections: {}, ui: { lang: "en", template: null } };
 
   // ---- i18n from external file ----
   const CVI = window.CV_I18N || {};
@@ -60,6 +60,8 @@ function startApp() {
   const printBtn = qs("printBtn");
   const downloadPdfBtn = qs("downloadPdfBtn");
   const downloadHtmlBtn = qs("downloadHtmlBtn");
+
+  const templateSelect = qs("templateSelect");
 
   const FIELD_IDS = [
     "name",
@@ -110,8 +112,117 @@ function startApp() {
     );
   }
 
+  // ---------------------------
+  // TEMPLATE SYSTEM (auto-load CSS + render.js)
+  // ---------------------------
+  const TEMPLATE_STORAGE_KEY = "cv_builder_active_template_v1";
+
+  function getTemplates() {
+    return Array.isArray(window.CV_TEMPLATES) ? window.CV_TEMPLATES : [];
+  }
+
+  function getDefaultTemplateId() {
+    const list = getTemplates();
+    return list[0]?.id || "nurse";
+  }
+
+  function getActiveTemplateId() {
+    return state.ui.template || getDefaultTemplateId();
+  }
+
+  function getActiveTemplate() {
+    const id = getActiveTemplateId();
+    return getTemplates().find((t) => t.id === id) || getTemplates()[0] || null;
+  }
+
+  function ensureTemplateCssLinkTag() {
+    let el = document.getElementById("templateCss");
+    if (!el) {
+      el = document.createElement("link");
+      el.id = "templateCss";
+      el.rel = "stylesheet";
+      document.head.appendChild(el);
+    }
+    return el;
+  }
+
+  function loadScriptReplace(src, id = "templateRender") {
+    return new Promise((resolve, reject) => {
+      const existing = document.getElementById(id);
+
+      if (existing && existing.getAttribute("data-src") === src) return resolve();
+      if (existing) existing.remove();
+
+      const s = document.createElement("script");
+      s.id = id;
+      s.src = src;
+      s.async = true;
+      s.setAttribute("data-src", src);
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error("Failed to load template render script: " + src));
+      document.head.appendChild(s);
+    });
+  }
+
+  function loadTemplateChoiceFromStorage() {
+    try {
+      const saved = localStorage.getItem(TEMPLATE_STORAGE_KEY);
+      if (saved && String(saved).trim()) state.ui.template = saved;
+    } catch {}
+    if (!state.ui.template) state.ui.template = getDefaultTemplateId();
+  }
+
+  function saveTemplateChoiceToStorage() {
+    try {
+      localStorage.setItem(TEMPLATE_STORAGE_KEY, getActiveTemplateId());
+    } catch {}
+  }
+
+  async function applyTemplate() {
+    const tpl = getActiveTemplate();
+    if (!tpl) return;
+
+    // CSS
+    const link = ensureTemplateCssLinkTag();
+    if (tpl.css) link.href = tpl.css;
+
+    // Render.js (setter window.renderCV)
+    if (tpl.render) {
+      await loadScriptReplace(tpl.render, "templateRender");
+    }
+
+    render();
+  }
+
+  function populateTemplateDropdown() {
+    if (!templateSelect) return;
+
+    const templates = getTemplates();
+    templateSelect.innerHTML = templates
+      .map((tpl) => `<option value="${tpl.id}">${tpl.name || tpl.id}</option>`)
+      .join("");
+
+    templateSelect.value = getActiveTemplateId();
+
+    templateSelect.addEventListener("change", async () => {
+      state.ui.template = templateSelect.value;
+      saveTemplateChoiceToStorage();
+      saveState(); // behold i din vanlige state også (ikke kritisk, men greit)
+      try {
+        await applyTemplate();
+      } catch (e) {
+        console.error(e);
+        alert("Failed to load template. Check console.");
+      }
+    });
+  }
+
+  // ---------------------------
+  // Render
+  // ---------------------------
   function render() {
-    if (!preview || typeof window.renderCV !== "function") return;
+    if (!preview) return;
+    if (typeof window.renderCV !== "function") return;
 
     const lang = state.ui.lang || "en";
     const defaults = getTemplateDefaults(lang);
@@ -779,13 +890,13 @@ function startApp() {
           <button class="btn ghost" type="button" data-vol-remove="${idx}" style="padding:6px 10px;">${t("common.remove")}</button>
         </div>
 
-        <label class="label">${t("vol.title")}</label>
+        <label class="label">${t("vol.title") || "Title"}</label>
         <textarea class="textarea" rows="2" data-vol-title="${idx}"></textarea>
 
-        <label class="label">${t("vol.date")}</label>
+        <label class="label">${t("vol.date") || "Date"}</label>
         <textarea class="textarea" rows="1" data-vol-date="${idx}"></textarea>
 
-        <label class="label">${t("vol.sub")}</label>
+        <label class="label">${t("vol.sub") || "Sub"}</label>
         <textarea class="textarea" rows="2" data-vol-sub="${idx}"></textarea>
 
         <div class="toolbar" data-vol-toolbar="${idx}">
@@ -858,19 +969,17 @@ function startApp() {
   }
 
   // ---- Export helpers (PDF/print) ✅ popup-safe via hidden iframe
-  // ---- Export helpers (PDF/print) ✅ popup-safe via hidden iframe
-async function exportToPrintIframe({ autoPrint = true } = {}) {
-  // ✅ Hent både global UI-styles og template-styles
-  // Tips: hvis du hoster på subpath (GitHub Pages), bruk "styles.css" uten leading slash.
-  const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
+  async function exportToPrintIframe({ autoPrint = true } = {}) {
+    const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
 
-  const templateCss = await fetch("/templates/nurse/template.css", { cache: "no-store" }).then((r) =>
-    r.text()
-  );
+    const tpl = getActiveTemplate();
+    const templateCssText = tpl?.css
+      ? await fetch(tpl.css, { cache: "no-store" }).then((r) => r.text())
+      : "";
 
-  const cvHtml = preview ? preview.innerHTML : "";
+    const cvHtml = preview ? preview.innerHTML : "";
 
-  const html = `<!doctype html>
+    const html = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -881,10 +990,12 @@ async function exportToPrintIframe({ autoPrint = true } = {}) {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
 
-  <!-- ✅ Viktig: inkluder BOTH -->
-  <style>${cssText}\n\n${templateCss}</style>
+  <style>
+${cssText}
 
-  <!-- Print hardening -->
+${templateCssText}
+  </style>
+
   <style>
     @page { size: A4; margin: 0; }
     html, body {
@@ -901,76 +1012,70 @@ async function exportToPrintIframe({ autoPrint = true } = {}) {
 </body>
 </html>`;
 
-  // Fjern gammel iframe hvis den finnes
-  const old = document.getElementById("printFrame");
-  if (old) old.remove();
+    const old = document.getElementById("printFrame");
+    if (old) old.remove();
 
-  // Lag ny hidden iframe (popup-safe)
-  const iframe = document.createElement("iframe");
-  iframe.id = "printFrame";
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  iframe.style.opacity = "0";
-  iframe.setAttribute("aria-hidden", "true");
-  document.body.appendChild(iframe);
+    const iframe = document.createElement("iframe");
+    iframe.id = "printFrame";
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.opacity = "0";
+    iframe.setAttribute("aria-hidden", "true");
+    document.body.appendChild(iframe);
 
-  const doc = iframe.contentDocument || iframe.contentWindow?.document;
-  if (!doc) return;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
 
-  doc.open();
-  doc.write(html);
-  doc.close();
+    doc.open();
+    doc.write(html);
+    doc.close();
 
-  // Vent på fonts/images + litt layout
-  const waitForIframeReady = async () => {
-    try {
-      const w = iframe.contentWindow;
-      const d = iframe.contentDocument;
+    const waitForIframeReady = async () => {
+      try {
+        const w = iframe.contentWindow;
+        const d = iframe.contentDocument;
 
-      // fonts
-      if (d?.fonts?.ready) await d.fonts.ready;
+        if (d?.fonts?.ready) await d.fonts.ready;
 
-      // images (hvis noen finnes)
-      const imgs = Array.from(d?.images || []);
-      await Promise.all(
-        imgs.map(
-          (img) =>
-            new Promise((res) => {
-              if (img.complete) return res();
-              img.addEventListener("load", res, { once: true });
-              img.addEventListener("error", res, { once: true });
-            })
-        )
-      );
+        const imgs = Array.from(d?.images || []);
+        await Promise.all(
+          imgs.map(
+            (img) =>
+              new Promise((res) => {
+                if (img.complete) return res();
+                img.addEventListener("load", res, { once: true });
+                img.addEventListener("error", res, { once: true });
+              })
+          )
+        );
 
-      // liten delay for stabil layout
-      await new Promise((r) => setTimeout(r, 250));
-      if (d && d.body) void d.body.offsetHeight;
-      await new Promise((r) => setTimeout(r, 150));
-      return w;
-    } catch {
-      return iframe.contentWindow;
-    }
-  };
+        await new Promise((r) => setTimeout(r, 250));
+        if (d && d.body) void d.body.offsetHeight;
+        await new Promise((r) => setTimeout(r, 150));
+        return w;
+      } catch {
+        return iframe.contentWindow;
+      }
+    };
 
-  iframe.onload = async () => {
-    if (!autoPrint) return;
+    iframe.onload = async () => {
+      if (!autoPrint) return;
 
-    const w = await waitForIframeReady();
-    await new Promise((r) => requestAnimationFrame(r));
+      const w = await waitForIframeReady();
+      await new Promise((r) => requestAnimationFrame(r));
 
-    try {
-      w?.focus();
-      w?.print();
-    } catch (e) {
-      console.error("Print failed:", e);
-    }
-  };
-}
+      try {
+        w?.focus();
+        w?.print();
+      } catch (e) {
+        console.error("Print failed:", e);
+      }
+    };
+  }
 
   // ✅ PDF button = open print dialog (user selects "Save as PDF")
   if (downloadPdfBtn) {
@@ -994,30 +1099,33 @@ async function exportToPrintIframe({ autoPrint = true } = {}) {
     downloadHtmlBtn.addEventListener("click", async () => {
       try {
         const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
-  
-        // ✅ NY
-        const templateCss = await fetch("/templates/nurse/template.css", { cache: "no-store" }).then((r) =>
-          r.text()
-        );
-  
+        const tpl = getActiveTemplate();
+        const templateCssText = tpl?.css
+          ? await fetch(tpl.css, { cache: "no-store" }).then((r) => r.text())
+          : "";
+
         const html = `<!doctype html>
-  <html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CV</title>
-  
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
-  
-    <style>${cssText}\n\n${templateCss}</style>
-  </head>
-  <body style="margin:0; padding:0; background:white;">
-    ${preview ? preview.innerHTML : ""}
-  </body>
-  </html>`;
-  
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CV</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <style>
+${cssText}
+
+${templateCssText}
+  </style>
+</head>
+<body style="margin:0; padding:0; background:white;">
+  ${preview ? preview.innerHTML : ""}
+</body>
+</html>`;
+
         const blob = new Blob([html], { type: "text/html;charset=utf-8" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -1033,6 +1141,7 @@ async function exportToPrintIframe({ autoPrint = true } = {}) {
       }
     });
   }
+
   // ---------------------------
   // Layout controls: hide + fullscreen + resizers
   // ---------------------------
@@ -1646,6 +1755,10 @@ async function exportToPrintIframe({ autoPrint = true } = {}) {
   // BOOT (no forced "show app" here — guard handles it)
   // ---------------------------
   loadState();
+
+  // template choice (separat key)
+  loadTemplateChoiceFromStorage();
+
   initSectionsFromUI();
   syncUIFromState();
   bindSimpleInputs();
@@ -1672,6 +1785,14 @@ async function exportToPrintIframe({ autoPrint = true } = {}) {
   applyI18n();
   applyDefaultSectionTitlesForLanguage(state.ui.lang || "en");
 
+  // Templates UI + load
+  populateTemplateDropdown();
+
   saveState();
-  render();
+
+  // Load active template CSS + render.js then render
+  applyTemplate().catch((e) => {
+    console.error(e);
+    alert("Template load failed. Check console.");
+  });
 }
