@@ -1,6 +1,6 @@
-// templates/manifest.js
+// /templates/manifest.js
 (function () {
-  // Legg til nye templates her, ferdig.
+  // Du kan legge til flere templates her uten å endre app.js
   window.CV_TEMPLATES = [
     {
       id: "nurse",
@@ -8,7 +8,12 @@
       css: "/templates/nurse/template.css",
       render: "/templates/nurse/render.js",
     },
-    // Eksempel:
-    // { id: "modern", name: "Modern", css: "/templates/modern/template.css", render: "/templates/modern/render.js" },
+    // eksempel:
+    // {
+    //   id: "modern",
+    //   name: "Modern",
+    //   css: "/templates/modern/template.css",
+    //   render: "/templates/modern/render.js",
+    // },
   ];
 })();
