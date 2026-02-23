@@ -1,1 +1,479 @@
+/* templates/nurse/template.css (CV + preview + print) */
 
+/* ────────────────────────────────────────────── CV Theme Variables ────────────────────────────────────────────── */
+:root{
+  --cv-bg: #f7f7f5;
+  --cv-heading: #2b2b2b;
+  --cv-body: #343434;
+  --cv-light: #7b7b7b;
+  --cv-accent: #c6b28e;
+  --cv-border: #eadfcd;
+
+  --cv-rule: rgba(0,0,0,0.18);
+  --cv-rule-thin: rgba(0,0,0,0.14);
+
+  /* MASTER KONTROLLER */
+  --cv-divider-pos-pct: 35%;   /* (UI) */
+  --cv-divider-pos: 0.35;      /* 0..1 (layout) */
+  --cv-divider-safe: 30px;
+  --cv-divider-w: 1px;
+  --cv-body-pad-x: 54px;
+  --cv-divider-top: 24px;
+
+  --cv-body-pad-bot: 26px;         /* bottom padding */
+  --cv-divider-bottom-safe: 24px;  /* stop line before very bottom */
+
+  /* kontakt-streker */
+  --cv-contact-rule: rgba(0,0,0,0.20);
+  --cv-contact-thickness: 2px;
+
+  --cv-dot-size: 3.5px;
+}
+
+/* ────────────────────────────────────────────── Preview viewport (A4 paper) ────────────────────────────────────────────── */
+#panel-preview{ display: block; }
+
+#preview{
+  height: auto;
+  overflow: visible;
+
+  padding: 18px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 12px;
+
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+#preview::before{
+  content:"";
+  position: absolute;
+  inset: 0;
+  pointer-events:none;
+}
+
+/* ────────────────────────────────────────────── CV Template (scoped) ────────────────────────────────────────────── */
+.cv{
+  width: 210mm;
+  height: 297mm;               /* ✅ TRUE A4 */
+  overflow: hidden;
+
+  background: var(--cv-bg);
+  border: 1px solid var(--cv-border);
+  margin: 0 auto;
+
+  display: block;
+
+  color: var(--cv-body);
+  font-family: "Source Sans 3", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.5;
+
+  box-shadow: 0 24px 70px rgba(0,0,0,0.45);
+
+  /* ✅ stabiliserer fysisk størrelse */
+  box-sizing: border-box;
+}
+
+/* force same paper tone everywhere */
+.cv .cv-header,
+.cv .cv-summary,
+.cv .cv-body{ background: var(--cv-bg); }
+
+/* lighter bold in CV */
+.cv strong{
+  font-weight: 500;
+  color: #222;
+}
+
+/* ────────────────────────────── Header ────────────────────────────── */
+.cv .cv-header{
+  text-align:center;
+  padding: 44px 54px 10px;
+}
+
+.cv .cv-name{
+  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--cv-heading);
+}
+.cv .cv-title{
+  font-size: 9.4px;
+  font-weight: 300;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--cv-text);
+  margin-top: 6px;
+  opacity: 0.95;
+}
+
+/* kontakt-raden får to tykkere streker */
+.cv .cv-contact{
+  margin-top: 16px;
+  padding: 10px 0;
+  border-top: var(--cv-contact-thickness) solid var(--cv-contact-rule);
+  border-bottom: var(--cv-contact-thickness) solid var(--cv-contact-rule);
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap: 6px 18px;
+
+  font-size: 8.6px;
+  color: var(--cv-body);
+}
+.cv .cv-contact .sep{ display:none; }
+.cv .cv-contact .citem{
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+}
+.cv .cv-contact svg{
+  width: 12px;
+  height: 12px;
+  opacity: 0.75;
+  color: var(--cv-body);
+}
+
+/* ────────────────────────────── Summary ────────────────────────────── */
+.cv .cv-summary{
+  padding: 18px 54px 12px;
+  margin-bottom: 14px;
+}
+.cv .body-text{
+  font-size: 9.1px;
+  line-height: 1.75;
+  color: var(--cv-body);
+}
+
+/* ────────────────────────────── Two columns + divider (FLOATS) ────────────────────────────── */
+.cv .cv-body{
+  display:block;
+  position: relative;
+  padding: var(--cv-divider-top) var(--cv-body-pad-x) var(--cv-body-pad-bot);
+}
+
+/* midtlinja */
+.cv .cv-body::before{
+  content:"";
+  position:absolute;
+  top: var(--cv-divider-top);
+  bottom: calc(var(--cv-body-pad-bot) + var(--cv-divider-bottom-safe));
+
+  left: calc(
+    var(--cv-body-pad-x) +
+    ((100% - (2 * var(--cv-body-pad-x))) * var(--cv-divider-pos))
+  );
+
+  width: 0;
+  border-left: var(--cv-divider-w) solid var(--cv-rule);
+  opacity: 0.75;
+  pointer-events:none;
+  z-index: 3;
+}
+
+/* ✅ FIX: IKKE flex+gap inne i floats (print kan endre gap) */
+.cv .cv-left{
+  float:left;
+  width: calc(100% * var(--cv-divider-pos));
+  padding-right: var(--cv-divider-safe);
+  box-sizing: border-box;
+
+  display:block;            /* ✅ vekk fra flex */
+  gap: 0 !important;        /* ✅ ingen gap i print */
+
+  position: relative;
+  z-index: 1;
+}
+.cv .cv-right{
+  float:right;
+  width: calc(100% * (1 - var(--cv-divider-pos)));
+  padding-left: var(--cv-divider-safe);
+  box-sizing: border-box;
+
+  display:block;            /* ✅ vekk fra flex */
+  gap: 0 !important;        /* ✅ ingen gap i print */
+
+  position: relative;
+  z-index: 1;
+}
+
+/* clear floats */
+.cv .cv-body::after{
+  content:"";
+  display:block;
+  clear:both;
+}
+
+/* ✅ FIX: spacing mellom seksjoner via margin (stabil i print/PDF) */
+.cv section{ margin-bottom: 0; }
+.cv .cv-left > section + section,
+.cv .cv-right > section + section{
+  margin-top: 18px;
+}
+
+/* ────────────────────────────── Section titles ────────────────────────────── */
+.cv .section-title{
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  color: var(--cv-heading);
+
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+
+  position: relative;
+  border-bottom: none;
+}
+.cv .section-title::after{
+  content:"";
+  position:absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--cv-rule-thin);
+}
+
+/* ────────────────────────────── Blocks ────────────────────────────── */
+.cv .edu-block{ margin-bottom: 10px; }
+.cv .edu-block h3{
+  font-size: 9.4px;
+  font-weight: 600;
+  margin:0;
+  color: var(--cv-heading);
+}
+.cv .edu-block p{ font-size: 8.5px; margin:0; color: var(--cv-body); }
+.cv .edu-block .date{ font-size: 8px; color: var(--cv-light); }
+.cv .edu-block .honors{ font-size: 8px; color: var(--cv-light); font-style: italic; }
+
+.cv .cert-item{ margin-bottom: 10px; }
+.cv .cert-item h3{ font-size: 9px; font-weight: 600; margin:0; color: var(--cv-heading); }
+.cv .cert-item p{ font-size: 8px; margin:0; color: var(--cv-light); }
+
+/* lists */
+.cv .skill-list, .cv .exp-bullets{
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+.cv .skill-list li, .cv .exp-bullets li{
+  font-size: 8.5px;
+  line-height: 1.65;
+  color: var(--cv-body);
+  display:flex;
+  align-items:flex-start;
+  gap:7px;
+  margin-bottom: 6px;
+}
+
+/* dots */
+.cv ul.auto-dots li::before{
+  content:"";
+  margin-top: 6px;
+  flex-shrink:0;
+  width: var(--cv-dot-size);
+  height: var(--cv-dot-size);
+  border-radius: 50%;
+  background: var(--cv-accent);
+}
+.cv ul.no-auto-dots li::before{
+  content: none !important;
+  display: none !important;
+}
+.cv ul.no-auto-dots li{ gap: 0; }
+
+/* experience */
+.cv .exp-entry{ margin-bottom: 16px; }
+.cv .exp-entry h3{
+  font-size: 9.3px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  margin:0;
+  color: var(--cv-heading);
+}
+.cv .exp-entry .meta{
+  font-size: 8.4px;
+  color: var(--cv-light);
+  margin: 4px 0 8px;
+}
+
+/* volunteer */
+.cv .vol-header{
+  display:flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.cv .vol-header h3{
+  font-size: 9.3px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  margin:0;
+  color: var(--cv-heading);
+}
+.cv .vol-header .date{
+  margin-left: auto;
+  font-size: 8px;
+  color: var(--cv-light);
+  white-space: nowrap;
+  text-align: right;
+}
+.cv .vol-sub{ font-size: 8.5px; color: var(--cv-light); margin: 0 0 6px; }
+.cv .lang-list p{ font-size: 8.5px; color: var(--cv-body); margin: 3px 0; }
+
+.cv .cv-right p, .cv .cv-right ul, .cv .cv-right ol,
+.cv .cv-left  p, .cv .cv-left  ul, .cv .cv-left  ol{
+  margin-left: 0;
+  padding-left: 0;
+}
+
+/* ────────────────────────────────────────────── FINAL FONT FIX ────────────────────────────────────────────── */
+.cv p,
+.cv .body-text,
+.cv .skill-list li,
+.cv .exp-bullets li,
+.cv .lang-list p,
+.cv .edu-block p{
+  font-size: 11px !important;
+  line-height: 1.5 !important;
+}
+.cv .section-title{ font-size: 14px !important; }
+.cv .exp-entry h3,
+.cv .edu-block h3,
+.cv .cert-item h3{
+  font-size: 12px !important;
+}
+.cv .cv-contact,
+.cv .exp-entry .meta,
+.cv .vol-sub{
+  font-size: 11px !important;
+}
+.cv .edu-block .date,
+.cv .edu-block .honors,
+.cv .vol-header .date{
+  font-size: 11px !important;
+}
+.cv li{ margin-bottom: 6px; }
+
+/* ────────────────────────────────────────────── Print: full A4 ────────────────────────────────────────────── */
+@page { size: A4; margin: 0; }
+
+@media print{
+  html, body{
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    color: #111 !important;
+  }
+
+  /* Hvis du printer fra hoveddokument (ikke iframe), skjul UI */
+  .topbar, #panel-editor, #panel-ai, .v-resizer, .panel-actions,
+  .ai-chat, .ai-compose, .btn, button, a,
+  .container, .grid3, .card, .panel,
+  #locked, #app{
+    display: none !important;
+  }
+
+  body{ display:block !important; }
+
+  .cv{
+    width: 210mm !important;
+    height: 297mm !important;      /* ✅ TRUE A4 */
+    margin: 0 auto !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    transform: none !important;
+
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+
+    display: block !important;
+
+    /* ✅ stabiliser */
+    box-sizing: border-box !important;
+  }
+
+  /* behold floats + midtlinje identisk */
+  .cv .cv-body{
+    display: block !important;
+    position: relative !important;
+    padding: var(--cv-divider-top) var(--cv-body-pad-x) var(--cv-body-pad-bot) !important;
+  }
+
+  .cv .cv-body::before{
+    content:"" !important;
+    position: absolute !important;
+    top: var(--cv-divider-top) !important;
+    bottom: calc(var(--cv-body-pad-bot) + var(--cv-divider-bottom-safe)) !important;
+
+    left: calc(
+      var(--cv-body-pad-x) +
+      ((100% - (2 * var(--cv-body-pad-x))) * var(--cv-divider-pos))
+    ) !important;
+
+    width: 0 !important;
+    border-left: var(--cv-divider-w) solid var(--cv-rule) !important;
+    opacity: 0.75 !important;
+
+    pointer-events: none !important;
+    z-index: 3 !important;
+  }
+
+  .cv .cv-left{
+    float: left !important;
+    width: calc(100% * var(--cv-divider-pos)) !important;
+    padding-right: var(--cv-divider-safe) !important;
+    box-sizing: border-box !important;
+
+    display: block !important;   /* ✅ */
+  }
+
+  .cv .cv-right{
+    float: right !important;
+    width: calc(100% * (1 - var(--cv-divider-pos))) !important;
+    padding-left: var(--cv-divider-safe) !important;
+    box-sizing: border-box !important;
+
+    display: block !important;   /* ✅ */
+  }
+
+  .cv .cv-body::after{
+    content:"" !important;
+    display:block !important;
+    clear:both !important;
+  }
+
+  /* ✅ behold samme spacing-regel i print */
+  .cv section{ margin-bottom: 0 !important; }
+  .cv .cv-left > section + section,
+  .cv .cv-right > section + section{
+    margin-top: 18px !important;
+  }
+
+  /* page-break regler (1 side uansett, men hindrer rare kutt i Chrome) */
+  .cv section,
+  .cv .exp-entry,
+  .cv .edu-block,
+  .cv .cert-item,
+  .cv li{
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}
