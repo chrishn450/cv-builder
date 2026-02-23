@@ -13,11 +13,13 @@ function addDaysIso(days) {
   return new Date(Date.now() + days * 24 * 3600 * 1000).toISOString();
 }
 
+function normalizeEmail(v) {
+  return String(v || "").trim().toLowerCase();
+}
+
 export default async function handler(req, res) {
   try {
-    if (req.method !== "POST") {
-      return json(res, 405, { error: "Method not allowed" });
-    }
+    if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
 
     const payload = await readJsonBody(req);
 
@@ -25,7 +27,6 @@ export default async function handler(req, res) {
     const apiKey = env("PAYHIP_API_KEY");
     const expectedSig = sha256Hex(apiKey);
     const gotSig = String(payload.signature || "").trim();
-
     if (!gotSig || gotSig !== expectedSig) {
       return json(res, 401, { error: "Invalid signature" });
     }
@@ -35,23 +36,17 @@ export default async function handler(req, res) {
       return json(res, 200, { ok: true, ignored: true, reason: "not_paid" });
     }
 
-    const email = String(payload.email || payload.customer_email || "")
-      .trim()
-      .toLowerCase();
+    const email = normalizeEmail(payload.email || payload.customer_email);
     if (!email) return json(res, 400, { error: "Missing customer email" });
 
     const transactionId = String(payload.id || payload.transaction_id || "").trim();
     if (!transactionId) return json(res, 400, { error: "Missing transaction id" });
 
-    const requiredProductId = process.env.PAYHIP_PRODUCT_ID;
+    // Product id from payload
     const item = Array.isArray(payload.items) ? payload.items[0] : null;
-    const productId =
-      String(item?.product_id || payload.product_id || "").trim() || null;
+    const productId = String(item?.product_id || payload.product_id || "").trim() || null;
 
-    if (requiredProductId && productId && requiredProductId !== productId) {
-      return json(res, 200, { ok: true, ignored: true, reason: "wrong_product" });
-    }
-
+    // Idempotency: don’t process same transaction twice
     const existing = await supabaseFetch(
       `/rest/v1/purchases?payhip_transaction_id=eq.${encodeURIComponent(transactionId)}&select=id`,
       { method: "GET" }
@@ -60,18 +55,15 @@ export default async function handler(req, res) {
       return json(res, 200, { ok: true, duplicate: true });
     }
 
+    // 1) 30 days access
     const accessExpiresAt = addDaysIso(30);
-
     await supabaseFetch("/rest/v1/customers?on_conflict=email", {
       method: "POST",
       headers: { Prefer: "resolution=merge-duplicates" },
-      body: {
-        email,
-        has_access: true,
-        access_expires_at: accessExpiresAt,
-      },
+      body: { email, has_access: true, access_expires_at: accessExpiresAt },
     });
 
+    // 2) store purchase
     await supabaseFetch("/rest/v1/purchases", {
       method: "POST",
       body: {
@@ -81,21 +73,42 @@ export default async function handler(req, res) {
       },
     });
 
+    // ✅ 3) map product -> template and grant entitlement
+    // provider_product_id is the "b/XXXXX" id like AeoVP
+    if (productId) {
+      const mapRows = await supabaseFetch(
+        `/rest/v1/product_templates?provider=eq.payhip&provider_product_id=eq.${encodeURIComponent(
+          productId
+        )}&select=template_key`,
+        { method: "GET" }
+      );
+
+      const mapping = Array.isArray(mapRows) ? mapRows[0] : null;
+      const templateKey = String(mapping?.template_key || "").trim();
+
+      if (templateKey) {
+        await supabaseFetch("/rest/v1/customer_templates?on_conflict=email,template_key", {
+          method: "POST",
+          headers: { Prefer: "resolution=ignore-duplicates" },
+          body: { email, template_key: templateKey },
+        });
+      }
+    }
+
+    // 4) create magic link (24h)
     const token = crypto.randomBytes(32).toString("hex");
     const tokenHash = sha256Hex(token);
     const expiresAt = addHoursIso(24);
 
     await supabaseFetch("/rest/v1/magic_links", {
       method: "POST",
-      body: {
-        customer_email: email,
-        token_hash: tokenHash,
-        expires_at: expiresAt,
-      },
+      body: { customer_email: email, token_hash: tokenHash, expires_at: expiresAt },
     });
 
+    // 5) email claim link
     const baseUrl = env("APP_BASE_URL");
     const link = `${String(baseUrl).replace(/\/$/, "")}/claim.html?token=${token}`;
+
     await sendEmail({
       to: email,
       subject: "Your CV Builder access",
