@@ -1,10 +1,4 @@
 // app.js (FULL) — gated behind /api/me + template entitlements + dynamic template loading
-// Assumes:
-// - index.html has: <link id="templateCss" rel="stylesheet" href="" />
-// - index.html has: <select id="templateSelect"></select>
-// - index.html includes: <script src="/templates/manifest.js?v=1"></script> BEFORE app.js
-// - manifest.js defines: window.CV_TEMPLATES = [{ id, name, css, render, default? }, ...]
-// - /api/me returns: { ok:true, email, has_access:true, access_expires_at, templates:["nurse", ...] }
 
 (function () {
   // --- ACCESS GUARD (must run before anything else) ---
@@ -25,7 +19,6 @@
   }
 
   async function requireAccessOrLock() {
-    // hide all while checking
     if (lockedEl) lockedEl.style.display = "none";
     if (appEl) appEl.style.display = "none";
 
@@ -44,11 +37,11 @@
     const me = await requireAccessOrLock();
     if (!me) {
       showLocked();
-      return; // IMPORTANT: stop here (do not init app)
+      return;
     }
 
     showApp();
-    startApp(me); // init app only for authenticated users
+    startApp(me);
   })();
 
   // ---------------------------
@@ -57,10 +50,8 @@
   function startApp(me) {
     const qs = (id) => document.getElementById(id);
 
-    // NOTE: state.ui.template added
     const state = { data: {}, sections: {}, ui: { lang: "en", template: "" } };
 
-    // ---- i18n from external file ----
     const CVI = window.CV_I18N || {};
     const LANGS = CVI.LANGS || [{ code: "en", name: "English" }];
     const t = (key) => (CVI.t ? CVI.t(state.ui.lang || "en", key) : key);
@@ -70,46 +61,25 @@
     const downloadPdfBtn = qs("downloadPdfBtn");
     const downloadHtmlBtn = qs("downloadHtmlBtn");
 
-    // Template UI hooks
+    // ✅ Upload UI hooks
+    const uploadOldCvBtn = qs("uploadOldCvBtn");
+    const oldCvFile = qs("oldCvFile");
+
     const templateSelect = qs("templateSelect");
     const templateCssLink = qs("templateCss");
 
     const FIELD_IDS = [
-      "name",
-      "title",
-      "email",
-      "phone",
-      "location",
-      "linkedin",
-      "summary",
-      "clinicalSkills",
-      "coreCompetencies",
-      "languages",
-      "achievements",
-      "custom1",
-      "custom2",
+      "name","title","email","phone","location","linkedin","summary",
+      "clinicalSkills","coreCompetencies","languages","achievements","custom1","custom2",
     ];
 
     const SECTION_KEYS = [
-      "summary",
-      "education",
-      "licenses",
-      "clinicalSkills",
-      "coreCompetencies",
-      "languages",
-      "experience",
-      "achievements",
-      "volunteer",
-      "custom1",
-      "custom2",
+      "summary","education","licenses","clinicalSkills","coreCompetencies","languages",
+      "experience","achievements","volunteer","custom1","custom2",
     ];
 
     const CONTACT_SHOW_IDS = [
-      "show_title",
-      "show_email",
-      "show_phone",
-      "show_location",
-      "show_linkedin",
+      "show_title","show_email","show_phone","show_location","show_linkedin",
     ];
 
     function getTemplateDefaults(lang) {
@@ -124,16 +94,14 @@
     }
 
     // ---------------------------
-    // Templates (manifest + entitlements)
+    // Templates
     // ---------------------------
     function getManifestTemplates() {
       const arr = window.CV_TEMPLATES;
       return Array.isArray(arr) ? arr : [];
     }
 
-    function normalizeId(x) {
-      return String(x || "").trim().toLowerCase();
-    }
+    function normalizeId(x) { return String(x || "").trim().toLowerCase(); }
 
     function getAllowedTemplateIdsFromMe() {
       const ids = Array.isArray(me?.templates) ? me.templates : [];
@@ -143,16 +111,11 @@
     function computeAllowedTemplates() {
       const manifest = getManifestTemplates();
       const allowedIds = new Set(getAllowedTemplateIdsFromMe());
-
-      // If backend doesn't send templates list, fallback to "all" (but you said you want per-template products,
-      // so keep backend sending it).
       if (allowedIds.size === 0) return [];
-
       return manifest.filter((tpl) => allowedIds.has(normalizeId(tpl.id)));
     }
 
     function pickDefaultTemplateId(allowedTemplates) {
-      // Prefer manifest default, else first
       const byDefault = allowedTemplates.find((t0) => !!t0.default);
       return normalizeId(byDefault?.id || allowedTemplates[0]?.id || "");
     }
@@ -164,7 +127,6 @@
 
     function setTemplateCssHref(cssPath) {
       if (!templateCssLink) return;
-      // force refresh if desired
       templateCssLink.href = cssPath ? `${cssPath}?v=1` : "";
     }
 
@@ -187,23 +149,10 @@
 
     async function loadTemplateAssets(tpl) {
       if (!tpl) return;
-
-      // 1) CSS
       setTemplateCssHref(tpl.css || "");
-
-      // 2) Render JS (defines window.renderCV)
       removeExistingTemplateRenderScript();
-
-      // Clear old renderer to avoid accidental render with wrong template
-      try {
-        delete window.renderCV;
-      } catch (_) {
-        window.renderCV = undefined;
-      }
-
-      if (tpl.render) {
-        await loadScript(tpl.render);
-      }
+      try { delete window.renderCV; } catch { window.renderCV = undefined; }
+      if (tpl.render) await loadScript(tpl.render);
     }
 
     function fillTemplateSelect(allowedTemplates) {
@@ -217,12 +166,7 @@
         templateSelect.appendChild(opt);
       });
 
-      // UX: hide selector if only one template
-      if (allowedTemplates.length <= 1) {
-        templateSelect.style.display = "none";
-      } else {
-        templateSelect.style.display = "";
-      }
+      templateSelect.style.display = allowedTemplates.length <= 1 ? "none" : "";
     }
 
     // ---------------------------
@@ -230,7 +174,6 @@
     // ---------------------------
     function render() {
       if (!preview || typeof window.renderCV !== "function") return;
-
       const lang = state.ui.lang || "en";
       const defaults = getTemplateDefaults(lang);
       const merged = { ...(defaults || {}), ...(state.data || {}) };
@@ -245,7 +188,7 @@
     // ---------------------------
     // Storage
     // ---------------------------
-    const STORAGE_KEY = "cv_builder_user_overrides_structured_v4"; // bumped version to include template in ui
+    const STORAGE_KEY = "cv_builder_user_overrides_structured_v4";
 
     function loadState() {
       try {
@@ -261,10 +204,7 @@
 
     function saveState() {
       try {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({ data: state.data, sections: state.sections, ui: state.ui })
-        );
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: state.data, sections: state.sections, ui: state.ui }));
       } catch (_) {}
     }
 
@@ -275,10 +215,8 @@
       });
     }
 
-    // ✅ FIXED + CLEAN: init sections + default OFF only if no saved choice yet
     function initSectionsFromUI() {
       const defaultOff = new Set(["coreCompetencies", "achievements", "volunteer"]);
-
       SECTION_KEYS.forEach((k) => {
         if (!state.sections[k]) state.sections[k] = {};
 
@@ -293,8 +231,10 @@
         }
 
         if (ti) {
-          if (state.sections[k].title != null) ti.value = state.sections[k].title;
-          else ti.value = ti.value || "";
+          if (ti) {
+            if (state.sections[k].title != null) ti.value = state.sections[k].title;
+            else ti.value = ti.value || "";
+          }
         }
       });
 
@@ -302,10 +242,7 @@
       CONTACT_SHOW_IDS.forEach((id) => {
         const el = qs(id);
         if (!el) return;
-
-        if (state.sections.contact[id] == null) {
-          state.sections.contact[id] = !!el.checked;
-        }
+        if (state.sections.contact[id] == null) state.sections.contact[id] = !!el.checked;
         el.checked = state.sections.contact[id] !== false;
       });
     }
@@ -338,8 +275,7 @@
         const el = qs(id);
         if (!el) return;
 
-        if (state.data[id] != null && String(state.data[id]).length > 0) el.value = String(state.data[id]);
-        else el.value = "";
+        el.value = state.data[id] != null ? String(state.data[id]) : "";
 
         el.addEventListener("input", () => {
           state.data[id] = el.value;
@@ -377,7 +313,6 @@
       CONTACT_SHOW_IDS.forEach((id) => {
         const el = qs(id);
         if (!el) return;
-
         el.checked = state.sections.contact[id] !== false;
 
         el.addEventListener("change", () => {
@@ -389,7 +324,7 @@
       });
     }
 
-    // ---------- Toolbar helpers (Bold + Bullet toggle) ----------
+    // ---------- Toolbar helpers ----------
     function wrapSelectionWith(el, left, right) {
       const v = el.value || "";
       const start = el.selectionStart ?? 0;
@@ -407,9 +342,7 @@
       btn.setAttribute("aria-pressed", String(!!on));
     }
 
-    function getLineStart(v, pos) {
-      return v.lastIndexOf("\n", pos - 1) + 1;
-    }
+    function getLineStart(v, pos) { return v.lastIndexOf("\n", pos - 1) + 1; }
 
     function lineHasBulletPrefix(v, lineStart) {
       const head2 = v.slice(lineStart, lineStart + 2);
@@ -420,7 +353,6 @@
       const v = el.value || "";
       const pos = el.selectionStart ?? v.length;
       const lineStart = getLineStart(v, pos);
-
       if (lineHasBulletPrefix(v, lineStart)) return;
 
       el.value = v.slice(0, lineStart) + BULLET + v.slice(lineStart);
@@ -468,10 +400,7 @@
         }
 
         if (e.key === "Backspace") {
-          setTimeout(() => {
-            removeEmptyBulletLine(target);
-            onChange();
-          }, 0);
+          setTimeout(() => { removeEmptyBulletLine(target); onChange(); }, 0);
         }
       });
 
@@ -578,7 +507,7 @@
         wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
           <div class="muted small">${t("edu.blockTitle")} ${idx + 1}</div>
-          <button class="btn ghost" type="button" data-edu-remove="${idx}" style="padding:6px 10px;">${t("common.remove")}</button>
+          <button class="btn ghost" type="button" data-edu-remove="${idx}" style="padding:6px 10px; height:auto;">${t("common.remove")}</button>
         </div>
 
         <label class="label">${t("edu.degree")}</label>
@@ -678,7 +607,7 @@
         wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
           <div class="muted small">${t("lic.blockTitle")} ${idx + 1}</div>
-          <button class="btn ghost" type="button" data-lic-remove="${idx}" style="padding:6px 10px;">${t("common.remove")}</button>
+          <button class="btn ghost" type="button" data-lic-remove="${idx}" style="padding:6px 10px; height:auto;">${t("common.remove")}</button>
         </div>
 
         <label class="label">${t("lic.title")}</label>
@@ -759,7 +688,7 @@
         wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
           <div class="muted small">${t("exp.blockTitle")} ${idx + 1}</div>
-          <button class="btn ghost" type="button" data-exp-remove="${idx}" style="padding:6px 10px;">${t("common.remove")}</button>
+          <button class="btn ghost" type="button" data-exp-remove="${idx}" style="padding:6px 10px; height:auto;">${t("common.remove")}</button>
         </div>
 
         <label class="label">${t("exp.role")}</label>
@@ -897,13 +826,13 @@
         wrap.innerHTML = `
         <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
           <div class="muted small">${t("vol.blockTitle")} ${idx + 1}</div>
-          <button class="btn ghost" type="button" data-vol-remove="${idx}" style="padding:6px 10px;">${t("common.remove")}</button>
+          <button class="btn ghost" type="button" data-vol-remove="${idx}" style="padding:6px 10px; height:auto;">${t("common.remove")}</button>
         </div>
 
-        <label class="label">${t("vol.title")}</label>
+        <label class="label">${t("vol.title") || "Title"}</label>
         <textarea class="textarea" rows="2" data-vol-title="${idx}"></textarea>
 
-        <label class="label">${t("vol.date")}</label>
+        <label class="label">${t("vol.date") || "Date"}</label>
         <textarea class="textarea" rows="1" data-vol-date="${idx}"></textarea>
 
         <label class="label">${t("vol.sub")}</label>
@@ -979,8 +908,7 @@
     }
 
     // ---------------------------
-    // Export helpers (PDF/print) ✅ popup-safe via hidden iframe
-    // Now automatically includes current template CSS
+    // Export helpers (PDF/print) — unchanged
     // ---------------------------
     async function exportToPrintIframe({ autoPrint = true } = {}) {
       const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
@@ -1074,28 +1002,17 @@
 
       iframe.onload = async () => {
         if (!autoPrint) return;
-
         const w = await waitForIframeReady();
         await new Promise((r) => requestAnimationFrame(r));
 
-        try {
-          w?.focus();
-          w?.print();
-        } catch (e) {
-          console.error("Print failed:", e);
-        }
+        try { w?.focus(); w?.print(); } catch (e) { console.error("Print failed:", e); }
       };
     }
 
-    // ✅ PDF button = open print dialog (user selects "Save as PDF")
     if (downloadPdfBtn) {
       downloadPdfBtn.addEventListener("click", async () => {
-        try {
-          await exportToPrintIframe({ autoPrint: true });
-        } catch (err) {
-          console.error("PDF/Print failed:", err);
-          alert("PDF/Print failed. Check console.");
-        }
+        try { await exportToPrintIframe({ autoPrint: true }); }
+        catch (err) { console.error("PDF/Print failed:", err); alert("PDF/Print failed. Check console."); }
       });
     }
 
@@ -1141,23 +1058,20 @@
       });
     }
 
-    // keep print button handling (if you still use it somewhere)
     if (printBtn) {
       const clone = printBtn.cloneNode(true);
       printBtn.parentNode?.replaceChild(clone, printBtn);
     }
 
     // ---------------------------
-    // Layout controls: hide + fullscreen + resizers
+    // Layout controls (unchanged)
     // ---------------------------
     const grid = qs("grid3");
 
     function setGridColumns(cols) {
       if (!grid) return;
       grid.style.gridTemplateColumns = cols;
-      try {
-        localStorage.setItem("cv_grid_cols_v1", cols);
-      } catch {}
+      try { localStorage.setItem("cv_grid_cols_v1", cols); } catch {}
     }
 
     function restoreGridColumns() {
@@ -1181,31 +1095,17 @@
 
     function normalizeGridForVisibility() {
       const v = computeVisiblePanels();
-      if (v.editor && v.preview && v.ai) {
-        setGridColumns("1.25fr 10px 1fr 10px 0.85fr");
-        return;
-      }
-      if (v.editor && v.preview && !v.ai) {
-        setGridColumns("1.25fr 10px 1fr");
-        return;
-      }
-      if (v.editor && !v.preview && v.ai) {
-        setGridColumns("1.25fr 10px 1fr");
-        return;
-      }
-      if (!v.editor && v.preview && v.ai) {
-        setGridColumns("1fr 10px 0.85fr");
-        return;
-      }
+      if (v.editor && v.preview && v.ai) { setGridColumns("1.25fr 10px 1fr 10px 0.85fr"); return; }
+      if (v.editor && v.preview && !v.ai) { setGridColumns("1.25fr 10px 1fr"); return; }
+      if (v.editor && !v.preview && v.ai) { setGridColumns("1.25fr 10px 1fr"); return; }
+      if (!v.editor && v.preview && v.ai) { setGridColumns("1fr 10px 0.85fr"); return; }
       setGridColumns("1fr");
     }
 
     function setupPanelButtons() {
       const showPanelsBtn = qs("showPanelsBtn");
 
-      function setBodyLocked(on) {
-        document.body.style.overflow = on ? "hidden" : "";
-      }
+      function setBodyLocked(on) { document.body.style.overflow = on ? "hidden" : ""; }
 
       function closeAnyFullscreen() {
         document.querySelectorAll(".panel.is-fullscreen").forEach((p) => p.classList.remove("is-fullscreen"));
@@ -1252,9 +1152,7 @@
         });
       });
 
-      window.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeAnyFullscreen();
-      });
+      window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAnyFullscreen(); });
 
       if (showPanelsBtn) {
         showPanelsBtn.addEventListener("click", () => {
@@ -1313,14 +1211,8 @@
           aiPct = remaining * (ratioAi / sum);
         }
 
-        if (previewPct < minPct) {
-          previewPct = minPct;
-          aiPct = remaining - previewPct;
-        }
-        if (aiPct < minPct) {
-          aiPct = minPct;
-          previewPct = remaining - aiPct;
-        }
+        if (previewPct < minPct) { previewPct = minPct; aiPct = remaining - previewPct; }
+        if (aiPct < minPct) { aiPct = minPct; previewPct = remaining - aiPct; }
 
         setGridColumns(`${editorPct}fr 10px ${previewPct}fr 10px ${aiPct}fr`);
       };
@@ -1363,34 +1255,21 @@
       if (pill) pill.textContent = current ? current.name : "English";
     }
 
-    // ✅ Titles default + migration for old stored English titles
     function applyDefaultSectionTitlesForLanguage(lang) {
       const L = lang || state.ui.lang || "en";
       const CVI2 = window.CV_I18N || {};
-      const defs =
-        (CVI2.SECTION_DEFAULTS && (CVI2.SECTION_DEFAULTS[L] || CVI2.SECTION_DEFAULTS.en)) || null;
+      const defs = (CVI2.SECTION_DEFAULTS && (CVI2.SECTION_DEFAULTS[L] || CVI2.SECTION_DEFAULTS.en)) || null;
       if (!defs) return;
 
       if (!state.sections) state.sections = {};
 
       Object.keys(defs).forEach((key) => {
         if (!state.sections[key]) state.sections[key] = {};
-
         const current = state.sections[key].title;
 
         if (!current || !String(current).trim()) {
           state.sections[key].title = defs[key];
           return;
-        }
-
-        if (L === "en") {
-          const cur = String(current).trim().toLowerCase();
-          if (key === "clinicalSkills" && cur === "clinical skills") {
-            state.sections[key].title = defs[key];
-          }
-          if (key === "achievements" && cur === "clinical achievements") {
-            state.sections[key].title = defs[key];
-          }
         }
       });
 
@@ -1412,10 +1291,7 @@
         if (!modal) return;
         modal.style.display = "flex";
         document.body.style.overflow = "hidden";
-        if (search) {
-          search.value = "";
-          search.focus();
-        }
+        if (search) { search.value = ""; search.focus(); }
         renderList("");
       }
 
@@ -1434,9 +1310,9 @@
           .map((l) => {
             const active = l.code === state.ui.lang ? "active" : "";
             return `<div class="lang-item ${active}" data-lang="${l.code}">
-          <div>${l.name}</div>
-          <div class="code">${l.code}</div>
-        </div>`;
+              <div>${l.name}</div>
+              <div class="code">${l.code}</div>
+            </div>`;
           })
           .join("");
 
@@ -1465,15 +1341,12 @@
       if (btn) btn.addEventListener("click", open);
       if (close) close.addEventListener("click", hide);
       if (cancel) cancel.addEventListener("click", hide);
-      if (modal)
-        modal.addEventListener("click", (e) => {
-          if (e.target === modal) hide();
-        });
+      if (modal) modal.addEventListener("click", (e) => { if (e.target === modal) hide(); });
       if (search) search.addEventListener("input", () => renderList(search.value));
     }
 
     // ---------------------------
-    // AI Coach (uendret)
+    // AI Coach (uendret + brukes også av import)
     // ---------------------------
     const AI_HISTORY_KEY = "cv_builder_ai_history_v2";
 
@@ -1491,9 +1364,7 @@
     }
 
     function saveAIHistory(hist) {
-      try {
-        localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(hist.slice(-20)));
-      } catch {}
+      try { localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(hist.slice(-20))); } catch {}
     }
 
     let aiHistory = loadAIHistory();
@@ -1511,9 +1382,9 @@
       const div = document.createElement("div");
       div.className = `msg ${role}`;
       div.innerHTML = `
-      <div class="msg-title">${escapeHtml(title)}</div>
-      <div>${escapeHtml(text).replace(/\n/g, "<br>")}</div>
-    `;
+        <div class="msg-title">${escapeHtml(title)}</div>
+        <div>${escapeHtml(text).replace(/\n/g, "<br>")}</div>
+      `;
       chat.prepend(div);
     }
 
@@ -1523,56 +1394,31 @@
       const div = document.createElement("div");
       div.className = "msg assistant";
       div.innerHTML = `
-      <div class="thinking-row">
-        <span class="spinner"></span>
-        <span>${escapeHtml(t("ai.thinking"))}</span>
-      </div>
-    `;
+        <div class="thinking-row">
+          <span class="spinner"></span>
+          <span>${escapeHtml(t("ai.thinking"))}</span>
+        </div>
+      `;
       chat.prepend(div);
       return div;
     }
 
     const ALLOWED_SET_PATHS = new Set([
-      "data.name",
-      "data.title",
-      "data.email",
-      "data.phone",
-      "data.location",
-      "data.linkedin",
-      "data.summary",
-      "data.education",
-      "data.licenses",
-      "data.clinicalSkills",
-      "data.coreCompetencies",
-      "data.languages",
-      "data.experience",
-      "data.achievements",
-      "data.volunteer",
-      "data.custom1",
-      "data.custom2",
+      "data.name","data.title","data.email","data.phone","data.location","data.linkedin",
+      "data.summary","data.education","data.licenses","data.clinicalSkills","data.coreCompetencies",
+      "data.languages","data.experience","data.achievements","data.volunteer","data.custom1","data.custom2",
 
-      "sections.summary.enabled",
-      "sections.summary.title",
-      "sections.education.enabled",
-      "sections.education.title",
-      "sections.licenses.enabled",
-      "sections.licenses.title",
-      "sections.clinicalSkills.enabled",
-      "sections.clinicalSkills.title",
-      "sections.coreCompetencies.enabled",
-      "sections.coreCompetencies.title",
-      "sections.languages.enabled",
-      "sections.languages.title",
-      "sections.experience.enabled",
-      "sections.experience.title",
-      "sections.achievements.enabled",
-      "sections.achievements.title",
-      "sections.volunteer.enabled",
-      "sections.volunteer.title",
-      "sections.custom1.enabled",
-      "sections.custom1.title",
-      "sections.custom2.enabled",
-      "sections.custom2.title",
+      "sections.summary.enabled","sections.summary.title",
+      "sections.education.enabled","sections.education.title",
+      "sections.licenses.enabled","sections.licenses.title",
+      "sections.clinicalSkills.enabled","sections.clinicalSkills.title",
+      "sections.coreCompetencies.enabled","sections.coreCompetencies.title",
+      "sections.languages.enabled","sections.languages.title",
+      "sections.experience.enabled","sections.experience.title",
+      "sections.achievements.enabled","sections.achievements.title",
+      "sections.volunteer.enabled","sections.volunteer.title",
+      "sections.custom1.enabled","sections.custom1.title",
+      "sections.custom2.enabled","sections.custom2.title",
 
       "sections.contact.show_title",
       "sections.contact.show_email",
@@ -1626,30 +1472,30 @@
       const div = document.createElement("div");
       div.className = "msg assistant";
       div.innerHTML = `
-      <div class="msg-title">${escapeHtml(t("ai.suggestionTitle"))}</div>
-      <div>${escapeHtml(message).replace(/\n/g, "<br>")}</div>
-      ${
-        suggestions.length
-          ? `<div class="sugg">
-        <div class="muted small">${escapeHtml(t("ai.choose"))}</div>
-        ${suggestions
-          .map(
-            (s, idx) => `
-          <div class="sugg-item" data-sugg="${idx}">
-            <div class="topic">${escapeHtml(s.topic || t("ai.suggestionTitle"))}</div>
-            <div>${escapeHtml(String(s.preview || "")).replace(/\n/g, "<br>")}</div>
-            <div class="sugg-buttons">
-              <button class="btn" type="button" data-accept="${idx}">${escapeHtml(t("ai.accept"))}</button>
-              <button class="btn ghost" type="button" data-reject="${idx}">${escapeHtml(t("ai.reject"))}</button>
-            </div>
-          </div>
-        `
-          )
-          .join("")}
-      </div>`
-          : ``
-      }
-    `;
+        <div class="msg-title">${escapeHtml(t("ai.suggestionTitle"))}</div>
+        <div>${escapeHtml(message).replace(/\n/g, "<br>")}</div>
+        ${
+          suggestions.length
+            ? `<div class="sugg">
+                <div class="muted small">${escapeHtml(t("ai.choose"))}</div>
+                ${suggestions
+                  .map(
+                    (s, idx) => `
+                      <div class="sugg-item" data-sugg="${idx}">
+                        <div class="topic">${escapeHtml(s.topic || t("ai.suggestionTitle"))}</div>
+                        <div>${escapeHtml(String(s.preview || "")).replace(/\n/g, "<br>")}</div>
+                        <div class="sugg-buttons">
+                          <button class="btn" type="button" data-accept="${idx}">${escapeHtml(t("ai.accept"))}</button>
+                          <button class="btn ghost" type="button" data-reject="${idx}">${escapeHtml(t("ai.reject"))}</button>
+                        </div>
+                      </div>
+                    `
+                  )
+                  .join("")}
+              </div>`
+            : ``
+        }
+      `;
       chat.prepend(div);
 
       suggestions.forEach((s, idx) => {
@@ -1757,13 +1603,199 @@
     }
 
     // ---------------------------
-    // Template selector setup (entitlements enforced)
+    // ✅ Import old CV (upload → AI → confirm → apply → fit → tips)
+    // ---------------------------
+    function getCvPageEl() {
+      // Prefer template wrapper
+      const page = document.querySelector(".cv-page");
+      if (page) return page;
+      // Fallback: first child inside preview
+      const root = preview?.firstElementChild;
+      return root || null;
+    }
+
+    async function fitToTemplateA4() {
+      // Best effort: trim “least important” content until no overflow
+      for (let i = 0; i < 30; i++) {
+        render();
+        const page = getCvPageEl();
+        if (!page) return;
+
+        const overflow = page.scrollHeight - page.clientHeight;
+        if (overflow <= 2) return;
+
+        // 1) achievements (lines)
+        if (typeof state.data.achievements === "string") {
+          const lines = state.data.achievements.split("\n").map(s => s.trim()).filter(Boolean);
+          if (lines.length > 2) {
+            lines.pop();
+            state.data.achievements = lines.join("\n");
+            saveState();
+            continue;
+          }
+        }
+
+        // 2) volunteer last bullet
+        if (Array.isArray(state.data.volunteerBlocks) && state.data.volunteerBlocks.length) {
+          const last = state.data.volunteerBlocks[state.data.volunteerBlocks.length - 1];
+          if (Array.isArray(last.bullets) && last.bullets.length) {
+            last.bullets.pop();
+            syncVolunteer();
+            saveState();
+            continue;
+          }
+        }
+
+        // 3) experience last bullet
+        if (Array.isArray(state.data.experienceJobs) && state.data.experienceJobs.length) {
+          const j = state.data.experienceJobs[state.data.experienceJobs.length - 1];
+          if (Array.isArray(j.bullets) && j.bullets.length) {
+            j.bullets.pop();
+            syncExperience();
+            saveState();
+            continue;
+          }
+        }
+
+        // 4) skills lines
+        if (typeof state.data.clinicalSkills === "string") {
+          const lines = state.data.clinicalSkills.split("\n").map(s => s.trim()).filter(Boolean);
+          if (lines.length > 6) {
+            lines.pop();
+            state.data.clinicalSkills = lines.join("\n");
+            saveState();
+            continue;
+          }
+        }
+
+        // 5) custom2 then custom1
+        if (typeof state.data.custom2 === "string" && state.data.custom2.trim().length > 0) {
+          const lines = state.data.custom2.split("\n").map(s => s.trim()).filter(Boolean);
+          if (lines.length > 2) {
+            lines.pop();
+            state.data.custom2 = lines.join("\n");
+            saveState();
+            continue;
+          } else {
+            state.data.custom2 = "";
+            delete state.data.custom2;
+            state.sections.custom2 = state.sections.custom2 || {};
+            state.sections.custom2.enabled = false;
+            saveState();
+            continue;
+          }
+        }
+        if (typeof state.data.custom1 === "string" && state.data.custom1.trim().length > 0) {
+          const lines = state.data.custom1.split("\n").map(s => s.trim()).filter(Boolean);
+          if (lines.length > 2) {
+            lines.pop();
+            state.data.custom1 = lines.join("\n");
+            saveState();
+            continue;
+          } else {
+            state.data.custom1 = "";
+            delete state.data.custom1;
+            state.sections.custom1 = state.sections.custom1 || {};
+            state.sections.custom1.enabled = false;
+            saveState();
+            continue;
+          }
+        }
+
+        // If nothing left to trim, stop
+        return;
+      }
+    }
+
+    async function uploadOldCvAndGetImportPlan(file) {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("language", state.ui.lang || "en");
+      fd.append("snapshot", JSON.stringify(snapshotForAI()));
+
+      const res = await fetch("/api/import-cv", {
+        method: "POST",
+        body: fd,
+        credentials: "include",
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.error || "Import failed");
+      return payload;
+    }
+
+    function confirmImport(summary) {
+      const msg = `${t("import.confirm")}\n\n${summary || ""}`;
+      return window.confirm(msg);
+    }
+
+    function setupImportOldCv() {
+      if (!uploadOldCvBtn || !oldCvFile) return;
+
+      uploadOldCvBtn.addEventListener("click", () => oldCvFile.click());
+
+      oldCvFile.addEventListener("change", async () => {
+        const file = oldCvFile.files?.[0];
+        oldCvFile.value = "";
+        if (!file) return;
+
+        addMsg("user", t("ai.you"), `Import CV: ${file.name}`);
+        const thinking = addThinking();
+
+        try {
+          const payload = await uploadOldCvAndGetImportPlan(file);
+          thinking?.remove();
+
+          const summary = String(payload?.summary || "");
+          const patches = Array.isArray(payload?.patches) ? payload.patches : [];
+          const missing = Array.isArray(payload?.missingSuggestions) ? payload.missingSuggestions : [];
+
+          const ok = confirmImport(summary);
+          if (!ok) {
+            renderSuggestionCard({
+              message: (state.ui.lang === "no" ? "Ok — jeg importerte ikke noe." : "Ok — nothing was imported."),
+              suggestions: []
+            });
+            return;
+          }
+
+          // Apply patches
+          patches.forEach(applyChangePatch);
+
+          // Fit to A4 (best effort)
+          await fitToTemplateA4();
+
+          // Show final summary + missing suggestions
+          const tips =
+            missing.length
+              ? (state.ui.lang === "no"
+                  ? "\n\nForslag til å legge til:\n- " + missing.join("\n- ")
+                  : "\n\nSuggestions to add:\n- " + missing.join("\n- "))
+              : "";
+
+          renderSuggestionCard({
+            message: summary + tips,
+            suggestions: []
+          });
+        } catch (e) {
+          thinking?.remove();
+          console.error(e);
+
+          renderSuggestionCard({
+            message: t("import.failed") + (e?.message ? `\n\n${String(e.message)}` : ""),
+            suggestions: []
+          });
+        }
+      });
+    }
+
+    // ---------------------------
+    // Template selector setup
     // ---------------------------
     async function setupTemplatesAndLoadInitial() {
       const allowedTemplates = computeAllowedTemplates();
 
       if (!allowedTemplates.length) {
-        // If user has no templates, lock them out (or show a nicer message)
         console.warn("No allowed templates for this user.");
         showLocked();
         return false;
@@ -1771,7 +1803,6 @@
 
       fillTemplateSelect(allowedTemplates);
 
-      // Pick template: saved -> still allowed -> else default
       const saved = normalizeId(state.ui.template);
       const savedOk = !!getTemplateById(allowedTemplates, saved);
 
@@ -1784,13 +1815,11 @@
       const tpl = getTemplateById(allowedTemplates, initialId) || allowedTemplates[0];
       await loadTemplateAssets(tpl);
 
-      // Change handler
       if (templateSelect) {
         templateSelect.addEventListener("change", async () => {
           const nextId = normalizeId(templateSelect.value);
           const nextTpl = getTemplateById(allowedTemplates, nextId);
           if (!nextTpl) {
-            // snap back
             templateSelect.value = state.ui.template;
             return;
           }
@@ -1812,7 +1841,7 @@
     }
 
     // ---------------------------
-    // BOOT (no forced "show app" here — guard handles it)
+    // BOOT
     // ---------------------------
     loadState();
     initSectionsFromUI();
@@ -1825,27 +1854,25 @@
     renderExperience();
     renderVolunteer();
 
-    // Panels / resizers
     setupPanelButtons();
     restoreGridColumns();
     normalizeGridForVisibility();
     setupResizer("resizer-1", false);
     setupResizer("resizer-2", true);
 
-    // AI
     setupAIUI();
 
-    // Language
     if (!state.ui.lang) state.ui.lang = "en";
     setupLanguageModal();
     applyI18n();
     applyDefaultSectionTitlesForLanguage(state.ui.lang || "en");
 
-    // Templates: must load renderer BEFORE first render
+    // ✅ setup import button
+    setupImportOldCv();
+
     (async () => {
       const ok = await setupTemplatesAndLoadInitial();
       if (!ok) return;
-
       saveState();
       render();
     })();
