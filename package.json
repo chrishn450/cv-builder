@@ -5,6 +5,9 @@
   "type": "module",
   "dependencies": {
     "openai": "^4.0.0",
-    "bcryptjs": "^2.4.3"
+    "bcryptjs": "^2.4.3",
+    "formidable": "^3.5.1",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.6.0"
   }
 }
