@@ -14,10 +14,9 @@
     />
 
     <!-- ✅ UI styles (app / panels / buttons) -->
-    <link rel="stylesheet" href="/styles.css?v=1" />
+    <link rel="stylesheet" href="/styles.css?v=2" />
 
     <!-- ✅ Template styles (ONLY the CV / A4 design) -->
-    <!-- App.js setter href automatisk basert på valgt template -->
     <link id="templateCss" rel="stylesheet" href="" />
   </head>
 
@@ -47,6 +46,17 @@
         >
           Log out
         </button>
+
+        <!-- ✅ NY: Upload old CV (helt til høyre) -->
+        <button id="uploadOldCvBtn" class="btn" type="button" data-i18n="btn.uploadOldCv">
+          Upload your old CV
+        </button>
+        <input
+          id="oldCvFile"
+          type="file"
+          accept=".pdf,.docx,.doc,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          style="display:none;"
+        />
       </div>
     </header>
 
@@ -105,24 +115,10 @@
             <div class="panel-head">
               <h2 data-i18n="editor.title">Edit content</h2>
               <div class="panel-actions">
-                <button
-                  class="pbtn"
-                  type="button"
-                  data-action="hide"
-                  data-target="editor"
-                  title="Hide"
-                  data-i18n="common.hide"
-                >
+                <button class="pbtn" type="button" data-action="hide" data-target="editor" title="Hide" data-i18n="common.hide">
                   Hide
                 </button>
-                <button
-                  class="pbtn"
-                  type="button"
-                  data-action="fullscreen"
-                  data-target="editor"
-                  title="Fullscreen"
-                  data-i18n="common.fullscreen"
-                >
+                <button class="pbtn" type="button" data-action="fullscreen" data-target="editor" title="Fullscreen" data-i18n="common.fullscreen">
                   Fullscreen
                 </button>
               </div>
@@ -218,13 +214,7 @@
                 <button class="tbtn" data-action="bold" type="button" title="Bold (** **)"><b>B</b></button>
                 <button class="tbtn tdot" data-action="bullets" type="button" title="Toggle bullets"></button>
               </div>
-              <textarea
-                id="summary"
-                class="textarea"
-                rows="5"
-                data-i18n-placeholder="ph.summary"
-                placeholder="Write your summary..."
-              ></textarea>
+              <textarea id="summary" class="textarea" rows="5" data-i18n-placeholder="ph.summary" placeholder="Write your summary..."></textarea>
             </div>
 
             <!-- EDUCATION (structured) -->
@@ -453,18 +443,8 @@
             <div class="panel-head">
               <h2 data-i18n="preview.title">Preview</h2>
               <div class="panel-actions">
-                <button class="pbtn" type="button" data-action="hide" data-target="preview" data-i18n="common.hide">
-                  Hide
-                </button>
-                <button
-                  class="pbtn"
-                  type="button"
-                  data-action="fullscreen"
-                  data-target="preview"
-                  data-i18n="common.fullscreen"
-                >
-                  Fullscreen
-                </button>
+                <button class="pbtn" type="button" data-action="hide" data-target="preview" data-i18n="common.hide">Hide</button>
+                <button class="pbtn" type="button" data-action="fullscreen" data-target="preview" data-i18n="common.fullscreen">Fullscreen</button>
               </div>
             </div>
             <div id="preview"></div>
@@ -479,12 +459,8 @@
               <h2 data-i18n="ai.title">AI Coach</h2>
               <div class="panel-actions">
                 <button class="pbtn" id="aiClear" type="button" data-i18n="common.clear">Clear</button>
-                <button class="pbtn" type="button" data-action="hide" data-target="ai" data-i18n="common.hide">
-                  Hide
-                </button>
-                <button class="pbtn" type="button" data-action="fullscreen" data-target="ai" data-i18n="common.fullscreen">
-                  Fullscreen
-                </button>
+                <button class="pbtn" type="button" data-action="hide" data-target="ai" data-i18n="common.hide">Hide</button>
+                <button class="pbtn" type="button" data-action="fullscreen" data-target="ai" data-i18n="common.fullscreen">Fullscreen</button>
               </div>
             </div>
 
@@ -515,13 +491,11 @@
     <script src="/templates/manifest.js?v=1"></script>
 
     <!-- i18n + app -->
-    <script src="/i18n.js?v=1"></script>
+    <script src="/i18n.js?v=2"></script>
 
-    <!-- html2pdf (optional, you can keep it if you still use it) -->
+    <!-- html2pdf (optional) -->
     <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 
-    <!-- ✅ app laster riktig template render.js dynamisk -->
-    <!-- (så denne skal IKKE lenger peke på /templates/nurse/render.js) -->
-    <script src="/app.js?v=1"></script>
+    <script src="/app.js?v=2"></script>
   </body>
 </html>
