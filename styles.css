@@ -24,7 +24,16 @@ body{
   border-bottom: 1.5px solid rgba(255,255,255,0.08);
 }
 .brand{ font-weight: 700; letter-spacing: 0.02em; }
-.actions{ display:flex; gap:10px; align-items:center; }
+
+/* ✅ litt mer robust når mange knapper */
+.actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .lang-pill{
   display:inline-flex;
   align-items:center;
@@ -119,6 +128,7 @@ hr{
   text-decoration: none;
   cursor: pointer;
   font-weight: 700;
+  height: 36px; /* ✅ matcher select */
 }
 .btn:hover{ opacity: 0.95; }
 .btn.ghost{ background: transparent; color: #e9eefc; }
@@ -144,7 +154,7 @@ hr{
   gap:12px;
 }
 .field-controls{ display:flex; align-items:center; gap:10px; }
-.input.small{ max-width: 260px; padding: 8px 10px; }
+.input.small{ max-width: 260px; padding: 8px 10px; height: 34px; }
 .toggle{ display:inline-flex; align-items:center; gap:8px; font-size: 12px; color: rgba(255,255,255,0.75); }
 .toggle input { transform: translateY(1px); }
 
