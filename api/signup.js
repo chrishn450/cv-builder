@@ -1,14 +1,33 @@
 import bcrypt from "bcryptjs";
 import { json, readJsonBody, env, supabaseFetch, setCookie, signJwtHS256 } from "./_utils.js";
 
+function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
 
-    const { email, password } = await readJsonBody(req);
-    const e = String(email || "").trim().toLowerCase();
-    if (!e || !password || String(password).length < 8) {
-      return json(res, 400, { error: "Email + password (min 8 chars) required" });
+    const body = await readJsonBody(req);
+
+    const e = normalizeEmail(body?.email);
+    const password = String(body?.password || "");
+    const passwordConfirm =
+      String(body?.passwordConfirm ?? body?.password2 ?? body?.confirmPassword ?? "");
+
+    if (!e) return json(res, 400, { error: "Email required" });
+
+    if (!password || password.length < 8) {
+      return json(res, 400, { error: "Password must be at least 8 characters" });
+    }
+
+    if (!passwordConfirm) {
+      return json(res, 400, { error: "Please confirm your password" });
+    }
+
+    if (password !== passwordConfirm) {
+      return json(res, 400, { error: "Passwords do not match" });
     }
 
     // finnes bruker?
@@ -21,7 +40,7 @@ export default async function handler(req, res) {
     }
 
     // opprett user
-    const password_hash = await bcrypt.hash(String(password), 12);
+    const password_hash = await bcrypt.hash(password, 12);
     await supabaseFetch("/rest/v1/users", {
       method: "POST",
       body: { email: e, password_hash },
@@ -35,7 +54,7 @@ export default async function handler(req, res) {
     if (!Array.isArray(cust) || cust.length === 0) {
       await supabaseFetch("/rest/v1/customers", {
         method: "POST",
-        body: { email: e, has_access: false, access_expires_at: null },
+        body: { email: e, has_access: false, access_expires_at: null, templates: [] },
       });
     }
 
