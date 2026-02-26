@@ -38,13 +38,18 @@
   </div>
 
   <script>
-    // Endpoints/URLs
+    // ---- CONFIG ----
+    // Må matche backend: /api/auth som tar { action: "login"|"signup"|"me"|... }
     const AUTH_URL = "/api/auth";
-    const PAY_URL  = "https://payhip.com/b/AeoVP";
-    const APP_URL  = "/index.html"; // <- editor/templaten din
 
+    // Payhip + editor
+    const PAY_URL = "https://payhip.com/b/AeoVP";
+    const APP_URL = "/index.html"; // <-- bytt hvis templaten/editoren din har annen URL
+
+    // ---- STATE ----
     let mode = "login"; // "login" | "signup"
 
+    // ---- HELPERS ----
     function setMode(nextMode) {
       mode = nextMode;
 
@@ -86,11 +91,11 @@
       try { return localStorage.getItem("pending_export_kind") || ""; }
       catch { return ""; }
     }
+
     function clearPendingExportKind() {
       try { localStorage.removeItem("pending_export_kind"); } catch {}
     }
 
-    // Hent "me" fra server for å se om bruker har betalt/export access
     async function fetchMe() {
       const { res, data } = await post(AUTH_URL, { action: "me" });
       if (!res.ok) return null;
@@ -98,41 +103,41 @@
       return data; // { email, has_access, templates, ... }
     }
 
-    // ✅ Ny logikk:
-    // - Hvis bruker kom hit fra Export (pending_export_kind finnes):
-    //    - har_access => rett til editor/templaten (ingen Payhip)
-    //    - ikke har_access => åpne Payhip + gå til editor
-    // - ellers: rett til editor
+    // ✅ NY LOGIKK:
+    // - Hvis user kom hit fra Export (pending_export_kind finnes):
+    //    - har_access => redirect til editor med ?autoExport=<kind> (pdf/html)
+    //    - ikke har_access => åpne Payhip + redirect til editor (ingen autoExport)
+    // - ellers => bare til editor
     async function afterAuthNavigate() {
       const pending = getPendingExportKind();
 
-      // Hvis ikke pending export: gå rett til editor/template
+      // Ikke export-flow: bare til app/template
       if (!pending) {
         location.href = APP_URL;
         return;
       }
 
-      // Pending export: sjekk access
       const me = await fetchMe();
 
-      // Hvis me feiler, ikke send til buy (bedre UX) -> bare gå til app
+      // Hvis me feiler: ikke send til Payhip — bare gå til app
       if (!me) {
         location.href = APP_URL;
         return;
       }
 
       if (me.has_access) {
-        // ✅ Har betalt: ikke åpne Payhip
+        // ✅ har betalt: auto-export
         clearPendingExportKind();
-        location.href = APP_URL;
+        location.href = `${APP_URL}?autoExport=${encodeURIComponent(pending)}`;
         return;
       }
 
-      // ❌ Ikke betalt: åpne Payhip + gå til app
+      // ❌ ikke betalt: send til buy + til app
       window.open(PAY_URL, "_blank", "noopener,noreferrer");
       location.href = APP_URL;
     }
 
+    // ---- ACTIONS ----
     async function doLogin() {
       setError("");
       setMode("login");
@@ -176,7 +181,8 @@
       await afterAuthNavigate();
     }
 
-    // Klikk: første klikk bytter mode, andre klikk utfører handlingen
+    // ---- UI EVENTS ----
+    // Første klikk bytter mode, andre klikk kjører handling
     document.getElementById("btnSignup").addEventListener("click", () => {
       if (mode !== "signup") {
         setMode("signup");
@@ -195,13 +201,14 @@
       doLogin();
     });
 
-    // Enter: gjør riktig handling basert på mode
+    // Enter: utfør basert på mode
     document.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
       if (mode === "signup") doSignup();
       else doLogin();
     });
 
+    // default
     setMode("login");
   </script>
 </body>
