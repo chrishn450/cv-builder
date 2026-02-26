@@ -20,21 +20,7 @@ export default async function handler(req, res) {
     const ok = await bcrypt.compare(String(password), String(u.password_hash));
     if (!ok) return json(res, 401, { error: "Invalid login" });
 
-    // 2) sjekk at 30-dagers access fortsatt er gyldig
-    const custRows = await supabaseFetch(
-      `/rest/v1/customers?email=eq.${encodeURIComponent(e)}&select=has_access,access_expires_at`,
-      { method: "GET" }
-    );
-    const c = Array.isArray(custRows) ? custRows[0] : null;
-    if (!c) return json(res, 403, { error: "No access" });
-
-    const hasAccess = Boolean(c.has_access);
-    const exp = c.access_expires_at ? new Date(c.access_expires_at).getTime() : NaN;
-    if (!hasAccess || !Number.isFinite(exp) || Date.now() > exp) {
-      return json(res, 403, { error: "Access expired" });
-    }
-
-    // 3) sett session-cookie
+    // 2) sett session-cookie (login er kun auth, ikke access)
     const secret = env("JWT_SECRET");
     const jwt = signJwtHS256({ email: e }, secret, 60 * 60 * 24 * 30);
     setCookie(res, "cv_session", jwt, { maxAge: 60 * 60 * 24 * 30, path: "/" });
