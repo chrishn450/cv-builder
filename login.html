@@ -11,7 +11,7 @@
     .box { border: 1px solid #ddd; border-radius: 12px; padding: 16px; }
     .row { display:flex; gap:10px; flex-wrap:wrap; }
     .error { color:#b00020; }
-    .muted { color:#666; font-size: 13px; }
+    .muted { color:#666; font-size: 13px; line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -26,34 +26,32 @@
     </div>
 
     <p class="muted">
-      New here? Create an account first — you’ll be asked to pay when exporting.
+      You can build your CV for free. Export (PDF/HTML) requires purchase (30 days).
     </p>
 
     <p id="err" class="error"></p>
   </div>
 
   <script>
-    async function post(url, body) {
-      const res = await fetch(url, {
+    async function postAuth(action, email, password) {
+      const res = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body || {})
+        body: JSON.stringify({ action, email, password })
       });
       const data = await res.json().catch(()=> ({}));
       return { res, data };
     }
 
     function redirectBack() {
-      // hvis appen din er på /index.html, behold denne.
-      // hvis den er på / (root), bruk "/"
+      // Endre hvis appen din ikke er /index.html
       location.href = "/index.html";
     }
 
     document.getElementById("loginBtn").addEventListener("click", async () => {
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("pw").value;
-
-      const { res, data } = await post("/api/login", { email, password });
+      const { res, data } = await postAuth("login", email, password);
       if (!res.ok) {
         document.getElementById("err").textContent = data.error || "Login failed";
         return;
@@ -64,8 +62,7 @@
     document.getElementById("signupBtn").addEventListener("click", async () => {
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("pw").value;
-
-      const { res, data } = await post("/api/signup", { email, password });
+      const { res, data } = await postAuth("signup", email, password);
       if (!res.ok) {
         document.getElementById("err").textContent = data.error || "Signup failed";
         return;
