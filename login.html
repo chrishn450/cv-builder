@@ -38,31 +38,32 @@
   </div>
 
   <script>
-    // 👇 Bytt denne hvis auth-endpointet ditt heter noe annet
+    // Endpoints/URLs
     const AUTH_URL = "/api/auth";
-
-    const PAY_URL = "https://payhip.com/b/AeoVP"; // Payhip
-    const APP_URL = "/index.html";               // editor
+    const PAY_URL  = "https://payhip.com/b/AeoVP";
+    const APP_URL  = "/index.html"; // <- editor/templaten din
 
     let mode = "login"; // "login" | "signup"
 
     function setMode(nextMode) {
       mode = nextMode;
+
       const pw2 = document.getElementById("pw2");
       const title = document.getElementById("modeTitle");
       const hint  = document.getElementById("modeHint");
+      const pw1   = document.getElementById("pw");
 
       if (mode === "signup") {
         pw2.classList.remove("hidden");
         title.textContent = "Create account";
         hint.textContent = "Choose a password and confirm it.";
-        document.getElementById("pw").setAttribute("autocomplete", "new-password");
+        pw1.setAttribute("autocomplete", "new-password");
       } else {
         pw2.classList.add("hidden");
         pw2.value = "";
         title.textContent = "Log in";
         hint.textContent = "Enter your email and password to log in.";
-        document.getElementById("pw").setAttribute("autocomplete", "current-password");
+        pw1.setAttribute("autocomplete", "current-password");
       }
     }
 
@@ -85,14 +86,50 @@
       try { return localStorage.getItem("pending_export_kind") || ""; }
       catch { return ""; }
     }
+    function clearPendingExportKind() {
+      try { localStorage.removeItem("pending_export_kind"); } catch {}
+    }
 
-    function afterAuthNavigate() {
+    // Hent "me" fra server for å se om bruker har betalt/export access
+    async function fetchMe() {
+      const { res, data } = await post(AUTH_URL, { action: "me" });
+      if (!res.ok) return null;
+      if (!data || data.ok !== true) return null;
+      return data; // { email, has_access, templates, ... }
+    }
+
+    // ✅ Ny logikk:
+    // - Hvis bruker kom hit fra Export (pending_export_kind finnes):
+    //    - har_access => rett til editor/templaten (ingen Payhip)
+    //    - ikke har_access => åpne Payhip + gå til editor
+    // - ellers: rett til editor
+    async function afterAuthNavigate() {
       const pending = getPendingExportKind();
-      if (pending) {
-        window.open(PAY_URL, "_blank", "noopener,noreferrer");
+
+      // Hvis ikke pending export: gå rett til editor/template
+      if (!pending) {
         location.href = APP_URL;
         return;
       }
+
+      // Pending export: sjekk access
+      const me = await fetchMe();
+
+      // Hvis me feiler, ikke send til buy (bedre UX) -> bare gå til app
+      if (!me) {
+        location.href = APP_URL;
+        return;
+      }
+
+      if (me.has_access) {
+        // ✅ Har betalt: ikke åpne Payhip
+        clearPendingExportKind();
+        location.href = APP_URL;
+        return;
+      }
+
+      // ❌ Ikke betalt: åpne Payhip + gå til app
+      window.open(PAY_URL, "_blank", "noopener,noreferrer");
       location.href = APP_URL;
     }
 
@@ -112,7 +149,7 @@
       });
 
       if (!res.ok) return setError(data.error || "Login failed");
-      afterAuthNavigate();
+      await afterAuthNavigate();
     }
 
     async function doSignup() {
@@ -136,10 +173,10 @@
       });
 
       if (!res.ok) return setError(data.error || "Signup failed");
-      afterAuthNavigate();
+      await afterAuthNavigate();
     }
 
-    // UI: Klikk "Create account" setter signup-mode, men logger ikke inn før du klikker igjen
+    // Klikk: første klikk bytter mode, andre klikk utfører handlingen
     document.getElementById("btnSignup").addEventListener("click", () => {
       if (mode !== "signup") {
         setMode("signup");
@@ -158,14 +195,13 @@
       doLogin();
     });
 
-    // Enter-tast: gjør riktig action basert på mode
+    // Enter: gjør riktig handling basert på mode
     document.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
       if (mode === "signup") doSignup();
       else doLogin();
     });
 
-    // default mode
     setMode("login");
   </script>
 </body>
