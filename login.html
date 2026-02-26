@@ -1,8 +1,8 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Log in</title>
+  <title>Log in / Sign up</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: Arial, sans-serif; max-width: 520px; margin: 40px auto; padding: 0 16px; }
@@ -11,64 +11,92 @@
     .box { border: 1px solid #ddd; border-radius: 12px; padding: 16px; }
     .row { display:flex; gap:10px; flex-wrap:wrap; }
     .error { color:#b00020; }
-    .muted { color:#666; font-size: 13px; line-height: 1.4; }
+    .muted { color:#666; font-size:14px; }
   </style>
 </head>
 <body>
   <h1>Log in / Sign up</h1>
+
   <div class="box">
-    <input id="email" type="email" placeholder="Email" />
-    <input id="pw" type="password" placeholder="Password (min 8 chars for signup)" />
+    <input id="email" type="email" placeholder="Email" autocomplete="email" />
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password" />
 
     <div class="row">
-      <button id="loginBtn">Log in</button>
-      <button id="signupBtn">Create account</button>
+      <button id="btnLogin">Log in</button>
+      <button id="btnSignup">Create account</button>
     </div>
 
-    <p class="muted">
-      You can build your CV for free. Export (PDF/HTML) requires purchase (30 days).
-    </p>
-
+    <p class="muted">You can build your CV for free. Export (PDF/HTML) requires purchase (30 days).</p>
     <p id="err" class="error"></p>
   </div>
 
   <script>
-    async function postAuth(action, email, password) {
-      const res = await fetch("/api/auth", {
+    const PAY_URL = "https://payhip.com/b/AeoVP"; // <-- din Payhip
+    const APP_URL = "/index.html";               // <-- din editor
+
+    async function post(url, body) {
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, email, password })
+        credentials: "include",
+        body: JSON.stringify(body || {})
       });
       const data = await res.json().catch(()=> ({}));
       return { res, data };
     }
 
-    function redirectBack() {
-      // Endre hvis appen din ikke er /index.html
-      location.href = "/index.html";
+    function getPendingExportKind() {
+      try { return localStorage.getItem("pending_export_kind") || ""; }
+      catch { return ""; }
     }
 
-    document.getElementById("loginBtn").addEventListener("click", async () => {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("pw").value;
-      const { res, data } = await postAuth("login", email, password);
-      if (!res.ok) {
-        document.getElementById("err").textContent = data.error || "Login failed";
-        return;
-      }
-      redirectBack();
-    });
+    function clearPendingExportKind() {
+      try { localStorage.removeItem("pending_export_kind"); } catch {}
+    }
 
-    document.getElementById("signupBtn").addEventListener("click", async () => {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("pw").value;
-      const { res, data } = await postAuth("signup", email, password);
-      if (!res.ok) {
-        document.getElementById("err").textContent = data.error || "Signup failed";
+    function afterAuthNavigate() {
+      // Hvis brukeren kom hit fordi de trykket Export:
+      const pending = getPendingExportKind();
+      if (pending) {
+        // 1) åpne betaling i ny fane med en gang
+        window.open(PAY_URL, "_blank", "noopener,noreferrer");
+        // 2) gå tilbake til editoren
+        location.href = APP_URL;
         return;
       }
-      redirectBack();
-    });
+      // Ellers normal login
+      location.href = APP_URL;
+    }
+
+    function setError(msg) {
+      document.getElementById("err").textContent = msg || "";
+    }
+
+    async function doLogin() {
+      setError("");
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("pw").value;
+
+      const { res, data } = await post("/api/login", { email, password });
+      if (!res.ok) return setError(data.error || "Login failed");
+
+      // Ikke clear pending her – app.js kan fortsatt bruke den etter redirect
+      afterAuthNavigate();
+    }
+
+    async function doSignup() {
+      setError("");
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("pw").value;
+
+      const { res, data } = await post("/api/signup", { email, password });
+      if (!res.ok) return setError(data.error || "Signup failed");
+
+      afterAuthNavigate();
+    }
+
+    document.getElementById("btnLogin").addEventListener("click", doLogin);
+    document.getElementById("btnSignup").addEventListener("click", doSignup);
   </script>
 </body>
 </html>
