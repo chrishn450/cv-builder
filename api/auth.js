@@ -6,8 +6,6 @@ import {
   supabaseFetch,
   setCookie,
   signJwtHS256,
-  // Du må ha en måte å lese cv_session JWT på. Hvis du allerede har i _utils.js: bruk den.
-  // Hvis ikke, legg til helperen under i _utils.js (se punkt 1b).
   readSessionEmailFromReq,
 } from "./_utils.js";
 
@@ -52,8 +50,9 @@ export default async function handler(req, res) {
 
     // --- ME ---
     if (action === "me") {
-      const email = readSessionEmailFromReq(req); // må finnes i _utils.js
-      if (!email) return json(res, 200, { ok: false });
+      const sessionEmail = readSessionEmailFromReq(req);
+      const email = normalizeEmail(sessionEmail);
+      if (!email) return json(res, 200, { ok: false, email: null });
 
       const c = await getCustomerByEmail(email);
       const has_access = computeHasAccess(c);
@@ -63,7 +62,7 @@ export default async function handler(req, res) {
         email,
         has_access,
         access_expires_at: c?.access_expires_at || null,
-        templates: Array.isArray(c?.templates) ? c.templates : [], // hvis du bruker template-entitlements
+        templates: Array.isArray(c?.templates) ? c.templates : [],
       });
     }
 
@@ -86,9 +85,12 @@ export default async function handler(req, res) {
       }
 
       const password_hash = await bcrypt.hash(password, 12);
-      await supabaseFetch("/rest/v1/users", { method: "POST", body: { email, password_hash } });
+      await supabaseFetch("/rest/v1/users", {
+        method: "POST",
+        body: { email, password_hash },
+      });
 
-      // ensure customer row exists (no access initially)
+      // ensure customer row exists
       const c = await getCustomerByEmail(email);
       if (!c) {
         await supabaseFetch("/rest/v1/customers", {
@@ -117,7 +119,7 @@ export default async function handler(req, res) {
       const ok = await bcrypt.compare(password, String(u.password_hash));
       if (!ok) return json(res, 401, { error: "Invalid login" });
 
-      // ensure customer row exists (just in case)
+      // ensure customer row exists
       const c = await getCustomerByEmail(email);
       if (!c) {
         await supabaseFetch("/rest/v1/customers", {
