@@ -1,52 +1,84 @@
-// app.js (FULL) — FREE editor + paywall-on-export (Payhip opens in NEW TAB) + auto-export after access
+// app.js (FULL) — FREE editor + paywall only on export
 // Assumes:
 // - index.html has: <link id="templateCss" rel="stylesheet" href="" />
 // - index.html has: <select id="templateSelect"></select>
 // - index.html includes: <script src="/templates/manifest.js?v=1"></script> BEFORE app.js
-// - manifest.js defines: window.CV_TEMPLATES = [{ id, name, css, render, default?, free? }, ...]
-// - /api/me returns (when logged in): { ok:true, email, has_access:true, access_expires_at, templates:["nurse", ...] }
+// - manifest.js defines: window.CV_TEMPLATES = [{ id, name, css, render, default? }, ...]
+// - /api/auth supports actions: { action:"me"|"login"|"signup"|"logout" }
 
 (function () {
-  // --- UI NODES (guard layer) ---
-  const lockedEl = document.getElementById("locked");
+  // --- PAGE HOOKS ---
+  const lockedEl = document.getElementById("locked"); // we won't use as a full-page lock anymore
   const appEl = document.getElementById("app");
   const logoutBtn = document.getElementById("logoutBtn");
 
-  function showLocked() {
-    if (appEl) appEl.style.display = "none";
-    if (lockedEl) lockedEl.style.display = "block";
-    if (logoutBtn) logoutBtn.style.display = "none";
-  }
+  // Optional: if you later add these in topbar
+  const loginTopLink = document.getElementById("loginTopLink");
+  const signupLink = document.getElementById("signupLink");
 
-  function showApp() {
-    if (lockedEl) lockedEl.style.display = "none";
+  function showAppAlways() {
+    if (lockedEl) lockedEl.style.display = "none"; // don't show full lock screen by default
     if (appEl) appEl.style.display = "block";
-    if (logoutBtn) logoutBtn.style.display = "inline-flex";
   }
 
-  // ✅ NEW: optional auth (app is FREE to use; /api/me only enables export & entitlements)
-  async function getMeOptional() {
+  function setTopbarAuthUI(me) {
+    const isAuthed = !!me?.ok;
+
+    if (logoutBtn) logoutBtn.style.display = isAuthed ? "inline-flex" : "none";
+
+    // If you added these links in the topbar:
+    if (loginTopLink) loginTopLink.style.display = !isAuthed ? "inline-flex" : "none";
+    if (signupLink) signupLink.style.display = !isAuthed ? "inline-flex" : "none";
+  }
+
+  async function fetchMe() {
     try {
-      const r = await fetch("/api/me", { credentials: "include" });
-      if (!r.ok) return null;
-      const me = await r.json().catch(() => null);
-      if (!me?.ok) return null;
-      return me;
+      const r = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "me" }),
+      });
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j) return { ok: false };
+      return j;
     } catch {
-      return null;
+      return { ok: false };
     }
   }
 
+  async function doLogout() {
+    try {
+      await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "logout" }),
+      });
+    } catch {}
+    // reload to reset UI/state
+    location.reload();
+  }
+
   (async function boot() {
-    const me = await getMeOptional();
-    showApp();          // ✅ always show editor
-    startApp(me);       // me may be null
+    showAppAlways();
+
+    const me = await fetchMe();
+    setTopbarAuthUI(me);
+
+    if (logoutBtn) logoutBtn.addEventListener("click", doLogout);
+
+    // Start app always (free editing)
+    startApp(me || { ok: false, has_access: false, templates: [] });
+
+    // Also: if user returned from login/payment and we have a pending export, try auto-export
+    // (this is wired inside startApp too)
   })();
 
   // ---------------------------
-  // APP (runs for everyone; export gated)
+  // APP (runs always; export is gated)
   // ---------------------------
-  function startApp(me) {
+  function startApp(meInitial) {
     const qs = (id) => document.getElementById(id);
 
     // NOTE: state.ui.template added
@@ -66,56 +98,52 @@
     const templateSelect = qs("templateSelect");
     const templateCssLink = qs("templateCss");
 
-    // ---------------------------
-    // ✅ Paywall on export (Payhip NEW TAB) + pending export
-    // ---------------------------
-    const PAYHIP_URL = "https://payhip.com/b/AeoVP";
-    const PENDING_EXPORT_KEY = "pending_export_kind";
+    // Locked section has Buy/Login links (we reuse buyLink to open in a new tab)
+    const buyLinkEl = qs("buyLink");
 
-    function setPendingExport(kind) {
-      try {
-        localStorage.setItem(PENDING_EXPORT_KEY, String(kind || ""));
-      } catch {}
+    // --- Auth state (mutable) ---
+    let me = meInitial || { ok: false, has_access: false, templates: [] };
+
+    // ---------- helpers ----------
+    async function refreshMe() {
+      me = await (async () => {
+        try {
+          const r = await fetch("/api/auth", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ action: "me" }),
+          });
+          const j = await r.json().catch(() => null);
+          return r.ok && j ? j : { ok: false };
+        } catch {
+          return { ok: false };
+        }
+      })();
+
+      // Update topbar auth UI if present
+      const isAuthed = !!me?.ok;
+      const logoutBtn2 = qs("logoutBtn");
+      const loginTopLink2 = qs("loginTopLink");
+      const signupLink2 = qs("signupLink");
+      if (logoutBtn2) logoutBtn2.style.display = isAuthed ? "inline-flex" : "none";
+      if (loginTopLink2) loginTopLink2.style.display = !isAuthed ? "inline-flex" : "none";
+      if (signupLink2) signupLink2.style.display = !isAuthed ? "inline-flex" : "none";
+
+      return me;
     }
 
-    function getPendingExport() {
-      try {
-        return localStorage.getItem(PENDING_EXPORT_KEY);
-      } catch {
-        return null;
-      }
+    function openPayhipInNewTab() {
+      const url = buyLinkEl?.href || "https://payhip.com/b/AeoVP";
+      window.open(url, "_blank", "noopener,noreferrer");
     }
 
-    function clearPendingExport() {
-      try {
-        localStorage.removeItem(PENDING_EXPORT_KEY);
-      } catch {}
+    function goToLogin() {
+      location.href = "/login.html";
     }
 
-    function openPayhipNewTab() {
-      const w = window.open(PAYHIP_URL, "_blank", "noopener,noreferrer");
-      if (!w) window.location.href = PAYHIP_URL; // popup-blocker fallback
-    }
-
-    function requirePaidForExport(kind) {
-      // not logged in -> login first
-      if (!me?.ok) {
-        setPendingExport(kind);
-        window.location.href = "/login.html";
-        return false;
-      }
-
-      // logged in but no access -> payhip in new tab
-      if (!me?.has_access) {
-        setPendingExport(kind);
-        openPayhipNewTab();
-        alert("Checkout opened in a new tab. After purchase, come back here and export again (or refresh).");
-        return false;
-      }
-
-      // paid
-      return true;
-    }
+    const STORAGE_KEY = "cv_builder_user_overrides_structured_v4"; // includes template in ui
+    const AI_HISTORY_KEY = "cv_builder_ai_history_v2";
 
     const FIELD_IDS = [
       "name",
@@ -186,23 +214,18 @@
     function computeAllowedTemplates() {
       const manifest = getManifestTemplates();
 
-      // ✅ NEW: anonymous users get "free" templates (fallback: first template)
-      if (!me?.ok) {
-        const free = manifest.filter((tpl) => tpl && (tpl.free === true || tpl.tier === "free"));
-        if (free.length) return free;
-        return manifest.length ? [manifest[0]] : [];
-      }
+      // FREE MODE: if not logged in => allow all templates
+      if (!me?.ok) return manifest;
 
-      const allowedIds = new Set(getAllowedTemplateIdsFromMe());
+      // If logged in but backend doesn't send template list => allow all
+      const allowedIdsArr = getAllowedTemplateIdsFromMe();
+      if (!allowedIdsArr.length) return manifest;
 
-      // If backend doesn't send templates list, fallback to "all"
-      if (allowedIds.size === 0) return manifest;
-
+      const allowedIds = new Set(allowedIdsArr);
       return manifest.filter((tpl) => allowedIds.has(normalizeId(tpl.id)));
     }
 
     function pickDefaultTemplateId(allowedTemplates) {
-      // Prefer manifest default, else first
       const byDefault = allowedTemplates.find((t0) => !!t0.default);
       return normalizeId(byDefault?.id || allowedTemplates[0]?.id || "");
     }
@@ -237,13 +260,9 @@
     async function loadTemplateAssets(tpl) {
       if (!tpl) return;
 
-      // 1) CSS
       setTemplateCssHref(tpl.css || "");
-
-      // 2) Render JS (defines window.renderCV)
       removeExistingTemplateRenderScript();
 
-      // Clear old renderer
       try {
         delete window.renderCV;
       } catch (_) {
@@ -266,7 +285,6 @@
         templateSelect.appendChild(opt);
       });
 
-      // UX: hide selector if only one template
       if (allowedTemplates.length <= 1) {
         templateSelect.style.display = "none";
       } else {
@@ -294,8 +312,6 @@
     // ---------------------------
     // Storage
     // ---------------------------
-    const STORAGE_KEY = "cv_builder_user_overrides_structured_v4"; // includes template in ui
-
     function loadState() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -324,7 +340,6 @@
       });
     }
 
-    // ✅ init sections + default OFF only if no saved choice yet
     function initSectionsFromUI() {
       const defaultOff = new Set(["coreCompetencies", "achievements", "volunteer"]);
 
@@ -438,7 +453,7 @@
       });
     }
 
-    // ---------- Toolbar helpers ----------
+    // ---------- Toolbar helpers (Bold + Bullet toggle) ----------
     function wrapSelectionWith(el, left, right) {
       const v = el.value || "";
       const start = el.selectionStart ?? 0;
@@ -881,7 +896,7 @@
       });
     }
 
-    // ---- Volunteer
+    // ---- Volunteer (same as your existing)
     function normalizeVolunteerBlock(v) {
       const out = { title: "", date: "", sub: "", bullets: [] };
       const header = String(v?.header ?? v?.title ?? "").trim();
@@ -1136,8 +1151,7 @@
       };
     }
 
-    // ✅ HTML export as function (so we can auto-run pending export)
-    async function exportHtmlNow() {
+    async function exportHtmlFile() {
       const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
 
       const allowedTemplates = computeAllowedTemplates();
@@ -1173,10 +1187,77 @@
       URL.revokeObjectURL(url);
     }
 
-    // ✅ PDF button = open print dialog (user selects "Save as PDF") — gated
+    // ---------------------------
+    // PAYWALL LOGIC (export only)
+    // ---------------------------
+    const PENDING_EXPORT_KEY = "pending_export_kind"; // "pdf" | "html"
+
+    async function requireLoginOrPayForExport(kind) {
+      // 1) not logged in -> go login (signup/login there)
+      await refreshMe();
+      if (!me?.ok) {
+        localStorage.setItem(PENDING_EXPORT_KEY, kind);
+        goToLogin();
+        return { allowed: false };
+      }
+
+      // 2) logged in but no access -> open payhip in new tab and wait
+      if (!me?.has_access) {
+        localStorage.setItem(PENDING_EXPORT_KEY, kind);
+        openPayhipInNewTab();
+        attachFocusPollingForAutoExport();
+        return { allowed: false };
+      }
+
+      // 3) allowed
+      localStorage.removeItem(PENDING_EXPORT_KEY);
+      return { allowed: true };
+    }
+
+    let focusPollingAttached = false;
+
+    function attachFocusPollingForAutoExport() {
+      if (focusPollingAttached) return;
+      focusPollingAttached = true;
+
+      const onFocus = async () => {
+        // When user returns from Payhip tab, poll up to ~60s for webhook to update access
+        const start = Date.now();
+        while (Date.now() - start < 60_000) {
+          await refreshMe();
+          if (me?.ok && me?.has_access) break;
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+        // If now has access and there is pending export -> do it
+        await maybeAutoExportPending();
+      };
+
+      window.addEventListener("focus", onFocus);
+    }
+
+    async function maybeAutoExportPending() {
+      const kind = localStorage.getItem(PENDING_EXPORT_KEY);
+      if (!kind) return;
+
+      await refreshMe();
+      if (!(me?.ok && me?.has_access)) return;
+
+      localStorage.removeItem(PENDING_EXPORT_KEY);
+
+      try {
+        if (kind === "pdf") await exportToPrintIframe({ autoPrint: true });
+        if (kind === "html") await exportHtmlFile();
+      } catch (e) {
+        console.error("Auto export failed:", e);
+      }
+    }
+
+    // Buttons
     if (downloadPdfBtn) {
       downloadPdfBtn.addEventListener("click", async () => {
-        if (!requirePaidForExport("pdf")) return;
+        const gate = await requireLoginOrPayForExport("pdf");
+        if (!gate.allowed) return;
+
         try {
           await exportToPrintIframe({ autoPrint: true });
         } catch (err) {
@@ -1186,12 +1267,13 @@
       });
     }
 
-    // ✅ HTML export — gated
     if (downloadHtmlBtn) {
       downloadHtmlBtn.addEventListener("click", async () => {
-        if (!requirePaidForExport("html")) return;
+        const gate = await requireLoginOrPayForExport("html");
+        if (!gate.allowed) return;
+
         try {
-          await exportHtmlNow();
+          await exportHtmlFile();
         } catch (err) {
           console.error("Export failed:", err);
           alert("Export failed. Check console.");
@@ -1206,7 +1288,7 @@
     }
 
     // ---------------------------
-    // Layout controls: hide + fullscreen + resizers
+    // Layout controls (unchanged)
     // ---------------------------
     const grid = qs("grid3");
 
@@ -1389,7 +1471,7 @@
     }
 
     // ---------------------------
-    // i18n apply
+    // i18n apply (unchanged)
     // ---------------------------
     function applyI18n() {
       document.querySelectorAll("[data-i18n]").forEach((el) => {
@@ -1442,12 +1524,8 @@
 
         if (L === "en") {
           const cur = String(current).trim().toLowerCase();
-          if (key === "clinicalSkills" && cur === "clinical skills") {
-            state.sections[key].title = defs[key];
-          }
-          if (key === "achievements" && cur === "clinical achievements") {
-            state.sections[key].title = defs[key];
-          }
+          if (key === "clinicalSkills" && cur === "clinical skills") state.sections[key].title = defs[key];
+          if (key === "achievements" && cur === "clinical achievements") state.sections[key].title = defs[key];
         }
       });
 
@@ -1456,7 +1534,6 @@
       render();
     }
 
-    // language modal
     function setupLanguageModal() {
       const btn = qs("langBtn");
       const modal = qs("langModal");
@@ -1532,8 +1609,6 @@
     // ---------------------------
     // AI Coach (unchanged)
     // ---------------------------
-    const AI_HISTORY_KEY = "cv_builder_ai_history_v2";
-
     function loadAIHistory() {
       try {
         const raw = localStorage.getItem(AI_HISTORY_KEY);
@@ -1818,10 +1893,8 @@
     // ---------------------------
     async function setupTemplatesAndLoadInitial() {
       const allowedTemplates = computeAllowedTemplates();
-
       if (!allowedTemplates.length) {
-        console.warn("No allowed templates for this user.");
-        showLocked();
+        console.warn("No templates in manifest.");
         return false;
       }
 
@@ -1878,23 +1951,19 @@
     renderExperience();
     renderVolunteer();
 
-    // Panels / resizers
     setupPanelButtons();
     restoreGridColumns();
     normalizeGridForVisibility();
     setupResizer("resizer-1", false);
     setupResizer("resizer-2", true);
 
-    // AI
     setupAIUI();
 
-    // Language
     if (!state.ui.lang) state.ui.lang = "en";
     setupLanguageModal();
     applyI18n();
     applyDefaultSectionTitlesForLanguage(state.ui.lang || "en");
 
-    // Templates: must load renderer BEFORE first render
     (async () => {
       const ok = await setupTemplatesAndLoadInitial();
       if (!ok) return;
@@ -1902,18 +1971,8 @@
       saveState();
       render();
 
-      // ✅ auto-run pending export after login/payment
-      const pending = getPendingExport();
-      if (pending && me?.has_access) {
-        clearPendingExport();
-        try {
-          await new Promise((r) => setTimeout(r, 150));
-          if (pending === "pdf") await exportToPrintIframe({ autoPrint: true });
-          if (pending === "html") await exportHtmlNow();
-        } catch (e) {
-          console.error("Auto-export failed:", e);
-        }
-      }
+      // If user came back from login/payment and we had a pending export -> try it
+      await maybeAutoExportPending();
     })();
   }
 })();
