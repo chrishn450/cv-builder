@@ -79,7 +79,7 @@ export function setCookie(res, name, value, options = {}) {
     path: "/",
     httpOnly: true,
     sameSite: "Lax",
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 30,
     ...options,
   };
@@ -234,4 +234,18 @@ export async function etsyFetch(path, { method = "GET", headers = {}, body } = {
 
 export function addDaysIso(days) {
   return new Date(Date.now() + days * 24 * 3600 * 1000).toISOString();
+}
+export function readSessionEmailFromReq(req) {
+  try {
+    const cookies = parseCookies(req);
+    const token = cookies?.cv_session;
+    if (!token) return "";
+
+    const secret = env("JWT_SECRET");
+    const payload = verifyJwtHS256(token, secret);
+    const email = String(payload?.email || "").trim().toLowerCase();
+    return email || "";
+  } catch {
+    return "";
+  }
 }
