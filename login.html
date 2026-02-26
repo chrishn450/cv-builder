@@ -19,7 +19,8 @@
 
   <div class="box">
     <input id="email" type="email" placeholder="Email" autocomplete="email" />
-    <input id="pw" type="password" placeholder="Password" autocomplete="current-password" />
+    <input id="pw" type="password" placeholder="Password" autocomplete="new-password" />
+    <input id="pw2" type="password" placeholder="Confirm password" autocomplete="new-password" />
 
     <div class="row">
       <button id="btnLogin">Log in</button>
@@ -50,21 +51,13 @@
       catch { return ""; }
     }
 
-    function clearPendingExportKind() {
-      try { localStorage.removeItem("pending_export_kind"); } catch {}
-    }
-
     function afterAuthNavigate() {
-      // Hvis brukeren kom hit fordi de trykket Export:
       const pending = getPendingExportKind();
       if (pending) {
-        // 1) åpne betaling i ny fane med en gang
         window.open(PAY_URL, "_blank", "noopener,noreferrer");
-        // 2) gå tilbake til editoren
         location.href = APP_URL;
         return;
       }
-      // Ellers normal login
       location.href = APP_URL;
     }
 
@@ -80,7 +73,6 @@
       const { res, data } = await post("/api/login", { email, password });
       if (!res.ok) return setError(data.error || "Login failed");
 
-      // Ikke clear pending her – app.js kan fortsatt bruke den etter redirect
       afterAuthNavigate();
     }
 
@@ -88,8 +80,9 @@
       setError("");
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("pw").value;
+      const passwordConfirm = document.getElementById("pw2").value;
 
-      const { res, data } = await post("/api/signup", { email, password });
+      const { res, data } = await post("/api/signup", { email, password, passwordConfirm });
       if (!res.ok) return setError(data.error || "Signup failed");
 
       afterAuthNavigate();
