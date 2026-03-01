@@ -100,7 +100,7 @@
 
 
     // NOTE: state.ui.template added
-    const state = { data: {}, sections: {}, ui: { lang: "en", template: "" } };
+    const state = { data: {}, sections: {}, ui: { lang: "en", template: "", previewScale: 1, _prevPreviewScale: null } };
 
     // ---- i18n from external file ----
     const CVI = window.CV_I18N || {};
@@ -108,6 +108,13 @@
     const t = (key) => (CVI.t ? CVI.t(state.ui.lang || "en", key) : key);
 
     const preview = qs("preview");
+    const previewInner = qs("previewInner") || preview;
+    const previewScaleWrap = qs("previewScaleWrap");
+    const previewScaleHost = qs("previewScaleHost");
+
+    const fitOnePageBtn = qs("fitOnePageBtn");
+    const fillOnePageBtn = qs("fillOnePageBtn");
+    const resetScaleBtn = qs("resetScaleBtn");
     const printBtn = qs("printBtn");
     const downloadPdfBtn = qs("downloadPdfBtn");
     const downloadHtmlBtn = qs("downloadHtmlBtn");
@@ -314,22 +321,112 @@
     // Render
     // ---------------------------
     function render() {
-      if (!preview || typeof window.renderCV !== "function") return;
+      if (!previewInner || typeof window.renderCV !== "function") return;
 
       const lang = state.ui.lang || "en";
       const defaults = getTemplateDefaults(lang);
       const merged = { ...(defaults || {}), ...(state.data || {}) };
       const renderData = buildRenderData(merged);
 
-      preview.innerHTML = window.renderCV({
+      previewInner.innerHTML = window.renderCV({
         ...renderData,
         sections: state.sections,
         lang,
       });
 
+      // Apply saved preview scale (fit/fill)
+      applySavedPreviewScale();
+
       // keep upload button working even if panels re-render
       bindOldCvUploadUI();
     }
+
+    
+    // ---------------------------
+    // Preview scaling (Fit/Fill one page) + Undo
+    // ---------------------------
+    const A4_W = 794;  // px @ ~96dpi
+    const A4_H = 1123; // px @ ~96dpi
+    const MAX_SCALE_UP = 1.08; // fill up a bit, but keep it readable
+
+    function clamp(n, a, b) {
+      return Math.max(a, Math.min(b, n));
+    }
+
+    function getPreviewContentEl() {
+      // usually the root element rendered by template
+      return previewInner?.firstElementChild || previewInner;
+    }
+
+    function measureNaturalSize() {
+      const el = getPreviewContentEl();
+      if (!el) return { w: A4_W, h: A4_H };
+
+      // Measure at scale=1 to avoid feedback loops
+      const prev = state.ui.previewScale || 1;
+      if (previewScaleWrap) previewScaleWrap.style.setProperty("--cv-scale", "1");
+
+      // Force layout
+      const rect = el.getBoundingClientRect();
+      const w = Math.max(1, rect.width);
+      const h = Math.max(1, rect.height);
+
+      // Restore
+      if (previewScaleWrap) previewScaleWrap.style.setProperty("--cv-scale", String(prev));
+
+      return { w, h };
+    }
+
+    function applyPreviewScale(scale, { rememberPrev = true } = {}) {
+      const s = clamp(Number(scale || 1), 0.7, MAX_SCALE_UP);
+
+      if (rememberPrev) state.ui._prevPreviewScale = state.ui.previewScale ?? 1;
+      state.ui.previewScale = s;
+
+      if (previewScaleWrap) previewScaleWrap.style.setProperty("--cv-scale", String(s));
+
+      // Keep a nice scroll area when scaled
+      if (previewScaleHost) {
+        const { w, h } = measureNaturalSize();
+        previewScaleHost.style.height = Math.ceil(h * s) + "px";
+        previewScaleHost.style.width = Math.ceil(w * s) + "px";
+      }
+
+      saveState();
+    }
+
+    function applySavedPreviewScale() {
+      const s = Number(state.ui.previewScale || 1);
+      if (!previewScaleWrap) return;
+      previewScaleWrap.style.setProperty("--cv-scale", String(s));
+
+      if (previewScaleHost) {
+        const { w, h } = measureNaturalSize();
+        previewScaleHost.style.height = Math.ceil(h * s) + "px";
+        previewScaleHost.style.width = Math.ceil(w * s) + "px";
+      }
+    }
+
+    function fitToOnePage() {
+      const { w, h } = measureNaturalSize();
+      const scale = Math.min(1, A4_W / w, A4_H / h);
+      applyPreviewScale(scale, { rememberPrev: true });
+    }
+
+    function fillOnePage() {
+      const { w, h } = measureNaturalSize();
+      const scale = Math.min(MAX_SCALE_UP, A4_W / w, A4_H / h);
+      applyPreviewScale(scale, { rememberPrev: true });
+    }
+
+    function resetScale() {
+      // "Scale tilbake" — restore previous scale if we have it, otherwise reset to 1
+      const prev = state.ui._prevPreviewScale;
+      const next = prev != null ? Number(prev) : 1;
+      state.ui._prevPreviewScale = null;
+      applyPreviewScale(next, { rememberPrev: false });
+    }
+
 
     // ---------------------------
     // Storage
@@ -1291,6 +1388,9 @@
     }
 
     // Buttons
+    if (fitOnePageBtn) fitOnePageBtn.addEventListener("click", () => fitToOnePage());
+    if (fillOnePageBtn) fillOnePageBtn.addEventListener("click", () => fillOnePage());
+    if (resetScaleBtn) resetScaleBtn.addEventListener("click", () => resetScale());
     if (downloadPdfBtn) {
       downloadPdfBtn.addEventListener("click", async () => {
         const gate = await requireLoginOrPayForExport("pdf");

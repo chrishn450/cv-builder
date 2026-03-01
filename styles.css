@@ -320,3 +320,17 @@ hr{
   border-radius: 50%;
   background: var(--cv-accent, #2f6bff);
 }
+
+
+/* --- Preview scaling (Fit/Fill one page) --- */
+.cvScaleHost{
+  width: 794px; /* A4 width @ ~96dpi */
+  margin: 0 auto;
+}
+#preview{
+  overflow: auto;
+}
+.cvScaleWrap{
+  transform: scale(var(--cv-scale, 1));
+  transform-origin: top left;
+}
