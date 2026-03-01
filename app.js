@@ -2520,6 +2520,123 @@ ${text}`.slice(0, 120000);
       return true;
     }
 
+// ---------------------------
+// Editor: collapsible field sections (mobile-friendly)
+// ---------------------------
+function setupEditorCollapsibles() {
+  const panel = document.getElementById("panel-editor");
+  if (!panel) return;
+
+  const STORAGE = "cv_builder_editor_collapsed_v1";
+  let collapsedMap = {};
+  try { collapsedMap = JSON.parse(localStorage.getItem(STORAGE) || "{}") || {}; } catch (_) { collapsedMap = {}; }
+
+  const fields = Array.from(panel.querySelectorAll(".field"));
+  if (!fields.length) return;
+
+  const isNarrow = window.matchMedia && window.matchMedia("(max-width: 980px)").matches;
+  const defaultOpen = new Set(["name", "title", "email"]); // keep top contact fields handy
+
+  function getFieldKey(fieldEl) {
+    const first = fieldEl.querySelector("input[id], textarea[id], select[id]");
+    return first?.id || null;
+  }
+
+  function ensureBodyWrap(fieldEl) {
+    if (fieldEl.querySelector(":scope > .field-body")) return;
+    const head = fieldEl.querySelector(":scope > .field-head");
+    if (!head) return;
+    const body = document.createElement("div");
+    body.className = "field-body";
+    // Move every sibling after field-head into field-body
+    let node = head.nextSibling;
+    const toMove = [];
+    while (node) {
+      const next = node.nextSibling;
+      toMove.push(node);
+      node = next;
+    }
+    toMove.forEach((n) => body.appendChild(n));
+    fieldEl.appendChild(body);
+  }
+
+  function setCollapsed(fieldEl, collapsed) {
+    const key = getFieldKey(fieldEl);
+    fieldEl.classList.toggle("collapsed", !!collapsed);
+    const btn = fieldEl.querySelector(":scope > .field-head .accbtn");
+    if (btn) {
+      btn.setAttribute("aria-expanded", String(!collapsed));
+      btn.textContent = collapsed ? "▸" : "▾";
+    }
+    if (key) {
+      collapsedMap[key] = !!collapsed;
+      try { localStorage.setItem(STORAGE, JSON.stringify(collapsedMap)); } catch (_) {}
+    }
+  }
+
+  // Add per-field toggle buttons
+  fields.forEach((fieldEl) => {
+    ensureBodyWrap(fieldEl);
+    const key = getFieldKey(fieldEl);
+    const head = fieldEl.querySelector(":scope > .field-head");
+    if (!head) return;
+
+    // Create toggle button if missing
+    if (!head.querySelector(".accbtn")) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "accbtn";
+      btn.title = "Collapse/expand";
+      btn.setAttribute("aria-expanded", "true");
+      btn.textContent = "▾";
+      head.appendChild(btn);
+
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const nowCollapsed = !fieldEl.classList.contains("collapsed");
+        setCollapsed(fieldEl, nowCollapsed);
+      });
+    }
+
+    // Auto-expand when focusing an input inside
+    fieldEl.addEventListener("focusin", () => {
+      if (fieldEl.classList.contains("collapsed")) setCollapsed(fieldEl, false);
+    });
+
+    // Initial state
+    if (key && Object.prototype.hasOwnProperty.call(collapsedMap, key)) {
+      setCollapsed(fieldEl, collapsedMap[key]);
+    } else if (isNarrow) {
+      setCollapsed(fieldEl, !defaultOpen.has(key || ""));
+    } else {
+      // Desktop: keep open by default
+      setCollapsed(fieldEl, false);
+    }
+  });
+
+  // Add "Collapse all / Expand all" buttons in panel header
+  const panelActions = panel.querySelector(".panel-actions");
+  if (panelActions && !panelActions.querySelector('[data-editor-acc="collapseAll"]')) {
+    const mk = (label, key) => {
+      const b = document.createElement("button");
+      b.className = "pbtn";
+      b.type = "button";
+      b.textContent = label;
+      b.setAttribute("data-editor-acc", key);
+      return b;
+    };
+    const collapseAll = mk("Collapse", "collapseAll");
+    const expandAll = mk("Expand", "expandAll");
+    panelActions.prepend(expandAll);
+    panelActions.prepend(collapseAll);
+
+    collapseAll.addEventListener("click", () => fields.forEach((f) => setCollapsed(f, true)));
+    expandAll.addEventListener("click", () => fields.forEach((f) => setCollapsed(f, false)));
+  }
+}
+
+
     // ---------------------------
     // BOOT
     // ---------------------------
@@ -2528,6 +2645,7 @@ ${text}`.slice(0, 120000);
     syncUIFromState();
     bindSimpleInputs();
     bindSimpleToolbars();
+    setupEditorCollapsibles();
 
     renderEducation();
     renderLicenses();
