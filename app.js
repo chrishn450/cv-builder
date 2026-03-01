@@ -823,7 +823,10 @@
         .map((j) => {
           const title = (j.title || "").trim();
           const meta = (j.meta || "").trim();
-          const bullets = (j.bullets || []).map((x) => String(x || "").trim()).filter(Boolean);
+          const bullets = (j.bullets || [])
+            .map((x) => String(x || "").trim())
+            .filter(Boolean)
+            .map((b) => (b.startsWith("• ") || b.startsWith("- ") || b.startsWith("· ") ? b : "• " + b));
           return [title, meta, ...bullets].filter(Boolean).join("\n");
         })
         .filter((x) => x.trim().length > 0)
@@ -872,11 +875,21 @@
 
         titleEl.value = job.title || "";
         metaEl.value = job.meta || "";
-        bulletsEl.value = (job.bullets || []).join("\n");
+        bulletsEl.value = (job.bullets || [])
+          .map((b) => {
+            const t0 = String(b || "").trim();
+            if (!t0) return "";
+            return t0.startsWith("• ") || t0.startsWith("- ") || t0.startsWith("· ") ? t0 : "• " + t0;
+          })
+          .filter(Boolean)
+          .join("\n");
 
         const parseBullets = () =>
           String(bulletsEl.value || "")
             .split("\n")
+            .map((l) => String(l || "").trim())
+            .filter(Boolean)
+            .map((l) => l.replace(/^([•\-·])\s+/, ""))
             .map((l) => l.trim())
             .filter(Boolean);
 
@@ -1924,18 +1937,23 @@
 
     async function requestAiReviewAfterImport(importText) {
       const issues = analyzeImportQuality();
-      if (!issues.length) return;
+      const hasIssues = issues.length > 0;
 
       const uiLang = state.ui.lang || "en";
       const clippedText = String(importText || state.ui?.lastImportText || "").slice(0, 120000);
 
+      // Always run a quick post-import review (even if validator finds no obvious issues)
+      // so the AI Coach can propose improvements and ask for missing details.
       const msg =
         `POST_IMPORT_REVIEW\n\n` +
-        `Goal: Improve the imported CV content, fix miscategorized skills, and generate strong bullet points.\n` +
+        `Goal: Improve the imported CV content, fix miscategorized skills, and generate strong bullet points (3–6 per role).\n` +
         `Rules:\n` +
         `- Use ONLY facts present in the old CV text. You MAY rewrite for clarity/impact, and restructure between sections.\n` +
-        `- If content is missing, do NOT guess; instead ask concise follow-up questions in the message.\n\n` +
-        `Issues detected by validator:\n- ${issues.join("\n- ")}\n\n` +
+        `- If something is missing, do NOT guess; ask up to 3 short questions in the message.\n` +
+        `- Provide at least 2 suggestions with patches if possible (Summary, Experience bullets, Skills).\n\n` +
+        (hasIssues
+          ? `Issues detected by validator:\n- ${issues.join("\n- ")}\n\n`
+          : `Validator found no obvious issues, but please still propose improvements and questions.\n\n`) +
         `Old CV text:\n${clippedText}\n`;
 
       showGlobalLoading(uiLang === "no" ? "Forbedrer CV-en…" : "Improving CV…", uiLang === "no" ? "AI gjennomgår importen og foreslår forbedringer." : "AI is reviewing the import and proposing improvements.");
@@ -1960,6 +1978,14 @@
         saveAIHistory(aiHistory);
 
         renderSuggestionCard(payload);
+
+        // Make sure the AI Coach panel is visible and show the new suggestions
+        try {
+          const aiPanel = document.getElementById("aiPanel");
+          if (aiPanel) aiPanel.classList.remove("hidden");
+          const chat = document.getElementById("aiChat");
+          chat?.scrollIntoView({ behavior: "smooth", block: "start" });
+        } catch (_) {}
       } catch (e) {
         console.error(e);
       } finally {
