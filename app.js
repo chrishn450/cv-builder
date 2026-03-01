@@ -1071,7 +1071,7 @@
     // Export helpers (PDF/print) ✅ popup-safe via hidden iframe
     // Includes current template CSS
     // ---------------------------
-    async function exportToPrintIframe({ autoPrint = true } = {}) {
+        async function exportToPrintIframe({ autoPrint = true } = {}) {
       const cssText = await fetch("/styles.css", { cache: "no-store" }).then((r) => r.text());
 
       const allowedTemplates = computeAllowedTemplates();
@@ -1161,19 +1161,56 @@
         }
       };
 
-      iframe.onload = async () => {
-        if (!autoPrint) return;
+      // IMPORTANT:
+      // Return a promise that resolves when we've *attempted* to trigger print.
+      // This lets callers reliably stop loaders (prevents “loading forever”).
+      return await new Promise((resolve) => {
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          resolve();
+        };
 
-        const w = await waitForIframeReady();
-        await new Promise((r) => requestAnimationFrame(r));
+        // failsafe: never keep callers hanging forever
+        const hardTimeout = setTimeout(finish, 12_000);
 
-        try {
-          w?.focus();
-          w?.print();
-        } catch (e) {
-          console.error("Print failed:", e);
-        }
-      };
+        iframe.onload = async () => {
+          if (!autoPrint) {
+            clearTimeout(hardTimeout);
+            finish();
+            return;
+          }
+
+          const w = await waitForIframeReady();
+          await new Promise((r) => requestAnimationFrame(r));
+
+          try {
+            // Prefer afterprint to know when dialog closes (not supported everywhere)
+            try {
+              w?.addEventListener(
+                "afterprint",
+                () => {
+                  clearTimeout(hardTimeout);
+                  finish();
+                },
+                { once: true }
+              );
+            } catch {}
+
+            w?.focus();
+            w?.print();
+          } catch (e) {
+            console.error("Print failed:", e);
+          }
+
+          // If afterprint never fires, resolve shortly after triggering print
+          setTimeout(() => {
+            clearTimeout(hardTimeout);
+            finish();
+          }, 800);
+        };
+      });
     }
 
     async function exportHtmlFile() {
@@ -1212,12 +1249,45 @@
       URL.revokeObjectURL(url);
     }
 
+
+// ---------------------------
+// Export UI wrapper (prevents “loading forever”)
+// ---------------------------
+async function exportPdfWithLoader() {
+  showGlobalLoading("Preparing PDF…", "Opening print dialog.");
+  const failsafe = setTimeout(() => {
+    try { hideGlobalLoading(); } catch {}
+  }, 15_000);
+
+  try {
+    await exportToPrintIframe({ autoPrint: true });
+  } finally {
+    clearTimeout(failsafe);
+    hideGlobalLoading();
+  }
+}
+
+async function exportHtmlWithLoader() {
+  showGlobalLoading("Preparing HTML…", "Generating file.");
+  const failsafe = setTimeout(() => {
+    try { hideGlobalLoading(); } catch {}
+  }, 15_000);
+
+  try {
+    await exportHtmlFile();
+  } finally {
+    clearTimeout(failsafe);
+    hideGlobalLoading();
+  }
+}
     // ---------------------------
     // PAYWALL LOGIC (export only)
     // ---------------------------
     const PENDING_EXPORT_KEY = "pending_export_kind"; // "pdf" | "html"
 
     async function requireLoginOrPayForExport(kind) {
+      // If a loader is visible from a previous action, ensure it doesn't stick around
+      try { hideGlobalLoading(); } catch {}
       // 1) not logged in -> go login (signup/login there)
       await refreshMe();
       if (!me?.ok) {
@@ -1270,8 +1340,8 @@
       localStorage.removeItem(PENDING_EXPORT_KEY);
 
       try {
-        if (kind === "pdf") await exportToPrintIframe({ autoPrint: true });
-        if (kind === "html") await exportHtmlFile();
+        if (kind === "pdf") await exportPdfWithLoader();
+        if (kind === "html") await exportHtmlWithLoader();
       } catch (e) {
         console.error("Auto export failed:", e);
       }
@@ -1284,7 +1354,7 @@
         if (!gate.allowed) return;
 
         try {
-          await exportToPrintIframe({ autoPrint: true });
+          await exportPdfWithLoader();
         } catch (err) {
           console.error("PDF/Print failed:", err);
           alert("PDF/Print failed. Check console.");
@@ -1298,7 +1368,7 @@
         if (!gate.allowed) return;
 
         try {
-          await exportHtmlFile();
+          await exportHtmlWithLoader();
         } catch (err) {
           console.error("Export failed:", err);
           alert("Export failed. Check console.");
