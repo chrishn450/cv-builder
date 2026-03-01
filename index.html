@@ -10,6 +10,7 @@
     .startTitle{font-size:42px;letter-spacing:.2px;margin:0 0 6px}
     .startSub{color:#e6e6e6;opacity:1;margin:0 0 22px;max-width:70ch}
     .startCard *{color:#111}
+    .startCard .muted{color:#333 !important; opacity:1 !important}
     .startCard{
       background:rgba(255,255,255,.96);
       color:#111;
@@ -53,7 +54,7 @@
           <h2>Upload your old CV (PDF)</h2>
           <p class="muted">We’ll extract the text and let AI prefill the template for you.</p>
 
-          <input id="oldCvFile" type="file" accept="application/pdf" />
+          <input id="oldCvFile" type="file" accept="application/pdf" style="display:none" />
           <div class="row">
             <button id="chooseBtn" class="btn secondary" type="button">Choose PDF</button>
             <div id="fileName" class="fileName">No file selected</div>
@@ -66,8 +67,8 @@
         </div>
 
         <div class="tile">
-          <h2>Start from template</h2>
-          <p class="muted">Open the editor and build as before.</p>
+          <h2>Build from scratch</h2>
+          <p class="muted">Start with a blank template and fill it in yourself.</p>
           <button id="goBtn" class="btn secondary" type="button">Go to template</button>
         </div>
       </div>
@@ -75,62 +76,69 @@
   </div>
 
   <script>
-    const STORAGE_PENDING_TEXT = "pending_cv_import_text_v1";
+    // Start page: parse PDF -> store text -> open builder
+    const PENDING_TEXT_KEY = "cv_builder_pending_import_text";
+    const PENDING_LANG_KEY = "cv_builder_pending_import_lang";
 
-    const oldCvFile = document.getElementById("oldCvFile");
-    const chooseBtn = document.getElementById("chooseBtn");
-    const fileName = document.getElementById("fileName");
-    const uploadBtn = document.getElementById("uploadBtn");
-    const statusEl = document.getElementById("uploadStatus");
-
-    function setStatus(text, loading=false){
-      statusEl.innerHTML = loading ? '<span class="spinner"></span> ' + text : text;
+    function setStatus(text, kind) {
+      const el = document.getElementById("uploadStatus");
+      if (!el) return;
+      el.textContent = text || "";
+      el.classList.remove("ok","err","busy");
+      if (kind) el.classList.add(kind);
     }
-
-    chooseBtn.addEventListener("click", () => {
-      oldCvFile.value = ""; // allow selecting the same file again
-      oldCvFile.click();
-    });
-
-    oldCvFile.addEventListener("change", () => {
-      const f = oldCvFile.files && oldCvFile.files[0];
-      fileName.textContent = f ? f.name : "No file selected";
-    });
-
-    document.getElementById("goBtn").addEventListener("click", () => {
-      location.href = "/builder.html";
-    });
 
     async function parsePdf(file) {
       const fd = new FormData();
       fd.append("file", file);
       const r = await fetch("/api/parse-cv", { method:"POST", body: fd });
       const j = await r.json().catch(() => null);
-      if (!r.ok) throw new Error(j && j.error ? j.error : "Failed to parse PDF");
-      return (j && j.text ? j.text : "");
+      if (!r.ok) throw new Error(j?.error || "Failed to parse PDF");
+      return String(j?.text || "");
     }
 
-    uploadBtn.addEventListener("click", async () => {
-      const file = oldCvFile.files && oldCvFile.files[0];
-      if (!file) { setStatus("Choose a PDF first."); return; }
+    document.getElementById("goBtn").addEventListener("click", () => {
+      location.href = "/builder.html";
+    });
 
-      uploadBtn.disabled = true;
-      chooseBtn.disabled = true;
+    document.getElementById("chooseBtn").addEventListener("click", () => {
+      const inp = document.getElementById("oldCvFile");
+      if (!inp) return;
+      inp.value = ""; // allow choosing the same file again
+      inp.click();
+    });
+
+    document.getElementById("oldCvFile").addEventListener("change", () => {
+      const file = document.getElementById("oldCvFile").files?.[0];
+      const nameEl = document.getElementById("fileName");
+      nameEl.textContent = file ? file.name : "No file selected";
+      setStatus("");
+    });
+
+    document.getElementById("uploadBtn").addEventListener("click", async () => {
+      const file = document.getElementById("oldCvFile").files?.[0];
+      if (!file) { setStatus("Choose a PDF first.", "err"); return; }
 
       try {
-        setStatus("Parsing PDF…", true);
+        document.getElementById("uploadBtn").disabled = true;
+        setStatus("Parsing PDF…", "busy");
+
         const text = await parsePdf(file);
+        if (!text.trim()) {
+          setStatus("We couldn't extract text from this PDF. Try a different file.", "err");
+          return;
+        }
 
-        // Store text, then let the editor do the AI import (better results with snapshot + template state)
-        localStorage.setItem(STORAGE_PENDING_TEXT, text);
-
-        setStatus("Opening template…", true);
+        const lower = text.toLowerCase();
+        const looksNo = /\b(og|ikke|som|med|arbeid|erfaring|utdanning|sertifisering|førerkort|språk)\b/.test(lower);
+        try { localStorage.setItem(PENDING_TEXT_KEY, text); } catch {}
+        try { localStorage.setItem(PENDING_LANG_KEY, looksNo ? "no" : "en"); } catch {}
+        setStatus("Opening the editor…", "ok");
         location.href = "/builder.html";
       } catch (e) {
-        setStatus(e && e.message ? e.message : "Import failed.");
+        setStatus(e?.message || "Upload failed.", "err");
       } finally {
-        uploadBtn.disabled = false;
-        chooseBtn.disabled = false;
+        document.getElementById("uploadBtn").disabled = false;
       }
     });
   </script>

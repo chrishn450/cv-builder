@@ -301,9 +301,10 @@
       const lang = state.ui.lang || "en";
       const defaults = getTemplateDefaults(lang);
       const merged = { ...(defaults || {}), ...(state.data || {}) };
+      const renderData = buildRenderData(merged);
 
       preview.innerHTML = window.renderCV({
-        ...merged,
+        ...renderData,
         sections: state.sections,
         lang,
       });
@@ -1900,6 +1901,61 @@
       state.data.languages = normalizeToLines(state.data.languages);
       state.data.achievements = normalizeToLines(state.data.achievements);
     }
+
+    // For preview/PDF rendering: templates vary in how they display lists.
+    // We keep stored values clean (no bullet chars), but add bullets in a render-only copy.
+    function addBulletsToEachLine(text) {
+      const s = String(text || "").trim();
+      if (!s) return "";
+      const lines = s.split("\n").map(x => x.trim()).filter(Boolean);
+      const out = lines.map(x => {
+        // avoid double bullets
+        if (/^([•\-–]|\u2022)\s+/.test(x)) return x;
+        return `• ${x}`;
+      });
+      return out.join("\n");
+    }
+
+    function buildRenderData(merged) {
+      const d = { ...(merged || {}) };
+
+      // Plain list fields
+      d.coreCompetencies = addBulletsToEachLine(d.coreCompetencies);
+      d.clinicalSkills = addBulletsToEachLine(d.clinicalSkills);
+      d.languages = addBulletsToEachLine(d.languages);
+      d.achievements = addBulletsToEachLine(d.achievements);
+
+      // Structured experience bullets
+      if (Array.isArray(d.experienceJobs)) {
+        d.experienceJobs = d.experienceJobs.map(j => {
+          const jj = { ...(j || {}) };
+          if (Array.isArray(jj.bullets)) {
+            jj.bullets = jj.bullets
+              .map(b => String(b || "").trim())
+              .filter(Boolean)
+              .map(b => (/^([•\-–]|\u2022)\s+/.test(b) ? b : `• ${b}`));
+          }
+          return jj;
+        });
+      }
+
+      // Structured volunteer bullets
+      if (Array.isArray(d.volunteerBlocks)) {
+        d.volunteerBlocks = d.volunteerBlocks.map(v => {
+          const vv = { ...(v || {}) };
+          if (Array.isArray(vv.bullets)) {
+            vv.bullets = vv.bullets
+              .map(b => String(b || "").trim())
+              .filter(Boolean)
+              .map(b => (/^([•\-–]|\u2022)\s+/.test(b) ? b : `• ${b}`));
+          }
+          return vv;
+        });
+      }
+
+      return d;
+    }
+
 
     function bindOldCvUploadUI() {
       const btn = qs("uploadOldCvBtn");
