@@ -5,6 +5,8 @@ const ALLOWED_PATHS = [
   "data.name","data.title","data.email","data.phone","data.location","data.linkedin",
   "data.summary","data.education","data.licenses","data.clinicalSkills","data.coreCompetencies",
   "data.languages","data.experience","data.achievements","data.volunteer","data.custom1","data.custom2",
+  "data.educationBlocks","data.licenseBlocks","data.experienceJobs","data.volunteerBlocks",
+
 
   "sections.summary.enabled","sections.summary.title",
   "sections.education.enabled","sections.education.title",
@@ -96,6 +98,16 @@ Rules:
 - When editing text fields: provide improved text in patches (e.g., data.summary).
 - If user asks for new bullets: update the relevant field. Keep bullets one per line.
 - Use snapshot to avoid repeating questions.
+- If the user message contains "IMPORT_OLD_CV":
+  - The message will include extracted text from an old CV.
+  - Populate as many fields as possible.
+  - You MAY create/replace structured arrays for these paths:
+    - data.educationBlocks: [{degree, school, date, honors}]
+    - data.licenseBlocks: [{title, detail}]
+    - data.experienceJobs: [{title, meta, bullets: string[]}]
+    - data.volunteerBlocks: [{title, date, sub, bullets: string[]}]
+  - Enable/disable sections based on whether content exists.
+  - Adjust contact show_* toggles based on whether information exists.
 `.trim();
 
     const context = {
