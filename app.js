@@ -322,6 +322,9 @@
         state.sections = parsed.sections || {};
         state.ui = parsed.ui || state.ui;
       } catch (_) {}
+
+      // Keep upload bindings alive after any DOM changes
+      normalizeGridForVisibility();
     }
 
     function saveState() {
@@ -1408,6 +1411,7 @@
 
           panel.classList.toggle("is-hidden");
           normalizeGridForVisibility();
+    tryAutoImportFromStartPage();
         });
       });
 
@@ -2017,6 +2021,37 @@ ${text}`.slice(0, 120000);
       if (!r.ok) throw new Error(out?.error || "AI import failed");
       return out;
     }
+
+    async function tryAutoImportFromStartPage() {
+      try {
+        const key = "pending_cv_import_text_v1";
+        const text = localStorage.getItem(key);
+        if (!text) return;
+
+        // clear immediately to avoid loops
+        localStorage.removeItem(key);
+
+        if (uploadOldCvStatus) uploadOldCvStatus.textContent = "Importing from uploaded CV…";
+
+        const out = await importOldCvFromText(text);
+        const patches = (out?.suggestions || []).flatMap((s) => s?.patches || []);
+        applyPatchesToState(patches);
+
+        normalizeImportFormatting();
+
+        syncEducation();
+        syncLicenses();
+        syncExperience();
+        syncVolunteer();
+
+        refreshAllAfterImport();
+        if (uploadOldCvStatus) uploadOldCvStatus.textContent = "Imported ✔";
+      } catch (e) {
+        if (uploadOldCvStatus) uploadOldCvStatus.textContent = e?.message || "Import failed";
+      }
+    }
+
+
 
     async function maybeAutoImportPending() {
       const keyText = "cv_builder_pending_import_text";
