@@ -1879,7 +1879,95 @@
       }
     }
 
-    // --- Old CV upload + AI import (PDF -> text -> patches) ---
+    
+    // --- Post-import quality check + AI review ---
+    function analyzeImportQuality() {
+      const issues = [];
+
+      const countLines = (s) =>
+        String(s || "")
+          .split("\n")
+          .map((x) => x.trim())
+          .filter(Boolean).length;
+
+      const skillsCount =
+        countLines(state.data.coreCompetencies) +
+        countLines(state.data.clinicalSkills);
+
+      const jobs = Array.isArray(state.data.experienceJobs) ? state.data.experienceJobs : [];
+      const jobCount = jobs.filter((j) => String(j?.title || "").trim() || String(j?.meta || "").trim()).length;
+
+      const bulletCounts = jobs.map((j) => (Array.isArray(j?.bullets) ? j.bullets.filter((b) => String(b || "").trim()).length : 0));
+      const maxBullets = bulletCounts.length ? Math.max(...bulletCounts) : 0;
+      const minBullets = bulletCounts.length ? Math.min(...bulletCounts) : 0;
+
+      if (skillsCount > 0 && skillsCount < 6) {
+        issues.push("Skills list is very short (under 6 items).");
+      }
+      if (jobCount === 0) {
+        issues.push("No work experience roles were created.");
+      } else {
+        if (maxBullets < 2) issues.push("Work experience is missing bullet points (needs 3–6 per role).");
+        if (minBullets === 0) issues.push("At least one role has no bullet points.");
+      }
+      const summaryLen = String(state.data.summary || "").trim().length;
+      if (summaryLen > 0 && summaryLen < 180) issues.push("Professional summary is quite short.");
+
+      // If we see a lot of 'category words' accidentally treated as skills, flag it
+      const skillText = (String(state.data.coreCompetencies || "") + "\n" + String(state.data.clinicalSkills || "")).toLowerCase();
+      if (/(kommersielt|kunde|faglig)\s*$/.test(skillText.trim())) {
+        issues.push("Some skills look like column headers (e.g. 'Kommersielt/Kunde/Faglig') rather than actual skills.");
+      }
+
+      return issues;
+    }
+
+    async function requestAiReviewAfterImport(importText) {
+      const issues = analyzeImportQuality();
+      if (!issues.length) return;
+
+      const uiLang = state.ui.lang || "en";
+      const clippedText = String(importText || state.ui?.lastImportText || "").slice(0, 120000);
+
+      const msg =
+        `POST_IMPORT_REVIEW\n\n` +
+        `Goal: Improve the imported CV content, fix miscategorized skills, and generate strong bullet points.\n` +
+        `Rules:\n` +
+        `- Use ONLY facts present in the old CV text. You MAY rewrite for clarity/impact, and restructure between sections.\n` +
+        `- If content is missing, do NOT guess; instead ask concise follow-up questions in the message.\n\n` +
+        `Issues detected by validator:\n- ${issues.join("\n- ")}\n\n` +
+        `Old CV text:\n${clippedText}\n`;
+
+      showGlobalLoading(uiLang === "no" ? "Forbedrer CV-en…" : "Improving CV…", uiLang === "no" ? "AI gjennomgår importen og foreslår forbedringer." : "AI is reviewing the import and proposing improvements.");
+
+      try {
+        const res = await fetch("/api/ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: msg,
+            language: uiLang,
+            snapshot: snapshotForAI(),
+            history: [],
+          }),
+        });
+
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(payload?.error || "AI review failed");
+
+        // Show AI's review/suggestions in the chat without adding a user-message
+        aiHistory.push({ role: "assistant", content: payload?.message || "" });
+        saveAIHistory(aiHistory);
+
+        renderSuggestionCard(payload);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        hideGlobalLoading();
+      }
+    }
+
+// --- Old CV upload + AI import (PDF -> text -> patches) ---
     function setDeep(obj, path, value) {
       const parts = String(path || "").split(".");
       let cur = obj;
@@ -2018,6 +2106,8 @@
 
           refreshAllAfterImport();
 
+          await requestAiReviewAfterImport(text);
+
           if (st) st.textContent = "Imported ✓ (you can upload again)";
         } catch (e) {
           if (st) st.textContent = e?.message || "Import failed";
@@ -2102,6 +2192,9 @@ async function parsePdfToText(file) {
       const detected = detectLangFromText(text);
       if (!state.ui) state.ui = {};
       state.ui.lang = detected;
+      // Keep last imported text (for post-import review / user prompts)
+      state.ui.lastImportText = String(text || "").slice(0, 120000);
+      saveState();
 
       // Ensure section titles match the detected language (use defaults)
       clearSectionTitles();
@@ -2164,6 +2257,7 @@ ${text}`.slice(0, 120000);
         syncVolunteer();
 
         refreshAllAfterImport();
+        await requestAiReviewAfterImport(text);
         if (uploadOldCvStatus) uploadOldCvStatus.textContent = "Imported ✔";
       } catch (e) {
         if (uploadOldCvStatus) uploadOldCvStatus.textContent = e?.message || "Import failed";
@@ -2206,6 +2300,7 @@ ${text}`.slice(0, 120000);
 
         cleanupEmptySectionsAndContact();
         refreshAllAfterImport();
+        await requestAiReviewAfterImport(text);
 
         if (statusEl) statusEl.textContent = "Imported ✔";
       } catch (e) {
