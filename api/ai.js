@@ -5,8 +5,9 @@ const ALLOWED_PATHS = [
   "data.name","data.title","data.email","data.phone","data.location","data.linkedin",
   "data.summary","data.education","data.licenses","data.clinicalSkills","data.coreCompetencies",
   "data.languages","data.experience","data.achievements","data.volunteer","data.custom1","data.custom2",
-  "data.educationBlocks","data.licenseBlocks","data.experienceJobs","data.volunteerBlocks",
 
+  // structured arrays
+  "data.educationBlocks","data.licenseBlocks","data.experienceJobs","data.volunteerBlocks",
 
   "sections.summary.enabled","sections.summary.title",
   "sections.education.enabled","sections.education.title",
@@ -51,6 +52,7 @@ function validateSuggestions(suggestions) {
         if (!p || p.op !== "set") return false;
         if (typeof p.path !== "string") return false;
         if (!ALLOWED_PATHS.includes(p.path)) return false;
+        // value can be anything (string/object/array) for allowed paths
         return true;
       });
 
@@ -89,44 +91,62 @@ Return EXACTLY:
 Allowed paths:
 ${ALLOWED_PATHS.join(", ")}
 
-Rules:
+Global rules:
 - Always respond in the user's UI language (language code provided).
 - Be proactive and concrete. Avoid being overly questioning.
 - Ask at most ONE clarifying question ONLY if absolutely needed; if so, return suggestions: [].
 - Suggestions must be independent and selectable (one accept per suggestion).
-- Each suggestion should contain patches for exactly one "theme" (e.g., Summary, Skills, Experience bullets).
+- Each suggestion should contain patches for exactly one theme (e.g., Summary, Skills, Experience).
 - When editing text fields: provide improved text in patches (e.g., data.summary).
-- If user asks for new bullets: update the relevant field. Keep bullets one per line.
+- If user asks for bullets: keep bullets one per line for plain text fields; for structured jobs use bullets: string[].
 - Use snapshot to avoid repeating questions.
-- If the user message contains "IMPORT_OLD_CV":
-  - The message will include extracted text from an old CV.
-  - Populate as many fields as possible.
-  - You MAY create/replace structured arrays for these paths:
-    - data.educationBlocks: [{degree, school, date, honors}]
-    - data.licenseBlocks: [{title, detail}]
-    - data.experienceJobs: [{title, meta, bullets: string[]}]
-    - data.volunteerBlocks: [{title, date, sub, bullets: string[]}]
-  - Enable/disable sections based on whether content exists.
-  - Adjust contact show_* toggles based on whether information exists.
+
+IMPORT_OLD_CV mode (high priority):
+If the user message contains "IMPORT_OLD_CV":
+- The message includes extracted text from an old CV (may be messy).
+- Goal: Build a strong, modern CV using ONLY information that is present in the CV text.
+- You MAY rewrite and improve phrasing, and you MAY restructure/move content between sections.
+- You MUST NOT invent: employers, job titles, degrees, schools, locations, dates, certifications, or contact details that aren't in the text.
+- If something is unclear, omit it rather than guessing.
+
+Output requirements for IMPORT_OLD_CV:
+- Produce ONE main suggestion only (suggestions array length = 1).
+- That suggestion should include as many patches as needed to fully populate the template.
+- Populate structured arrays (replace existing if present):
+  - data.educationBlocks: [{degree, school, date, honors}]
+  - data.licenseBlocks: [{title, detail}]
+  - data.experienceJobs: [{title, meta, bullets: string[]}]
+  - data.volunteerBlocks: [{title, date, sub, bullets: string[]}]
+- For experience bullets:
+  - 3–6 bullets per job when possible.
+  - Start with a strong verb.
+  - Prefer outcome/impact wording when the text supports it.
+  - Avoid duplicates and filler.
+- Set data.summary to a polished 3–5 line professional summary (no fabrication).
+- Enable/disable sections based on whether content exists after restructuring.
+- Adjust contact show_* toggles based on whether information exists.
+- If the CV language is clearly Norwegian, keep content Norwegian and prefer Norwegian section titles (set sections.*.title accordingly).
+- If the CV language is clearly English, keep content English and prefer English section titles.
 `.trim();
 
+    // We pass the context as JSON once, and do NOT repeat message twice.
     const context = {
       language,
-      user_message: message,
       snapshot,
-      notes: "Use snapshot + history to avoid repeating questions."
+      // The user_message is the raw instruction including IMPORT_OLD_CV + CV text.
+      user_message: message
     };
 
     const messages = [
       { role: "system", content: system },
       { role: "user", content: JSON.stringify(context) },
-      ...history,
-      { role: "user", content: message }
+      ...history
     ];
 
     const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.3,
+      // Better quality for import + bullets:
+      model: process.env.OPENAI_MODEL || "gpt-4o",
+      temperature: 0.2,
       messages
     });
 
@@ -136,10 +156,10 @@ Rules:
     if (!parsed || typeof parsed.message !== "string" || !Array.isArray(parsed.suggestions)) {
       return res.status(200).json({
         message: language === "no"
-          ? "Jeg fikk ikke laget forslag i riktig format. Prøv igjen med en tydelig forespørsel (f.eks. «Forbedre oppsummeringen min»)."
+          ? "Jeg fikk ikke laget forslag i riktig format. Prøv igjen."
           : (language === "de"
-              ? "Ich konnte die Vorschläge nicht im richtigen Format erzeugen. Bitte erneut mit einer klaren Anfrage versuchen."
-              : "I couldn't produce suggestions in the correct format. Please try again with a clearer request."),
+              ? "Ich konnte die Vorschläge nicht im richtigen Format erzeugen. Bitte erneut versuchen."
+              : "I couldn't produce suggestions in the correct format. Please try again."),
         suggestions: []
       });
     }
