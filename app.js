@@ -307,6 +307,9 @@
         sections: state.sections,
         lang,
       });
+
+      // keep upload button working even if panels re-render
+      bindOldCvUploadUI();
     }
 
     // ---------------------------
@@ -323,8 +326,8 @@
         state.ui = parsed.ui || state.ui;
       } catch (_) {}
 
-      // Keep upload bindings alive after any DOM changes
       normalizeGridForVisibility();
+      bindOldCvUploadUI();
     }
 
     function saveState() {
@@ -1329,39 +1332,6 @@
         return;
       }
 
-      // Upload old CV (PDF) and prefill the template via AI
-      if (uploadOldCvBtn && uploadOldCvInput) {
-        uploadOldCvBtn.addEventListener("click", () => uploadOldCvInput.click());
-
-        uploadOldCvInput.addEventListener("change", async () => {
-          const file = uploadOldCvInput.files?.[0];
-          if (!file) return;
-
-          try {
-            if (uploadOldCvStatus) uploadOldCvStatus.textContent = "Parsing PDF…";
-            const text = await parsePdfToText(file);
-
-            if (uploadOldCvStatus) uploadOldCvStatus.textContent = "Asking AI to prefill…";
-            const out = await importOldCvFromText(text);
-
-            const patches = (out?.suggestions || []).flatMap((s) => s?.patches || []);
-            applyPatchesToState(patches);
-
-            // Keep hidden textareas in sync (the template renderer reads these)
-            syncEducation();
-            syncLicenses();
-            syncExperience();
-            syncVolunteer();
-
-            refreshAllAfterImport();
-            if (uploadOldCvStatus) uploadOldCvStatus.textContent = "Imported ✔";
-          } catch (e) {
-            if (uploadOldCvStatus) uploadOldCvStatus.textContent = e?.message || "Import failed";
-          } finally {
-            uploadOldCvInput.value = "";
-          }
-        });
-      }
       if (v.editor && v.preview && !v.ai) {
         setGridColumns("1.25fr 10px 1fr");
         return;
@@ -1909,7 +1879,79 @@
       });
     }
 
-    async function parsePdfToText(file) {
+    
+    function normalizeToLines(value) {
+      const s = String(value || "").trim();
+      if (!s) return "";
+      if (s.includes("\n")) {
+        return s.split("\n").map(x => x.trim()).filter(Boolean).join("\n");
+      }
+      const parts = s
+        .split(/[,;•·|]+/g)
+        .map(x => x.trim())
+        .filter(Boolean);
+      if (parts.length <= 1) return s;
+      return parts.join("\n");
+    }
+
+    function normalizeImportFormatting() {
+      state.data.coreCompetencies = normalizeToLines(state.data.coreCompetencies);
+      state.data.clinicalSkills = normalizeToLines(state.data.clinicalSkills);
+      state.data.languages = normalizeToLines(state.data.languages);
+      state.data.achievements = normalizeToLines(state.data.achievements);
+    }
+
+    function bindOldCvUploadUI() {
+      const btn = qs("uploadOldCvBtn");
+      const inp = qs("uploadOldCvInput");
+      const st = qs("uploadOldCvStatus");
+      if (!btn || !inp) return;
+
+      if (btn.dataset.bound === "1") return;
+      btn.dataset.bound = "1";
+
+      btn.addEventListener("click", () => {
+        // allow selecting the same file again
+        inp.value = "";
+        inp.click();
+      });
+
+      inp.addEventListener("change", async () => {
+        const file = inp.files?.[0];
+        if (!file) return;
+
+        try {
+          if (st) st.textContent = "Parsing PDF…";
+          btn.disabled = true;
+          const text = await parsePdfToText(file);
+
+          if (st) st.textContent = "Asking AI to prefill…";
+          const out = await importOldCvFromText(text);
+
+          const patches = (out?.suggestions || []).flatMap((s) => s?.patches || []);
+          applyPatchesToState(patches);
+
+          // Fix common formatting issues regardless of model output
+          normalizeImportFormatting();
+
+          // Keep hidden textareas in sync (the template renderer reads these)
+          syncEducation();
+          syncLicenses();
+          syncExperience();
+          syncVolunteer();
+
+          refreshAllAfterImport();
+
+          if (st) st.textContent = "Imported ✓ (you can upload again)";
+        } catch (e) {
+          if (st) st.textContent = e?.message || "Import failed";
+        } finally {
+          btn.disabled = false;
+          inp.value = "";
+        }
+      });
+    }
+async function parsePdfToText(file) {
       const fd = new FormData();
       fd.append("file", file);
       const r = await fetch("/api/parse-cv", { method: "POST", body: fd });

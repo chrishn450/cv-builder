@@ -8,7 +8,8 @@
   <style>
     .startWrap{max-width:1000px;margin:44px auto;padding:0 18px}
     .startTitle{font-size:42px;letter-spacing:.2px;margin:0 0 6px}
-    .startSub{opacity:.8;margin:0 0 22px;max-width:70ch}
+    .startSub{color:#e6e6e6;opacity:1;margin:0 0 22px;max-width:70ch}
+    .startCard *{color:#111}
     .startCard{
       background:rgba(255,255,255,.96);
       color:#111;
@@ -21,7 +22,7 @@
     @media (max-width:860px){.grid{grid-template-columns:1fr}}
     .tile{border:1px solid rgba(0,0,0,.10);border-radius:16px;padding:18px}
     .tile h2{margin:0 0 6px;font-size:26px}
-    .muted{opacity:.75;margin:0 0 12px;line-height:1.35}
+    .muted{color:#444;opacity:1;margin:0 0 12px;line-height:1.35}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .btn{
       display:inline-flex;align-items:center;justify-content:center;gap:8px;
@@ -61,7 +62,7 @@
           <div style="height:12px"></div>
 
           <button id="uploadBtn" class="btn" type="button">Upload &amp; Prefill</button>
-          <div id="uploadStatus" class="status muted"></div>
+          <div id="uploadStatus" class="status"></div>
         </div>
 
         <div class="tile">
