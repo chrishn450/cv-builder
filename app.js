@@ -2008,6 +2008,76 @@
       state.data.achievements = normalizeToLines(state.data.achievements);
     }
 
+    // If AI didn't populate structured experienceJobs, try to build them from the legacy free-text field (data.experience).
+    // This keeps import robust and ensures bullets show up in the template.
+    function ensureExperienceJobsHaveBullets() {
+      const jobs = Array.isArray(state.data.experienceJobs) ? state.data.experienceJobs : [];
+      const legacy = String(state.data.experience || "").trim();
+
+      const stripBullet = (s) => String(s || "").replace(/^\s*([•\-–]|\u2022)\s+/, "").trim();
+
+      const hasAnyJob =
+        jobs.some((j) => String(j?.title || "").trim() || String(j?.meta || "").trim() || (Array.isArray(j?.bullets) && j.bullets.some((b) => String(b || "").trim())));
+
+      const hasLegacy = legacy.length > 0;
+
+      // Case A: No structured jobs, but we have legacy experience text -> parse blocks.
+      if ((!hasAnyJob || jobs.length === 0) && hasLegacy) {
+        const blocks = legacy
+          .split(/\n\s*\n+/g)
+          .map((b) => b.split("\n").map((x) => x.trim()).filter(Boolean))
+          .filter((lines) => lines.length >= 2);
+
+        const parsed = blocks
+          .map((lines) => {
+            const title = lines[0] || "";
+            const maybeMeta = lines[1] || "";
+            const rest = lines.slice(2).map(stripBullet).filter(Boolean);
+
+            const metaLooksUseful =
+              /\d{4}/.test(maybeMeta) ||
+              /\b(nå|present)\b/i.test(maybeMeta) ||
+              maybeMeta.length > 8;
+
+            const meta = metaLooksUseful ? maybeMeta : "";
+            const bulletsRaw = rest.length ? rest : lines.slice(meta ? 2 : 1).map(stripBullet).filter(Boolean);
+
+            return { title, meta, bullets: bulletsRaw.slice(0, 8) };
+          })
+          .filter((j) => String(j.title).trim() || String(j.meta).trim() || (j.bullets && j.bullets.length));
+
+        if (parsed.length) state.data.experienceJobs = parsed;
+        return;
+      }
+
+      // Case B: Structured jobs exist but bullets are empty -> derive bullets from legacy lines.
+      if (hasLegacy && jobs.length) {
+        const legacyLines = legacy.split("\n").map((x) => x.trim()).filter(Boolean).map(stripBullet);
+        if (!legacyLines.length) return;
+
+        state.data.experienceJobs = jobs.map((j) => {
+          const jj = { ...(j || {}) };
+          const bCount = Array.isArray(jj.bullets) ? jj.bullets.filter((b) => String(b || "").trim()).length : 0;
+          if (bCount > 0) return jj;
+
+          const title = String(jj.title || "").trim().toLowerCase();
+          const meta = String(jj.meta || "").trim().toLowerCase();
+
+          const candidate = legacyLines
+            .filter((ln) => {
+              const l = String(ln || "").toLowerCase();
+              if (title && l === title) return false;
+              if (meta && l === meta) return false;
+              return true;
+            })
+            .slice(0, 6);
+
+          if (candidate.length) jj.bullets = candidate;
+          return jj;
+        });
+      }
+    }
+
     // For preview/PDF rendering: templates vary in how they display lists.
     // We keep stored values clean (no bullet chars), but add bullets in a render-only copy.
     function addBulletsToEachLine(text) {
@@ -2095,7 +2165,8 @@
           const patches = (out?.suggestions || []).flatMap((s) => s?.patches || []);
           applyPatchesToState(patches);
 
-          // Fix common formatting issues regardless of model output
+          ensureExperienceJobsHaveBullets();
+// Fix common formatting issues regardless of model output
           normalizeImportFormatting();
 
           // Keep hidden textareas in sync (the template renderer reads these)
@@ -2249,7 +2320,10 @@ ${text}`.slice(0, 120000);
         const patches = (out?.suggestions || []).flatMap((s) => s?.patches || []);
         applyPatchesToState(patches);
 
+        ensureExperienceJobsHaveBullets();
+
         normalizeImportFormatting();
+
 
         syncEducation();
         syncLicenses();
@@ -2292,6 +2366,10 @@ ${text}`.slice(0, 120000);
         const out = await importOldCvFromText(text);
         const patches = (out?.suggestions || []).flatMap((s) => s?.patches || []);
         applyPatchesToState(patches);
+
+        ensureExperienceJobsHaveBullets();
+
+        normalizeImportFormatting();
 
         syncEducation();
         syncLicenses();
