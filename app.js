@@ -1325,6 +1325,40 @@
         setGridColumns("1.25fr 10px 1fr 10px 0.85fr");
         return;
       }
+
+      // Upload old CV (PDF) and prefill the template via AI
+      if (uploadOldCvBtn && uploadOldCvInput) {
+        uploadOldCvBtn.addEventListener("click", () => uploadOldCvInput.click());
+
+        uploadOldCvInput.addEventListener("change", async () => {
+          const file = uploadOldCvInput.files?.[0];
+          if (!file) return;
+
+          try {
+            if (uploadOldCvStatus) uploadOldCvStatus.textContent = "Parsing PDF…";
+            const text = await parsePdfToText(file);
+
+            if (uploadOldCvStatus) uploadOldCvStatus.textContent = "Asking AI to prefill…";
+            const out = await importOldCvFromText(text);
+
+            const patches = (out?.suggestions || []).flatMap((s) => s?.patches || []);
+            applyPatchesToState(patches);
+
+            // Keep hidden textareas in sync (the template renderer reads these)
+            syncEducation();
+            syncLicenses();
+            syncExperience();
+            syncVolunteer();
+
+            refreshAllAfterImport();
+            if (uploadOldCvStatus) uploadOldCvStatus.textContent = "Imported ✔";
+          } catch (e) {
+            if (uploadOldCvStatus) uploadOldCvStatus.textContent = e?.message || "Import failed";
+          } finally {
+            uploadOldCvInput.value = "";
+          }
+        });
+      }
       if (v.editor && v.preview && !v.ai) {
         setGridColumns("1.25fr 10px 1fr");
         return;
@@ -1639,6 +1673,9 @@
 
     function addMsg(role, title, text) {
       const chat = qs("aiChat");
+      const uploadOldCvBtn = qs("uploadOldCvBtn");
+      const uploadOldCvInput = qs("uploadOldCvInput");
+      const uploadOldCvStatus = qs("uploadOldCvStatus");
       if (!chat) return;
       const div = document.createElement("div");
       div.className = `msg ${role}`;
@@ -1847,6 +1884,72 @@
 
         renderSuggestionCard({ message: fallback, suggestions: [] });
       }
+    }
+
+    // --- Old CV upload + AI import (PDF -> text -> patches) ---
+    function setDeep(obj, path, value) {
+      const parts = String(path || "").split(".");
+      let cur = obj;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const k = parts[i];
+        if (!cur[k] || typeof cur[k] !== "object") cur[k] = {};
+        cur = cur[k];
+      }
+      cur[parts[parts.length - 1]] = value;
+    }
+
+    function applyPatchesToState(patches) {
+      (patches || []).forEach((p) => {
+        if (!p || p.op !== "set" || typeof p.path !== "string") return;
+        setDeep(state, p.path, p.value);
+      });
+    }
+
+    async function parsePdfToText(file) {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await fetch("/api/parse-cv", { method: "POST", body: fd });
+      const j = await r.json().catch(() => null);
+      if (!r.ok) throw new Error(j?.error || "Failed to parse PDF");
+      return String(j?.text || "");
+    }
+
+    async function importOldCvFromText(text) {
+      const msg = `IMPORT_OLD_CV
+
+Here is the old CV text:
+
+${text}`.slice(0, 120000);
+
+      const r = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: msg,
+          language: state.ui.lang || "en",
+          snapshot: { data: state.data, sections: state.sections, ui: state.ui },
+          history: []
+        }),
+      });
+
+      const out = await r.json().catch(() => null);
+      if (!r.ok) throw new Error(out?.error || "AI import failed");
+      return out;
+    }
+
+    function refreshAllAfterImport() {
+      // Ensure defaults exist, then sync inputs/toggles from state
+      initSectionsFromUI();
+      syncUIFromState();
+
+      // Re-render structured blocks in the editor
+      renderEducation();
+      renderLicenses();
+      renderExperience();
+      renderVolunteer();
+
+      saveState();
+      render();
     }
 
     function setupAIUI() {
