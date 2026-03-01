@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Activate Access</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 520px; margin: 40px auto; padding: 0 16px; }
+    input { width: 100%; padding: 10px; margin: 8px 0; }
+    button { padding: 10px 14px; cursor: pointer; }
+    .box { border: 1px solid #ddd; border-radius: 12px; padding: 16px; }
+    .muted { color:#666; }
+    .error { color:#b00020; }
+  </style>
+</head>
+<body>
+  <h1>Activate your access</h1>
+  <div class="box">
+    <p id="status" class="muted">Checking link…</p>
+
+    <div id="createBox" style="display:none;">
+      <p class="muted">Create a password (type it twice).</p>
+      <input id="pw1" type="password" placeholder="Password (min 8 chars)" />
+      <input id="pw2" type="password" placeholder="Confirm password" />
+      <button id="createBtn">Create account & continue</button>
+      <p id="createErr" class="error"></p>
+    </div>
+
+    <div id="loginBox" style="display:none;">
+      <p class="muted">Account already exists. Please log in.</p>
+      <a href="/login.html">Go to login</a>
+    </div>
+
+    <div id="badBox" style="display:none;">
+      <p class="error">This link is invalid or expired.</p>
+      <p class="muted">Please check your email for a newer link.</p>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const token = params.get("token");
+
+    const statusEl = document.getElementById("status");
+    const createBox = document.getElementById("createBox");
+    const loginBox = document.getElementById("loginBox");
+    const badBox = document.getElementById("badBox");
+    const createErr = document.getElementById("createErr");
+
+    async function post(url, body) {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body || {})
+      });
+      const data = await res.json().catch(()=> ({}));
+      return { res, data };
+    }
+
+    (async () => {
+      if (!token) {
+        statusEl.textContent = "Missing token.";
+        badBox.style.display = "block";
+        return;
+      }
+
+      const { data } = await post("/api/claim-status", { token });
+
+      if (data.state === "new") {
+        statusEl.textContent = "Link OK. Create your password.";
+        createBox.style.display = "block";
+      } else if (data.state === "claimed") {
+        statusEl.textContent = "Already activated.";
+        loginBox.style.display = "block";
+      } else {
+        statusEl.textContent = "Invalid or expired.";
+        badBox.style.display = "block";
+      }
+    })();
+
+    document.getElementById("createBtn").addEventListener("click", async () => {
+      createErr.textContent = "";
+      const pw1 = document.getElementById("pw1").value;
+      const pw2 = document.getElementById("pw2").value;
+
+      const { res, data } = await post("/api/claim", { token, password: pw1, confirmPassword: pw2 });
+      if (!res.ok) {
+        createErr.textContent = data.error || "Failed.";
+        if ((data.error || "").toLowerCase().includes("already")) {
+          location.href = "/login.html";
+        }
+        return;
+      }
+
+      // Ferdig: inn i app/templaten din
+      location.href = "/";  // <-- endre hvis templaten er en annen side
+    });
+  </script>
+</body>
+</html>
