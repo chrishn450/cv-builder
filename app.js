@@ -1914,10 +1914,91 @@
       return String(j?.text || "");
     }
 
-    async function importOldCvFromText(text) {
-      const msg = `IMPORT_OLD_CV
+    function detectLangFromText(text) {
+      const t = String(text || "").toLowerCase();
+      const hits = [
+        " utdanning", " erfaring", " ferdigheter", " språk", " sammendrag", " nåværende",
+        " ansvar", " stilling", " arbeids", " sertifikat", " kurs", " videregående", " ungdomsskole"
+      ].reduce((acc, w) => acc + (t.includes(w) ? 1 : 0), 0);
+      return hits >= 2 ? "no" : "en";
+    }
 
-Here is the old CV text:
+    function clearSectionTitles() {
+      if (!state.sections) state.sections = {};
+      Object.keys(state.sections).forEach((k) => {
+        if (!state.sections[k]) state.sections[k] = {};
+        if (k === "contact") return;
+        state.sections[k].title = "";
+      });
+    }
+
+    function cleanupEmptySectionsAndContact() {
+      if (!state.sections) state.sections = {};
+      if (!state.data) state.data = {};
+
+      const hasArrayItems = (arr) => Array.isArray(arr) && arr.some((x) => {
+        if (!x) return false;
+        if (typeof x === "string") return x.trim().length > 0;
+        if (typeof x === "object") return Object.values(x).some((v) => String(v ?? "").trim().length > 0);
+        return false;
+      });
+
+      const hasText = (v) => v != null && String(v).trim().length > 0;
+
+      // Prefer structured blocks if present
+      const sectionChecks = {
+        summary: () => hasText(state.data.summary),
+        education: () => hasArrayItems(state.data.educationBlocks) || hasText(state.data.education),
+        licenses: () => hasArrayItems(state.data.licenseBlocks) || hasText(state.data.licenses),
+        clinicalSkills: () => hasText(state.data.clinicalSkills),
+        coreCompetencies: () => hasText(state.data.coreCompetencies),
+        languages: () => hasText(state.data.languages),
+        experience: () => hasArrayItems(state.data.experienceJobs) || hasText(state.data.experience),
+        achievements: () => hasText(state.data.achievements),
+        volunteer: () => hasArrayItems(state.data.volunteerBlocks) || hasText(state.data.volunteer),
+        custom1: () => hasText(state.data.custom1),
+        custom2: () => hasText(state.data.custom2),
+      };
+
+      Object.keys(sectionChecks).forEach((k) => {
+        if (!state.sections[k]) state.sections[k] = {};
+        if (state.sections[k].enabled == null) state.sections[k].enabled = false;
+        state.sections[k].enabled = !!sectionChecks[k]();
+      });
+
+      // Contact show_* toggles
+      if (!state.sections.contact) state.sections.contact = {};
+      if (state.sections.contact.show_title == null) state.sections.contact.show_title = true;
+      state.sections.contact.show_email = hasText(state.data.email);
+      state.sections.contact.show_phone = hasText(state.data.phone);
+      state.sections.contact.show_location = hasText(state.data.location);
+      state.sections.contact.show_linkedin = hasText(state.data.linkedin);
+    }
+
+    async function importOldCvFromText(text) {
+      const detected = detectLangFromText(text);
+      if (!state.ui) state.ui = {};
+      state.ui.lang = detected;
+
+      // Ensure section titles match the detected language (use defaults)
+      clearSectionTitles();
+      applyDefaultSectionTitlesForLanguage(detected);
+      applyI18n();
+
+      const msg =
+        `IMPORT_OLD_CV
+
+` +
+        `The uploaded CV text may be in Norwegian (no) or English (en).
+` +
+        `- Populate structured blocks (educationBlocks, licenseBlocks, experienceJobs, volunteerBlocks).
+` +
+        `- Enable only sections that have content; disable the rest.
+` +
+        `- If language is Norwegian, use Norwegian section titles (lang=no).
+
+` +
+        `Here is the old CV text:
 
 ${text}`.slice(0, 120000);
 
@@ -1926,15 +2007,59 @@ ${text}`.slice(0, 120000);
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: msg,
-          language: state.ui.lang || "en",
+          language: detected,
           snapshot: { data: state.data, sections: state.sections, ui: state.ui },
-          history: []
+          history: [],
         }),
       });
 
       const out = await r.json().catch(() => null);
       if (!r.ok) throw new Error(out?.error || "AI import failed");
       return out;
+    }
+
+    async function maybeAutoImportPending() {
+      const keyText = "cv_builder_pending_import_text";
+      const keyLang = "cv_builder_pending_import_lang";
+      const text = localStorage.getItem(keyText);
+      if (!text) return;
+
+      const statusEl = qs("uploadOldCvStatus");
+      const btnEl = qs("uploadOldCvBtn");
+
+      try {
+        if (btnEl) btnEl.disabled = true;
+        if (statusEl) statusEl.textContent = "Importing your old CV…";
+
+        // If start page already detected language, respect it as a hint
+        const hintLang = localStorage.getItem(keyLang);
+        if (hintLang && (hintLang === "no" || hintLang === "en")) {
+          state.ui.lang = hintLang;
+          clearSectionTitles();
+          applyDefaultSectionTitlesForLanguage(hintLang);
+          applyI18n();
+        }
+
+        const out = await importOldCvFromText(text);
+        const patches = (out?.suggestions || []).flatMap((s) => s?.patches || []);
+        applyPatchesToState(patches);
+
+        syncEducation();
+        syncLicenses();
+        syncExperience();
+        syncVolunteer();
+
+        cleanupEmptySectionsAndContact();
+        refreshAllAfterImport();
+
+        if (statusEl) statusEl.textContent = "Imported ✔";
+      } catch (e) {
+        if (statusEl) statusEl.textContent = e?.message || "Import failed";
+      } finally {
+        localStorage.removeItem(keyText);
+        localStorage.removeItem(keyLang);
+        if (btnEl) btnEl.disabled = false;
+      }
     }
 
     function refreshAllAfterImport() {
@@ -2073,6 +2198,9 @@ ${text}`.slice(0, 120000);
 
       saveState();
       render();
+
+      // If we have a pending old-CV import from the start page, run it now
+      await maybeAutoImportPending();
 
       // If user came back from login/payment and we had a pending export -> try it
       await maybeAutoExportPending();
