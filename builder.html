@@ -19,6 +19,39 @@
     <!-- ✅ Template styles (ONLY the CV / A4 design) -->
     <!-- App.js setter href automatisk basert på valgt template -->
     <link id="templateCss" rel="stylesheet" href="" />
+  
+    <style>
+      /* Fullscreen loading overlay */
+      #globalLoadingOverlay{
+        position:fixed; inset:0; display:none;
+        align-items:center; justify-content:center;
+        background: rgba(10,14,24,.72);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        z-index: 9999;
+      }
+      #globalLoadingOverlay .gl-card{
+        width:min(520px, calc(100vw - 32px));
+        background:#fff;
+        color:#111;
+        border-radius:18px;
+        padding:20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,.30);
+        border: 1px solid rgba(0,0,0,.08);
+      }
+      #globalLoadingOverlay .gl-row{ display:flex; gap:14px; align-items:center; }
+      #globalLoadingOverlay .gl-title{ font-weight:800; font-size:18px; margin:0; }
+      #globalLoadingOverlay .gl-desc{ margin:6px 0 0; opacity:.72; font-size:14px; line-height:1.35; }
+      #globalLoadingOverlay .gl-spinner{
+        width:34px; height:34px; border-radius:999px;
+        border:3px solid rgba(0,0,0,.15);
+        border-top-color: rgba(0,0,0,.75);
+        animation: glSpin .9s linear infinite;
+        flex:0 0 auto;
+      }
+      @keyframes glSpin { to { transform: rotate(360deg); } }
+    </style>
+
   </head>
 
   <body>
@@ -530,5 +563,19 @@
     <!-- ✅ app laster riktig template render.js dynamisk -->
     <!-- (så denne skal IKKE lenger peke på /templates/nurse/render.js) -->
     <script src="/app.js?v=1"></script>
+  
+    <!-- Fullscreen loading overlay -->
+    <div id="globalLoadingOverlay" aria-live="polite" aria-busy="true">
+      <div class="gl-card">
+        <div class="gl-row">
+          <div class="gl-spinner" aria-hidden="true"></div>
+          <div>
+            <p class="gl-title" id="glTitle">Working…</p>
+            <p class="gl-desc" id="glDesc">Please wait.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </body>
 </html>

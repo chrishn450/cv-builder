@@ -81,6 +81,24 @@
   function startApp(meInitial) {
     const qs = (id) => document.getElementById(id);
 
+
+    // --- Fullscreen loading overlay helpers ---
+    function showGlobalLoading(title, desc) {
+      const overlay = document.getElementById("globalLoadingOverlay");
+      if (!overlay) return;
+      const tEl = document.getElementById("glTitle");
+      const dEl = document.getElementById("glDesc");
+      if (tEl) tEl.textContent = title || "Working…";
+      if (dEl) dEl.textContent = desc || "Please wait.";
+      overlay.style.display = "flex";
+    }
+    function hideGlobalLoading() {
+      const overlay = document.getElementById("globalLoadingOverlay");
+      if (!overlay) return;
+      overlay.style.display = "none";
+    }
+
+
     // NOTE: state.ui.template added
     const state = { data: {}, sections: {}, ui: { lang: "en", template: "" } };
 
@@ -1978,10 +1996,12 @@
 
         try {
           if (st) st.textContent = "Parsing PDF…";
+          showGlobalLoading("Parsing your PDF…", "Extracting text from your CV.");
           btn.disabled = true;
           const text = await parsePdfToText(file);
 
           if (st) st.textContent = "Asking AI to prefill…";
+          showGlobalLoading("Prefilling your CV…", "Asking AI to extract and structure your information.");
           const out = await importOldCvFromText(text);
 
           const patches = (out?.suggestions || []).flatMap((s) => s?.patches || []);
@@ -2002,6 +2022,7 @@
         } catch (e) {
           if (st) st.textContent = e?.message || "Import failed";
         } finally {
+          hideGlobalLoading();
           btn.disabled = false;
           inp.value = "";
         }
@@ -2163,6 +2184,7 @@ ${text}`.slice(0, 120000);
       try {
         if (btnEl) btnEl.disabled = true;
         if (statusEl) statusEl.textContent = "Importing your old CV…";
+        showGlobalLoading("Prefilling your CV…", "Asking AI to extract and structure your information.");
 
         // If start page already detected language, respect it as a hint
         const hintLang = localStorage.getItem(keyLang);
